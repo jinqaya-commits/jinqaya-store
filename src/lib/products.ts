@@ -60,7 +60,11 @@ function resolveImageUrl(path: string): string | null {
 async function attachProductData(rows: ProductRow[]): Promise<StoreProduct[]> {
   if (rows.length === 0) return [];
 
-  const supabase = await createClient();
+  let supabase;
+  try { supabase = await createClient(); } catch (error) {
+    console.error("Supabase is not configured for the storefront:", error);
+    return rows.map((product) => ({ ...product, variants: [], images: [] }));
+  }
   const ids = rows.map((product) => product.id);
 
   const [variantResult, imageResult] = await Promise.all([
@@ -120,7 +124,11 @@ async function attachProductData(rows: ProductRow[]): Promise<StoreProduct[]> {
 const productColumns = "id, name, slug, short_description, description, pet_type, brand_name, material, care_instructions, is_featured, is_new_arrival, seo_title, seo_description";
 
 export async function getStoreProducts(categorySlug?: string): Promise<StoreProduct[]> {
-  const supabase = await createClient();
+  let supabase;
+  try { supabase = await createClient(); } catch (error) {
+    console.error("Supabase is not configured for the storefront:", error);
+    return [];
+  }
   let productIds: string[] | null = null;
 
   if (categorySlug) {
@@ -165,7 +173,11 @@ export async function getStoreProducts(categorySlug?: string): Promise<StoreProd
 }
 
 export async function getStoreProductBySlug(slug: string): Promise<StoreProduct | null> {
-  const supabase = await createClient();
+  let supabase;
+  try { supabase = await createClient(); } catch (error) {
+    console.error("Supabase is not configured for the storefront:", error);
+    return null;
+  }
   const { data, error } = await supabase
     .from("products")
     .select(productColumns)
