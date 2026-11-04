@@ -3,37 +3,37 @@ const categories = [
     number: "01",
     name: "WALK & TRAVEL",
     description: "For little journeys and everyday adventures.",
-    href: "/shop?category=walk-travel",
+    href: "/collections/walk-travel",
   },
   {
     number: "02",
     name: "HOME & COMFORT",
     description: "Thoughtful comforts for shared spaces.",
-    href: "/shop?category=home-comfort",
+    href: "/collections/home-comfort",
   },
   {
     number: "03",
     name: "PLAY & DISCOVER",
     description: "Make room for curiosity and connection.",
-    href: "/shop?category=play-discover",
+    href: "/collections/play-discover",
   },
   {
     number: "04",
     name: "CARE & GROOMING",
     description: "Considered essentials for daily care.",
-    href: "/shop?category=care-grooming",
+    href: "/collections/care-grooming",
   },
   {
     number: "05",
     name: "STYLE & ACCESSORIES",
     description: "Finishing touches for life together.",
-    href: "/shop?category=style-accessories",
+    href: "/collections/style-accessories",
   },
   {
     number: "06",
     name: "SMART LIVING",
     description: "Useful ideas for a more thoughtful routine.",
-    href: "/shop?category=smart-living",
+    href: "/collections/smart-living",
   },
 ];
 
