@@ -48,13 +48,13 @@ type ProductRow = Omit<StoreProduct, "variants" | "images">;
 function resolveImageUrl(path: string): string | null {
   if (/^https?:\/\//i.test(path)) return path;
 
-  const bucket = process.env.NEXT_PUBLIC_SUPABASE_PRODUCT_IMAGES_BUCKET;
-  if (!bucket) return null;
+  const bucket = process.env.NEXT_PUBLIC_SUPABASE_PRODUCT_IMAGES_BUCKET || "product-images";
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   if (!url) return null;
 
-  return `${url.replace(/\/$/, "")}/storage/v1/object/public/${bucket}/${path.replace(/^\//, "")}`;
+  const encodedPath = path.replace(/^\//, "").split("/").map(encodeURIComponent).join("/");
+  return `${url.replace(/\/$/, "")}/storage/v1/object/public/${bucket}/${encodedPath}`;
 }
 
 async function attachProductData(rows: ProductRow[]): Promise<StoreProduct[]> {
