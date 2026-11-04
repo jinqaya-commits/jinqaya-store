@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { createProduct, type CreateProductInput } from "../../actions";
+import { createProduct, type CreateProductInput } from "../actions";
 import { createClient } from "@/lib/supabase/client";
 
 type Category = { id: string; name: string };
