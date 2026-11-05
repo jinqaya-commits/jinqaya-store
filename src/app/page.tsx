@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 const categories = [
   {
     number: "01",
@@ -45,17 +47,17 @@ export default function HomePage() {
       </div>
 
       <header className="site-header">
-        <a className="wordmark" href="/" aria-label="JINQAYA home">
+        <Link className="wordmark" href="/" aria-label="JINQAYA home">
           JINQAYA<span>®</span>
-        </a>
+        </Link>
         <nav className="main-nav" aria-label="Main navigation">
-          <a href="/shop">SHOP ALL</a>
-          <a href="#categories">COLLECTIONS</a>
-          <a href="#philosophy">OUR PHILOSOPHY</a>
+          <Link href="/shop">SHOP ALL</Link>
+          <Link href="#categories">COLLECTIONS</Link>
+          <Link href="#philosophy">OUR PHILOSOPHY</Link>
         </nav>
         <div className="header-actions">
-          <a href="/account">ACCOUNT</a>
-          <a href="/cart">BAG (0)</a>
+          <Link href="/account">ACCOUNT</Link>
+          <Link href="/cart">BAG (0)</Link>
         </div>
       </header>
 
@@ -67,9 +69,9 @@ export default function HomePage() {
             Thoughtfully chosen essentials for the everyday moments
             we share with our pets.
           </p>
-          <a className="button button-dark" href="/shop">
+          <Link className="button button-dark" href="/shop">
             DISCOVER THE COLLECTION <span aria-hidden="true">↗</span>
-          </a>
+          </Link>
         </div>
         <div className="hero-art" aria-label="Decorative warm neutral composition">
           <div className="art-sun" />
@@ -97,12 +99,12 @@ export default function HomePage() {
             <p className="eyebrow">EXPLORE OUR WORLD</p>
             <h2>Made for life <em>together.</em></h2>
           </div>
-          <a className="text-link" href="/shop">VIEW ALL CATEGORIES ↗</a>
+          <Link className="text-link" href="/shop">VIEW ALL CATEGORIES ↗</Link>
         </div>
 
         <div className="category-grid">
           {categories.map((category) => (
-            <a className="category-card" href={category.href} key={category.number}>
+            <Link className="category-card" href={category.href} key={category.number}>
               <div className="category-art">
                 <span>{category.number}</span>
                 <span className="category-arrow" aria-hidden="true">↗</span>
@@ -111,7 +113,7 @@ export default function HomePage() {
                 <h3>{category.name}</h3>
                 <p>{category.description}</p>
               </div>
-            </a>
+            </Link>
           ))}
         </div>
       </section>
@@ -119,19 +121,19 @@ export default function HomePage() {
       <section className="closing-banner">
         <p className="eyebrow">JINQAYA</p>
         <h2>Little rituals.<br /><em>Better days.</em></h2>
-        <a className="button button-light" href="/shop">EXPLORE JINQAYA ↗</a>
+        <Link className="button button-light" href="/shop">EXPLORE JINQAYA ↗</Link>
       </section>
 
       <footer className="site-footer">
         <div className="footer-main">
           <div>
-            <a className="wordmark footer-wordmark" href="/">JINQAYA<span>®</span></a>
+            <Link className="wordmark footer-wordmark" href="/">JINQAYA<span>®</span></Link>
             <p>Better Living, Together.</p>
           </div>
           <div className="footer-links">
-            <div><p className="eyebrow">DISCOVER</p><a href="/shop">Shop all</a><a href="#categories">Collections</a></div>
-            <div><p className="eyebrow">HELP</p><a href="/contact">Contact</a><a href="/shipping">Shipping</a><a href="/returns">Returns</a></div>
-            <div><p className="eyebrow">FOLLOW ALONG</p><a href="#top">Instagram ↗</a><a href="#top">Pinterest ↗</a></div>
+            <div><p className="eyebrow">DISCOVER</p><Link href="/shop">Shop all</Link><Link href="#categories">Collections</Link></div>
+            <div><p className="eyebrow">HELP</p><Link href="/contact">Contact</Link><Link href="/shipping">Shipping</Link><Link href="/returns">Returns</Link></div>
+            <div><p className="eyebrow">FOLLOW ALONG</p><Link href="#top">Instagram ↗</Link><Link href="#top">Pinterest ↗</Link></div>
           </div>
         </div>
         <div className="footer-bottom">
