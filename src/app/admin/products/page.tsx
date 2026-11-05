@@ -7,8 +7,8 @@ export const dynamic = "force-dynamic";
 
 export default async function AdminProductsPage() {
   const supabase = await createClient();
-  const { data: { claims } } = await supabase.auth.getClaims();
-  if (!claims?.sub) redirect("/login");
+  const { data: claimsData } = await supabase.auth.getClaims();
+  if (!claimsData?.claims?.sub) redirect("/login");
   const { data: canManage, error: permissionError } = await supabase.rpc("can_manage_catalog");
   if (permissionError || canManage !== true) redirect("/");
 
