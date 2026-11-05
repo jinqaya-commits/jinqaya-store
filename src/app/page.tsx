@@ -56,8 +56,7 @@ export default function HomePage() {
           <Link href="#philosophy">OUR PHILOSOPHY</Link>
         </nav>
         <div className="header-actions">
-          <Link href="/account">ACCOUNT</Link>
-          <Link href="/cart">BAG (0)</Link>
+          <Link href="/shop">DISCOVER THE SHOP ↗</Link>
         </div>
       </header>
 
@@ -132,8 +131,7 @@ export default function HomePage() {
           </div>
           <div className="footer-links">
             <div><p className="eyebrow">DISCOVER</p><Link href="/shop">Shop all</Link><Link href="#categories">Collections</Link></div>
-            <div><p className="eyebrow">HELP</p><Link href="/contact">Contact</Link><Link href="/shipping">Shipping</Link><Link href="/returns">Returns</Link></div>
-            <div><p className="eyebrow">FOLLOW ALONG</p><Link href="#top">Instagram ↗</Link><Link href="#top">Pinterest ↗</Link></div>
+            <div><p className="eyebrow">STORE INFORMATION</p><span>Online purchasing will open once checkout and customer support are ready.</span></div>
           </div>
         </div>
         <div className="footer-bottom">
