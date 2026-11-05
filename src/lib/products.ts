@@ -1,3 +1,4 @@
+import { resolveProductImageUrls } from "@/lib/product-images";
 import { createClient } from "@/lib/supabase/server";
 
 export type StoreProductImage = {
@@ -8,6 +9,9 @@ export type StoreProductImage = {
   sort_order: number;
   is_primary: boolean;
   url: string | null;
+  original_url: string | null;
+  thumbnail_url: string | null;
+  detail_url: string | null;
 };
 
 export type StoreProductVariant = {
@@ -45,17 +49,6 @@ export type StoreProduct = {
 
 type ProductRow = Omit<StoreProduct, "variants" | "images">;
 
-function resolveImageUrl(path: string): string | null {
-  if (/^https?:\/\//i.test(path)) return path;
-
-  const bucket = process.env.NEXT_PUBLIC_SUPABASE_PRODUCT_IMAGES_BUCKET || "product-images";
-
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (!url) return null;
-
-  const encodedPath = path.replace(/^\//, "").split("/").map(encodeURIComponent).join("/");
-  return `${url.replace(/\/$/, "")}/storage/v1/object/public/${bucket}/${encodedPath}`;
-}
 
 async function attachProductData(rows: ProductRow[]): Promise<StoreProduct[]> {
   if (rows.length === 0) return [];
@@ -116,7 +109,15 @@ async function attachProductData(rows: ProductRow[]): Promise<StoreProduct[]> {
         image_type: image.image_type,
         sort_order: image.sort_order,
         is_primary: image.is_primary,
-        url: resolveImageUrl(image.storage_path),
+        ...(() => {
+          const urls = resolveProductImageUrls(image.storage_path);
+          return {
+            url: urls.detailUrl,
+            original_url: urls.originalUrl,
+            thumbnail_url: urls.thumbnailUrl,
+            detail_url: urls.detailUrl,
+          };
+        })(),
       })),
   }));
 }
