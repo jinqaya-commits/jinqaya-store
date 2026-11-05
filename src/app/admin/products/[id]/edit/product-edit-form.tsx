@@ -2,7 +2,8 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { updateProduct, updateVariant, removeVariant, reorderImages, removeImage } from "../actions";
+import { updateProduct, updateVariant, removeVariant, reorderImages, removeImage, addProductImage } from "../actions";
+import { createClient } from "@/lib/supabase/client";
 
 type Product = { id:string; name:string; pet_type:"cat"|"dog"|"both"|"shared"; short_description:string|null; description:string|null; material:string|null; care_instructions:string|null; status:"draft"|"active"|"archived" };
 type Variant = { id?:string; sku:string; variantName:string; color:string; size:string; price:string; compareAtPrice:string };
@@ -12,7 +13,7 @@ export function ProductEditForm({product,variants: initialVariants,images: initi
  const [fields,setFields]=useState({name:product.name,petType:product.pet_type,shortDescription:product.short_description??"",description:product.description??"",material:product.material??"",careInstructions:product.care_instructions??"",status:product.status});
  const [variants,setVariants]=useState(initialVariants);
  const [images,setImages]=useState([...initialImages].sort((a,b)=>a.sort_order-b.sort_order));
- const [error,setError]=useState(""); const [busy,setBusy]=useState(false); const router=useRouter();
+ const [error,setError]=useState(""); const [busy,setBusy]=useState(false); const [uploadBusy,setUploadBusy]=useState(false); const router=useRouter();
  async function run(action:()=>Promise<{error?:string;success?:boolean}>) {setBusy(true);setError("");try{const result=await action();if(result.error){setError(result.error);setBusy(false);return false;}setBusy(false);router.refresh();return true;}catch(e){setError(e instanceof Error?e.message:"Unable to save.");setBusy(false);return false;}}
  async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();await run(()=>updateProduct(product.id,fields));}
  async function saveVariant(v:Variant,index:number){setBusy(true);setError("");try{const result=await updateVariant(product.id,v);if(result.error){setError(result.error);setBusy(false);return;}if(result.variantId)setVariants(current=>current.map((x,i)=>i===index?{...x,id:result.variantId}:x));setBusy(false);router.refresh();}catch(e){setError(e instanceof Error?e.message:"Unable to save variant.");setBusy(false);}}
@@ -42,8 +43,11 @@ export function ProductEditForm({product,variants: initialVariants,images: initi
    </div><div className="admin-form-actions"><button type="button" className="admin-primary-button" disabled={busy} onClick={()=>void saveVariant(v,i)}>Save SKU</button><button type="button" className="admin-secondary-button" disabled={busy} onClick={()=>void dropVariant(v,i)}>Remove</button></div></div>)}
    <button type="button" className="admin-secondary-button" disabled={busy} onClick={()=>setVariants(v=>[...v,blank])}>＋ Add variant</button>
   </section>
-  <section className="admin-form-section"><div className="admin-form-heading"><span>03</span><div><h2>Product images</h2><p>Move the primary image or remove images.</p></div></div>
-   {images.length===0?<p className="admin-help">No images uploaded.</p>:images.map((img,i)=><div className="admin-form-grid" key={img.id}><div><strong>{i===0?"Main image":`Image ${i+1}`}</strong><p className="admin-help">{img.alt_text??img.storage_path}</p></div><div className="admin-form-actions"><button type="button" className="admin-secondary-button" disabled={busy||i===0} onClick={()=>void moveImage(i,-1)}>Move up</button><button type="button" className="admin-secondary-button" disabled={busy||i===images.length-1} onClick={()=>void moveImage(i,1)}>Move down</button><button type="button" className="admin-secondary-button" disabled={busy} onClick={()=>void dropImage(img)}>Delete</button></div></div>)}
+
+  <section className="admin-form-section"><div className="admin-form-heading"><span>03</span><div><h2>Product images</h2><p>Upload JPG, PNG, WebP or AVIF images (maximum 8 MB each). The first image becomes the main image.</p></div></div>
+   <label>Upload image<input type="file" accept="image/jpeg,image/png,image/webp,image/avif" disabled={uploadBusy||busy} onChange={async e=>{const input=e.currentTarget;const file=input.files?.[0];if(!file)return;setError("");if(file.size>8*1024*1024){setError("Each image must be 8 MB or smaller.");input.value="";return;}if(!["image/jpeg","image/png","image/webp","image/avif"].includes(file.type)){setError("Please choose a JPG, PNG, WebP or AVIF image.");input.value="";return;}setUploadBusy(true);try{const supabase=createClient();const safeName=file.name.toLowerCase().replace(/[^a-z0-9._-]+/g,"-");const storagePath=product.id+"/"+Date.now()+"-"+safeName;const {error:uploadError}=await supabase.storage.from("product-images").upload(storagePath,file,{contentType:file.type,cacheControl:"3600",upsert:false});if(uploadError)throw uploadError;const result=await addProductImage(product.id,storagePath,product.name);if(result.error)throw new Error(result.error);router.refresh();}catch(err){setError(err instanceof Error?err.message:"Image upload failed.");}finally{setUploadBusy(false);input.value="";}}}/></label>
+   {uploadBusy&&<p className="admin-help">Uploading image…</p>}
+   {images.length===0?<p className="admin-help">No images uploaded.</p>:images.map((img,i)=><div className="admin-form-grid" key={img.id}><div><strong>{i===0?"Main image":"Image "+(i+1)}</strong><p className="admin-help">{img.alt_text??img.storage_path}</p></div><div className="admin-form-actions"><button type="button" className="admin-secondary-button" disabled={busy||uploadBusy||i===0} onClick={()=>void moveImage(i,-1)}>Move up</button><button type="button" className="admin-secondary-button" disabled={busy||uploadBusy||i===images.length-1} onClick={()=>void moveImage(i,1)}>Move down</button><button type="button" className="admin-secondary-button" disabled={busy||uploadBusy} onClick={()=>void dropImage(img)}>Delete</button></div></div>)}
   </section>
   {error&&<p className="admin-error" role="alert">{error}</p>}
   <div className="admin-form-actions"><button type="button" className="admin-secondary-button" onClick={()=>router.push("/admin/products")}>Back to products</button></div>
