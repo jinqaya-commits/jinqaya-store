@@ -129,3 +129,63 @@ export async function setProductStatus(productId: string, status: "draft" | "act
   revalidatePath("/admin/products");
   revalidatePath("/shop");
 }
+
+export async function updateProduct(productId: string, values: {
+  name: string; petType: "cat"|"dog"|"both"|"shared"; shortDescription: string;
+  description: string; material: string; careInstructions: string; status: "draft"|"active"|"archived";
+}) {
+  const supabase = await requireCatalogManager();
+  const name = values.name.trim();
+  const slug = slugify(name);
+  if (!name || !slug) return { error: "Product name is required." };
+  const { data: conflict } = await supabase.from("products").select("id").eq("slug",slug).neq("id",productId).maybeSingle();
+  const { error } = await supabase.from("products").update({
+    name, slug: conflict ? slug + "-" + productId.slice(0,8) : slug,
+    pet_type: values.petType, short_description: values.shortDescription.trim() || null,
+    description: values.description.trim() || null, material: values.material.trim() || null,
+    care_instructions: values.careInstructions.trim() || null, status: values.status,
+    published_at: values.status === "active" ? new Date().toISOString() : null,
+  }).eq("id",productId);
+  if (error) return { error: error.message };
+  revalidatePath("/admin/products"); revalidatePath("/shop"); revalidatePath("/collections");
+  return { success: true };
+}
+
+export async function updateVariant(productId: string, variant: {
+  id?: string; sku: string; variantName: string; color: string; size: string; price: string; compareAtPrice: string;
+}) {
+  const supabase = await requireCatalogManager();
+  if (!variant.sku.trim()) return { error: "SKU is required." };
+  const price = variant.price.trim() ? Number(variant.price) : null;
+  const compare = variant.compareAtPrice.trim() ? Number(variant.compareAtPrice) : null;
+  if ((price !== null && (!Number.isFinite(price)||price<0))||(compare!==null&&(!Number.isFinite(compare)||compare<0))) return {error:"Enter valid non-negative prices."};
+  const values = {product_id:productId,sku:variant.sku.trim(),variant_name:variant.variantName.trim()||null,color:variant.color.trim()||null,size:variant.size.trim()||null,price,compare_at_price:compare,currency:"USD"};
+  const query = variant.id ? supabase.from("product_variants").update(values).eq("id",variant.id).eq("product_id",productId) : supabase.from("product_variants").insert(values);
+  const {error}=await query;
+  if(error)return {error:error.message};
+  revalidatePath("/admin/products"); revalidatePath("/shop");
+  return {success:true};
+}
+
+export async function removeVariant(productId:string,variantId:string) {
+ const supabase=await requireCatalogManager();
+ const {error}=await supabase.from("product_variants").delete().eq("id",variantId).eq("product_id",productId);
+ if(error)return {error:error.message}; revalidatePath("/admin/products"); return {success:true};
+}
+
+export async function reorderImages(productId:string, ids:string[]) {
+ const supabase=await requireCatalogManager();
+ for(let i=0;i<ids.length;i++){
+  const {error}=await supabase.from("product_images").update({sort_order:i,is_primary:i===0,image_type:i===0?"main":"gallery"}).eq("id",ids[i]).eq("product_id",productId);
+  if(error)return {error:error.message};
+ }
+ revalidatePath("/admin/products"); revalidatePath("/shop"); return {success:true};
+}
+
+export async function removeImage(productId:string,imageId:string,path:string) {
+ const supabase=await requireCatalogManager();
+ const {error}=await supabase.from("product_images").delete().eq("id",imageId).eq("product_id",productId);
+ if(error)return {error:error.message};
+ if(path){const {error:storageError}=await supabase.storage.from("product-images").remove([path]);if(storageError)return {error:storageError.message};}
+ revalidatePath("/admin/products"); revalidatePath("/shop"); return {success:true};
+}
