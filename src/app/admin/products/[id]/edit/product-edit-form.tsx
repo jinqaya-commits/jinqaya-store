@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { updateProduct, updateVariant, removeVariant, reorderImages, removeImage, addProductImage } from "../actions";
+import { updateProduct, updateVariant, removeVariant, reorderImages, removeImage, addProductImage } from "../../actions";
 
 type Product = { id:string; name:string; pet_type:"cat"|"dog"|"both"|"shared"; short_description:string|null; description:string|null; material:string|null; care_instructions:string|null; status:"draft"|"active"|"archived" };
 type Variant = { id?:string; sku:string; variantName:string; color:string; size:string; price:string; compareAtPrice:string };
