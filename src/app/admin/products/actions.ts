@@ -160,11 +160,16 @@ export async function updateVariant(productId: string, variant: {
   const compare = variant.compareAtPrice.trim() ? Number(variant.compareAtPrice) : null;
   if ((price !== null && (!Number.isFinite(price)||price<0))||(compare!==null&&(!Number.isFinite(compare)||compare<0))) return {error:"Enter valid non-negative prices."};
   const values = {product_id:productId,sku:variant.sku.trim(),variant_name:variant.variantName.trim()||null,color:variant.color.trim()||null,size:variant.size.trim()||null,price,compare_at_price:compare,currency:"USD"};
-  const query = variant.id ? supabase.from("product_variants").update(values).eq("id",variant.id).eq("product_id",productId) : supabase.from("product_variants").insert(values);
-  const {error}=await query;
-  if(error)return {error:error.message};
+  if (variant.id) {
+    const { error } = await supabase.from("product_variants").update(values).eq("id", variant.id).eq("product_id", productId);
+    if (error) return { error: error.message };
+    revalidatePath("/admin/products"); revalidatePath("/shop");
+    return { success: true, variantId: variant.id };
+  }
+  const { data, error } = await supabase.from("product_variants").insert(values).select("id").single();
+  if (error) return { error: error.message };
   revalidatePath("/admin/products"); revalidatePath("/shop");
-  return {success:true};
+  return { success: true, variantId: data.id };
 }
 
 export async function removeVariant(productId:string,variantId:string) {
