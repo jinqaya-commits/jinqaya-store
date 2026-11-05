@@ -5,6 +5,7 @@ export type ProductImageUrls = {
 };
 
 const R2_PATH_PREFIX = "r2://";
+const DEFAULT_R2_PUBLIC_BASE_URL = "https://images.jinqaya.com";
 
 function encodeObjectKey(key: string): string {
   return key
@@ -14,18 +15,11 @@ function encodeObjectKey(key: string): string {
     .join("/");
 }
 
-function transformedUrl(baseUrl: string, key: string, width: number): string {
-  const base = baseUrl.replace(/\/+$/, "");
-  const path = encodeObjectKey(key);
-  return `${base}/cdn-cgi/image/width=${width},quality=85,format=auto/${path}`;
-}
-
 /**
- * Image storage paths are provider-neutral identifiers:
- * - r2://<object-key> for Cloudflare R2
- * - legacy unprefixed paths for the existing Supabase Storage bucket
- *
- * The database stores object keys, never a provider's public URL.
+ * Resolve stored image identifiers to browser-accessible URLs.
+ * R2 images use the public custom domain directly. Avoid requiring
+ * Cloudflare Image Resizing so uploaded originals remain displayable
+ * even when the image transformation feature is not enabled.
  */
 export function resolveProductImageUrls(storagePath: string): ProductImageUrls {
   if (/^https?:\/\//i.test(storagePath)) {
@@ -33,19 +27,15 @@ export function resolveProductImageUrls(storagePath: string): ProductImageUrls {
   }
 
   if (storagePath.startsWith(R2_PATH_PREFIX)) {
-    const baseUrl = process.env.PRODUCT_IMAGE_PUBLIC_BASE_URL;
-    if (!baseUrl) return { originalUrl: null, thumbnailUrl: null, detailUrl: null };
-
+    const baseUrl = (process.env.PRODUCT_IMAGE_PUBLIC_BASE_URL || DEFAULT_R2_PUBLIC_BASE_URL)
+      .replace(/\/+$/, "");
     const key = storagePath.slice(R2_PATH_PREFIX.length);
     if (!key || key.includes("..")) {
       return { originalUrl: null, thumbnailUrl: null, detailUrl: null };
     }
 
-    return {
-      originalUrl: `${baseUrl.replace(/\/+$/, "")}/${encodeObjectKey(key)}`,
-      thumbnailUrl: transformedUrl(baseUrl, key, 600),
-      detailUrl: transformedUrl(baseUrl, key, 1600),
-    };
+    const url = `${baseUrl}/${encodeObjectKey(key)}`;
+    return { originalUrl: url, thumbnailUrl: url, detailUrl: url };
   }
 
   // Backward compatibility for images uploaded before the R2 migration.
