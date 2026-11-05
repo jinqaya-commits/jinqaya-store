@@ -194,3 +194,32 @@ export async function removeImage(productId:string,imageId:string,path:string) {
  if(path){const {error:storageError}=await supabase.storage.from("product-images").remove([path]);if(storageError)return {error:storageError.message};}
  revalidatePath("/admin/products"); revalidatePath("/shop"); return {success:true};
 }
+
+export async function addProductImage(productId: string, storagePath: string, altText: string) {
+  const supabase = await requireCatalogManager();
+  if (!storagePath.startsWith(`${productId}/`) || storagePath.includes("..")) {
+    return { error: "Invalid image storage path." };
+  }
+  const { data: existing, error: readError } = await supabase
+    .from("product_images")
+    .select("id")
+    .eq("product_id", productId);
+  if (readError) return { error: readError.message };
+  const isPrimary = (existing?.length ?? 0) === 0;
+  const { error } = await supabase.from("product_images").insert({
+    product_id: productId,
+    storage_path: storagePath,
+    alt_text: altText.trim() || null,
+    image_type: isPrimary ? "main" : "gallery",
+    sort_order: existing?.length ?? 0,
+    is_primary: isPrimary,
+  });
+  if (error) {
+    await supabase.storage.from("product-images").remove([storagePath]);
+    return { error: error.message };
+  }
+  revalidatePath("/admin/products");
+  revalidatePath("/shop");
+  revalidatePath(`/products/`);
+  return { success: true };
+}
