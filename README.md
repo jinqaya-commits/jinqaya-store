@@ -5,23 +5,17 @@ Premium Pet Lifestyle — Better Living, Together.
 ## Tech stack
 
 - Next.js App Router
-- React
-- TypeScript
+- React and TypeScript
 - Tailwind CSS
-- Supabase (integration in the next development phase)
-- Vercel (deployment target)
+- Supabase Auth and PostgreSQL catalog
+- Cloudflare R2 for original product images
+- Cloudflare Image Resizing for image delivery
+- Vercel deployment target
 
 ## Local development
 
-Install dependencies:
-
 ```bash
 npm install
-```
-
-Start the development server:
-
-```bash
 npm run dev
 ```
 
@@ -29,8 +23,15 @@ Open http://localhost:3000.
 
 ## Environment variables
 
-Copy `.env.example` to `.env.local` when Supabase integration begins. Never commit real credentials or expose the Supabase service-role key in browser code.
+Copy `.env.example` to `.env.local`, then fill in the Supabase publishable key and Cloudflare R2 credentials. Never commit real credentials or expose the R2 secret access key or Supabase service-role key in browser code.
 
-## Project status
+## Current implementation
 
-Initial storefront shell. Product data, checkout, customer accounts, admin tools, visitor analytics, and production integrations are not implemented yet.
+- Public storefront, shop, collection and product detail pages
+- Supabase-backed product, category, variant and image records
+- Admin sign-in and catalog permission checks
+- Product creation and editing
+- Signed browser-to-R2 image uploads
+- R2 object deletion and Cloudflare image transformation URLs
+
+Checkout, payment processing, customer accounts, inventory management and order fulfilment are not yet implemented. Product pages currently display product information and indicate that checkout is not enabled.
