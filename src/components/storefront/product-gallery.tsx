@@ -4,7 +4,7 @@ import { useState } from "react";
 import type { StoreProductImage } from "@/lib/products";
 
 export function ProductGallery({ images, productName }: { images: StoreProductImage[]; productName: string }) {
-  const available = images.filter((image) => image.url);
+  const available = images.filter((image) => image.detail_url);
   const [activeId, setActiveId] = useState<string | null>(
     available.find((image) => image.is_primary)?.id ?? available[0]?.id ?? null
   );
@@ -12,9 +12,9 @@ export function ProductGallery({ images, productName }: { images: StoreProductIm
 
   return (
     <div className="product-detail-gallery">
-      {active?.url ? (
+      {active?.detail_url ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img className="product-detail-main-image" src={active.url} alt={active.alt_text || productName} />
+        <img className="product-detail-main-image" src={active.detail_url} alt={active.alt_text || productName} />
       ) : <div className="product-detail-placeholder">JINQAYA</div>}
       {available.length > 1 && (
         <div className="product-thumbnail-grid" aria-label="Product image gallery">
@@ -28,7 +28,7 @@ export function ProductGallery({ images, productName }: { images: StoreProductIm
               aria-pressed={image.id === active?.id}
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={image.url!} alt={image.alt_text || productName + " image " + (index + 1)} loading="lazy" />
+              <img src={image.thumbnail_url ?? image.detail_url!} alt={image.alt_text || productName + " image " + (index + 1)} loading="lazy" />
             </button>
           ))}
         </div>
