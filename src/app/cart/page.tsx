@@ -1,36 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
-import { CART_EVENT, formatCartMoney, readCart, writeCart, type CartItem } from "@/lib/cart";
+import { useMemo, useSyncExternalStore } from "react";
+import { formatCartMoney, getCartSnapshot, parseCartSnapshot, subscribeCart, writeCart } from "@/lib/cart";
 import { CartLink } from "@/components/storefront/cart-link";
 
 export default function CartPage() {
-  const [items, setItems] = useState<CartItem[]>([]);
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    const refresh = () => setItems(readCart());
-    refresh();
-    setReady(true);
-    window.addEventListener(CART_EVENT, refresh);
-    window.addEventListener("storage", refresh);
-    return () => {
-      window.removeEventListener(CART_EVENT, refresh);
-      window.removeEventListener("storage", refresh);
-    };
-  }, []);
+  const snapshot = useSyncExternalStore(subscribeCart, getCartSnapshot, () => "[]");
+  const items = useMemo(() => parseCartSnapshot(snapshot), [snapshot]);
 
   function updateQuantity(key: string, quantity: number) {
     const next = items.map((item) => item.key === key ? { ...item, quantity: Math.max(1, Math.min(99, quantity)) } : item);
-    setItems(next);
     writeCart(next);
   }
 
   function removeItem(key: string) {
-    const next = items.filter((item) => item.key !== key);
-    setItems(next);
-    writeCart(next);
+    writeCart(items.filter((item) => item.key !== key));
   }
 
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -47,7 +32,7 @@ export default function CartPage() {
     <section className="cart-page">
       <p className="eyebrow">YOUR SELECTION</p>
       <h1>Your bag</h1>
-      {!ready ? <p>Loading your bag…</p> : items.length === 0 ? <div className="cart-empty">
+      {items.length === 0 ? <div className="cart-empty">
         <p>Your bag is currently empty.</p>
         <Link className="button button-dark" href="/shop">EXPLORE THE COLLECTION <span aria-hidden="true">↗</span></Link>
       </div> : <div className="cart-layout">
