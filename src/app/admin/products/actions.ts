@@ -207,7 +207,7 @@ export async function removeImage(productId: string, imageId: string, _path: str
         Bucket: config.bucket,
         Key: path.slice("r2://".length),
       }));
-    } else if (path && !/^https?:\\/\\//i.test(path)) {
+    } else if (path && !(path.startsWith("https://") || path.startsWith("http://"))) {
       const { error: storageError } = await supabase.storage.from("product-images").remove([path]);
       if (storageError) return { error: storageError.message };
     }
