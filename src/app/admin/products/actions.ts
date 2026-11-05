@@ -150,7 +150,7 @@ export async function updateProduct(productId: string, values: {
   }).eq("id",productId);
   if (error) return { error: error.message };
   revalidatePath("/admin/products"); revalidatePath("/shop"); revalidatePath("/collections");
-  return { success: true };
+  return { success: true, imageId: insertedImage.id };
 }
 
 export async function updateVariant(productId: string, variant: {
@@ -235,14 +235,14 @@ export async function addProductImage(productId: string, storagePath: string, al
     .eq("product_id", productId);
   if (readError) return { error: readError.message };
   const isPrimary = (existing?.length ?? 0) === 0;
-  const { error } = await supabase.from("product_images").insert({
+  const { data: insertedImage, error } = await supabase.from("product_images").insert({
     product_id: productId,
     storage_path: storagePath,
     alt_text: altText.trim() || null,
     image_type: isPrimary ? "main" : "gallery",
     sort_order: existing?.length ?? 0,
     is_primary: isPrimary,
-  });
+  }).select("id").single();
   if (error) {
     try {
       if (isR2) {
