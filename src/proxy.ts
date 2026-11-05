@@ -38,7 +38,8 @@ export async function proxy(request: NextRequest) {
     },
   });
 
-  await supabase.auth.getUser();
+  // Verify/refresh the cookie-backed session before protected pages render.
+  await supabase.auth.getClaims();
 
   return supabaseResponse;
 }
