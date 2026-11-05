@@ -150,7 +150,7 @@ export async function updateProduct(productId: string, values: {
   }).eq("id",productId);
   if (error) return { error: error.message };
   revalidatePath("/admin/products"); revalidatePath("/shop"); revalidatePath("/collections");
-  return { success: true, imageId: insertedImage.id };
+  return { success: true };
 }
 
 export async function updateVariant(productId: string, variant: {
@@ -243,7 +243,7 @@ export async function removeImage(productId: string, imageId: string, _path: str
   return { success: true };
 }
 
-export async function addProductImage(productId: string, storagePath: string, altText: string) {
+export async function addProductImage(productId: string, storagePath: string, altText: string): Promise<{ error: string; success?: never; imageId?: never } | { success: true; imageId: string }> {
   const supabase = await requireCatalogManager();
   const isR2 = storagePath.startsWith("r2://");
   const objectKey = isR2 ? storagePath.slice("r2://".length) : storagePath;
@@ -280,5 +280,5 @@ export async function addProductImage(productId: string, storagePath: string, al
   revalidatePath("/admin/products");
   revalidatePath("/shop");
   revalidatePath("/products");
-  return { success: true };
+  return { success: true, imageId: insertedImage.id };
 }
