@@ -36,7 +36,7 @@ export default async function AdminProductsPage() {
               {products.map((product) => {
                 const variant = Array.isArray(product.product_variants) ? product.product_variants[0] : null;
                 const price = variant?.price == null ? "—" : new Intl.NumberFormat("en-US", { style: "currency", currency: variant.currency || "USD" }).format(Number(variant.price));
-                return <tr key={product.id}><td><strong>{product.name}</strong><small>/{product.slug}</small></td><td>{variant?.sku ?? "—"}</td><td>{product.pet_type}</td><td>{price}</td><td><span className={`admin-status status-${product.status}`}>{product.status}</span></td><td><form action={async () => { "use server"; await setProductStatus(product.id, product.status === "active" ? "draft" : "active"); }}><button className="admin-table-action" type="submit">{product.status === "active" ? "Unpublish" : "Publish"}</button></form></td></tr>;
+                return <tr key={product.id}><td><strong>{product.name}</strong><small>/{product.slug}</small><small><Link href={`/admin/products/${product.id}/edit`}>Edit product →</Link></small></td><td>{variant?.sku ?? "—"}</td><td>{product.pet_type}</td><td>{price}</td><td><span className={`admin-status status-${product.status}`}>{product.status}</span></td><td><form action={async () => { "use server"; await setProductStatus(product.id, product.status === "active" ? "draft" : "active"); }}><button className="admin-table-action" type="submit">{product.status === "active" ? "Unpublish" : "Publish"}</button></form></td></tr>;
               })}
             </tbody></table></div>
           )}
