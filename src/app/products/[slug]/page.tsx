@@ -22,7 +22,6 @@ export default async function ProductPage({ params }: Props) {
   if (!product) notFound();
   const price = formatProductPrice(product.variants);
   const images = product.images.filter((image) => image.url);
-  const primaryImage = images.find((image) => image.is_primary) ?? images[0];
 
   return (
     <main className="inner-page">
