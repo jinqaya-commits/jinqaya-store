@@ -2,8 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { createProduct, type CreateProductInput } from "../actions";
-import { createClient } from "@/lib/supabase/client";
+import { addProductImage, createProduct, type CreateProductInput } from "../actions";
 
 type Category = { id: string; name: string };
 
@@ -36,27 +35,36 @@ export function ProductCreateForm({ categories }: { categories: Category[] }) {
         return;
       }
 
-      if (files.length) {
-        const supabase = createClient();
-        for (let index = 0; index < files.length; index += 1) {
-          const file = files[index];
-          const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
-          const path = `${result.productId}/${crypto.randomUUID()}.${extension}`;
-          const { error: uploadError } = await supabase.storage.from("product-images").upload(path, file, {
-            upsert: false,
-            contentType: file.type,
-          });
-          if (uploadError) throw new Error(uploadError.message);
-          const { error: imageError } = await supabase.from("product_images").insert({
-            product_id: result.productId,
-            storage_path: path,
-            alt_text: values.name,
-            image_type: index === 0 ? "main" : "gallery",
-            sort_order: index,
-            is_primary: index === 0,
-          });
-          if (imageError) throw new Error(imageError.message);
+      for (const file of files) {
+        if (file.size > 20 * 1024 * 1024) {
+          throw new Error(`${file.name}: image must be 20 MB or smaller.`);
         }
+        if (!["image/jpeg", "image/png", "image/webp", "image/avif"].includes(file.type)) {
+          throw new Error(`${file.name}: choose a JPG, PNG, WebP or AVIF image.`);
+        }
+
+        const prepared = await fetch("/api/admin/product-images/upload-url", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            productId: result.productId,
+            fileName: file.name,
+            contentType: file.type,
+            fileSize: file.size,
+          }),
+        });
+        const uploadInfo = await prepared.json();
+        if (!prepared.ok) throw new Error(uploadInfo.error || "Unable to prepare image upload.");
+
+        const uploaded = await fetch(uploadInfo.uploadUrl, {
+          method: "PUT",
+          headers: { "Content-Type": file.type },
+          body: file,
+        });
+        if (!uploaded.ok) throw new Error(`R2 upload failed for ${file.name} (${uploaded.status}).`);
+
+        const saved = await addProductImage(result.productId, uploadInfo.storagePath, values.name);
+        if (saved.error) throw new Error(saved.error);
       }
       router.push("/admin/products");
       router.refresh();
@@ -81,7 +89,7 @@ export function ProductCreateForm({ categories }: { categories: Category[] }) {
       <div className="admin-form-grid"><label>Price (USD)<input type="number" min="0" step="0.01" value={values.price} onChange={(e) => update("price", e.target.value)} placeholder="0.00" /></label><label>Compare-at price (USD)<input type="number" min="0" step="0.01" value={values.compareAtPrice} onChange={(e) => update("compareAtPrice", e.target.value)} placeholder="Optional" /></label></div>
       <p className="admin-help">Leave SKU blank to create the product first without a purchasable variant. Inventory and checkout are not connected yet.</p>
     </section>
-    <section className="admin-form-section"><div className="admin-form-heading"><span>03</span><div><h2>Product images</h2><p>Upload JPG, PNG, WebP or AVIF images, up to 5 MB each. First image becomes the main image.</p></div></div>
+    <section className="admin-form-section"><div className="admin-form-heading"><span>03</span><div><h2>Product images</h2><p>Upload JPG, PNG, WebP or AVIF images, up to 20 MB each. First image becomes the main image.</p></div></div>
       <label className="admin-upload">Choose product images<input type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple onChange={(e) => setFiles(Array.from(e.target.files ?? []))} /></label>
       {files.length > 0 && <p className="admin-help">{files.length} image(s) selected: {files.map((file) => file.name).join(", ")}</p>}
     </section>
