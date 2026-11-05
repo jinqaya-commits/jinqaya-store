@@ -243,7 +243,7 @@ export async function removeImage(productId: string, imageId: string, _path: str
   return { success: true };
 }
 
-export async function addProductImage(productId: string, storagePath: string, altText: string): Promise<{ error: string; success?: never; imageId?: never } | { success: true; imageId: string }> {
+export async function addProductImage(productId: string, storagePath: string, altText: string): Promise<{ error?: string; success?: boolean; imageId?: string }> {
   const supabase = await requireCatalogManager();
   const isR2 = storagePath.startsWith("r2://");
   const objectKey = isR2 ? storagePath.slice("r2://".length) : storagePath;
