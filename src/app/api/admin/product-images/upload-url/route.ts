@@ -45,11 +45,14 @@ export async function POST(request: Request) {
       .from("products").select("id").eq("id", productId).maybeSingle();
     if (productError || !product) return NextResponse.json({ error: "Product not found." }, { status: 404 });
 
-    const safeBase = (fileName || "product-image")
-      .split(".").slice(0, -1).join(".")
+    const rawName = (fileName || "product-image").split(/[\\/]/).pop() || "product-image";
+    const safeBase = rawName
+      .replace(/\\.[^.]+$/, "")
+      .normalize("NFKD")
+      .replace(/[\\u0300-\\u036f]/g, "")
       .toLowerCase()
-      .split(".").slice(0, -1).join(".")
-      .split(".").slice(0, -1).join(".")
+      .replace(/[^a-z0-9_-]+/g, "-")
+      .replace(/^-+|-+$/g, "")
       .slice(0, 60) || "product-image";
     const key = `${productId}/${crypto.randomUUID()}-${safeBase}.${extension}`;
     const config = getR2Config();
