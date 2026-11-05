@@ -26,6 +26,7 @@ export async function proxy(request: NextRequest) {
           request.cookies.set(name, value);
         });
 
+        requestHeaders.set("cookie", request.cookies.toString());
         supabaseResponse = NextResponse.next({
           request: { headers: requestHeaders },
         });
@@ -44,6 +45,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
