@@ -1,12 +1,12 @@
 "use client";
-import { useState, useTransition, type FormEvent } from "react";
+import { useState, useTransition, type FormEvent } from "react";\nimport { useRouter } from "next/navigation";
 import { processOrderAction } from "./actions";
 
 type Props={orderId:string;status:string;shippingAmount:number|string|null;shippingMethod:string|null};
 export function OrderActions({orderId,status,shippingAmount,shippingMethod}:Props){
- const [busy,start]=useTransition();const [error,setError]=useState("");const [success,setSuccess]=useState("");
+ const router=useRouter();\n const [busy,start]=useTransition();const [error,setError]=useState("");const [success,setSuccess]=useState("");
  const [amount,setAmount]=useState(shippingAmount==null?"":String(shippingAmount));const [method,setMethod]=useState(shippingMethod||"");const [carrier,setCarrier]=useState("");const [tracking,setTracking]=useState("");const [url,setUrl]=useState("");const [note,setNote]=useState("");
- function run(action:string,formData:FormData){setError("");setSuccess("");start(async()=>{const r=await processOrderAction(orderId,action,formData);if(r.error){setError(r.error);return;}setSuccess("Order updated.");});}
+ function run(action:string,formData:FormData){setError("");setSuccess("");start(async()=>{const r=await processOrderAction(orderId,action,formData);if(r.error){setError(r.error);return;}setSuccess("Order updated.");router.refresh();});}
  function submit(action:string,e:FormEvent<HTMLFormElement>){e.preventDefault();if(action==="cancel"&&!window.confirm("Cancel this unpaid order and release any reserved stock?"))return;run(action,new FormData(e.currentTarget));}
  return <section className="admin-panel order-actions-panel"><div className="admin-panel-heading"><div><p className="admin-kicker">ORDER WORKFLOW</p><h2>Next action</h2></div><span>{status.replaceAll("_"," ").toUpperCase()}</span></div>
  <form className="order-action-form" onSubmit={e=>submit(status==="on_hold"?"confirm_quote":status==="pending_payment"?"confirm_payment":status==="paid"?"start_processing":status==="processing"?"ship":status==="shipped"?"delivered":"save_note",e)}>
