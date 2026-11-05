@@ -35,7 +35,8 @@ export function ProductEditForm({product,variants: initialVariants,images: initi
     if(!uploaded.ok)throw new Error("Cloudflare R2 upload failed ("+uploaded.status+").");
     const result=await addProductImage(product.id,uploadInfo.storagePath,product.name);
     if(result.error)throw new Error(result.error);
-    if(result.imageId)setImages(current=>[...current,{id:result.imageId,storage_path:uploadInfo.storagePath,alt_text:product.name,sort_order:current.length}]);
+    const imageId=result.imageId;
+    if(imageId)setImages(current=>[...current,{id:imageId,storage_path:uploadInfo.storagePath,alt_text:product.name,sort_order:current.length}]);
    }
    router.refresh();
   }catch(err){setError(err instanceof Error?err.message:"Image upload failed.");}
