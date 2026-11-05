@@ -3,6 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getStoreProductBySlug, formatProductPrice } from "@/lib/products";
 import { ProductGallery } from "@/components/storefront/product-gallery";
+import { AddToCart } from "@/components/storefront/add-to-cart";
+import { CartLink } from "@/components/storefront/cart-link";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -28,7 +30,7 @@ export default async function ProductPage({ params }: Props) {
       <header className="inner-page-header">
         <Link className="wordmark" href="/">JINQAYA<span>®</span></Link>
         <nav className="inner-nav" aria-label="Main navigation">
-          <Link href="/shop">SHOP ALL</Link><Link href="/#philosophy">OUR PHILOSOPHY</Link><Link href="/">HOME</Link>
+          <Link href="/shop">SHOP ALL</Link><Link href="/#philosophy">OUR PHILOSOPHY</Link><CartLink />
         </nav>
       </header>
       <div className="product-detail">
@@ -47,7 +49,7 @@ export default async function ProductPage({ params }: Props) {
           </div>}
           {product.material && <p className="product-detail-meta"><strong>Material</strong> {product.material}</p>}
           {product.care_instructions && <p className="product-detail-meta"><strong>Care</strong> {product.care_instructions}</p>}
-          <p className="product-detail-note">Product availability and purchasing options will be shown here once the store checkout is enabled.</p>
+          <AddToCart product={product} />
           <Link className="back-link" href="/shop">← BACK TO SHOP</Link>
         </section>
       </div>
