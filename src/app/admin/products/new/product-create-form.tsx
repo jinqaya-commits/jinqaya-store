@@ -49,6 +49,7 @@ export function ProductCreateForm({ categories }: { categories: Category[] }) {
         productId = result.productId;
         setCreatedProductId(productId);
       }
+      if (!productId) throw new Error("Product could not be created.");
 
       for (const file of files) {
         const prepared = await fetch("/api/admin/product-images/upload-url", {
