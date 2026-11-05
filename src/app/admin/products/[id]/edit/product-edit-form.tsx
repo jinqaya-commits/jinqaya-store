@@ -19,6 +19,28 @@ export function ProductEditForm({product,variants: initialVariants,images: initi
  async function dropVariant(v:Variant,index:number){if(v.id){const ok=await run(()=>removeVariant(product.id,v.id!));if(!ok)return;}setVariants(current=>current.filter((_,i)=>i!==index));setBusy(false);}
  async function moveImage(i:number,delta:-1|1){const next=[...images];const j=i+delta;if(j<0||j>=next.length)return;[next[i],next[j]]=[next[j],next[i]];setImages(next);await run(()=>reorderImages(product.id,next.map(x=>x.id)));}
  async function dropImage(img:Image){const ok=await run(()=>removeImage(product.id,img.id,img.storage_path));if(ok)setImages(current=>current.filter(x=>x.id!==img.id));}
+ async function uploadImages(selected:File[]){
+  if(!selected.length)return;
+  for(const file of selected){
+   if(file.size<=0||file.size>20*1024*1024){setError(file.name+": image must be larger than 0 bytes and 20 MB or smaller.");return;}
+   if(!["image/jpeg","image/png","image/webp","image/avif"].includes(file.type)){setError(file.name+": choose a JPG, PNG, WebP or AVIF image.");return;}
+  }
+  setUploadBusy(true);setError("");
+  try{
+   for(const file of selected){
+    const prepared=await fetch("/api/admin/product-images/upload-url",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({productId:product.id,fileName:file.name,contentType:file.type,fileSize:file.size})});
+    const uploadInfo=await prepared.json();
+    if(!prepared.ok)throw new Error(uploadInfo.error||"Unable to prepare upload.");
+    const uploaded=await fetch(uploadInfo.uploadUrl,{method:"PUT",headers:{"Content-Type":file.type},body:file});
+    if(!uploaded.ok)throw new Error("Cloudflare R2 upload failed ("+uploaded.status+").");
+    const result=await addProductImage(product.id,uploadInfo.storagePath,product.name);
+    if(result.error)throw new Error(result.error);
+    if(result.imageId)setImages(current=>[...current,{id:result.imageId,storage_path:uploadInfo.storagePath,alt_text:product.name,sort_order:current.length}]);
+   }
+   router.refresh();
+  }catch(err){setError(err instanceof Error?err.message:"Image upload failed.");}
+  finally{setUploadBusy(false);}
+ }
  const blank:Variant={sku:"",variantName:"",color:"",size:"",price:"",compareAtPrice:""};
  return <div className="admin-form">
   <form onSubmit={submit} className="admin-form-section">
@@ -44,7 +66,8 @@ export function ProductEditForm({product,variants: initialVariants,images: initi
   </section>
 
   <section className="admin-form-section"><div className="admin-form-heading"><span>03</span><div><h2>Product images</h2><p>Upload JPG, PNG, WebP or AVIF images (maximum 20 MB each). The first image becomes the main image.</p></div></div>
-   <label>Upload image<input type="file" accept="image/jpeg,image/png,image/webp,image/avif" disabled={uploadBusy||busy} onChange={async e=>{const input=e.currentTarget;const file=input.files?.[0];if(!file)return;setError("");if(file.size>20*1024*1024){setError("Each image must be 20 MB or smaller.");input.value="";return;}if(!["image/jpeg","image/png","image/webp","image/avif"].includes(file.type)){setError("Please choose a JPG, PNG, WebP or AVIF image.");input.value="";return;}setUploadBusy(true);try{const prepared=await fetch("/api/admin/product-images/upload-url",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({productId:product.id,fileName:file.name,contentType:file.type,fileSize:file.size})});const uploadInfo=await prepared.json();if(!prepared.ok)throw new Error(uploadInfo.error||"Unable to prepare upload.");const uploaded=await fetch(uploadInfo.uploadUrl,{method:"PUT",headers:{"Content-Type":file.type},body:file});if(!uploaded.ok)throw new Error("Cloudflare R2 upload failed ("+uploaded.status+").");const result=await addProductImage(product.id,uploadInfo.storagePath,product.name);if(result.error)throw new Error(result.error);router.refresh();}catch(err){setError(err instanceof Error?err.message:"Image upload failed.");}finally{setUploadBusy(false);input.value="";}}}/></label>
+   <label>Upload product images<input type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple disabled={uploadBusy||busy} onChange={e=>{const selected=Array.from(e.currentTarget.files??[]);e.currentTarget.value="";void uploadImages(selected);}}/></label>
+   <p className="admin-help">Select multiple images at once. Each image can be up to 20 MB.</p>
    {uploadBusy&&<p className="admin-help">Uploading image…</p>}
    {images.length===0?<p className="admin-help">No images uploaded.</p>:images.map((img,i)=><div className="admin-form-grid" key={img.id}><div><strong>{i===0?"Main image":"Image "+(i+1)}</strong><p className="admin-help">{img.alt_text??img.storage_path}</p></div><div className="admin-form-actions"><button type="button" className="admin-secondary-button" disabled={busy||uploadBusy||i===0} onClick={()=>void moveImage(i,-1)}>Move up</button><button type="button" className="admin-secondary-button" disabled={busy||uploadBusy||i===images.length-1} onClick={()=>void moveImage(i,1)}>Move down</button><button type="button" className="admin-secondary-button" disabled={busy||uploadBusy} onClick={()=>void dropImage(img)}>Delete</button></div></div>)}
   </section>
