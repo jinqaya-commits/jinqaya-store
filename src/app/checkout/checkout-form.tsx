@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, type FormEvent } from "react";
-import { CART_EVENT, formatCartMoney, readCart, writeCart, type CartItem } from "@/lib/cart";
+import { useMemo, useState, useSyncExternalStore, type FormEvent } from "react";
+import { formatCartMoney, getCartSnapshot, parseCartSnapshot, subscribeCart, writeCart } from "@/lib/cart";
 import { CartLink } from "@/components/storefront/cart-link";
 
 type OrderResult = {
@@ -21,25 +21,12 @@ function newRequestKey() {
 }
 
 export function CheckoutForm() {
-  const [items, setItems] = useState<CartItem[]>([]);
-  const [ready, setReady] = useState(false);
+  const snapshot = useSyncExternalStore(subscribeCart, getCartSnapshot, () => "[]");
+  const items = useMemo(() => parseCartSnapshot(snapshot), [snapshot]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [order, setOrder] = useState<OrderResult | null>(null);
   const [requestKey, setRequestKey] = useState("");
-
-  useEffect(() => {
-    const refresh = () => setItems(readCart());
-    refresh();
-    setReady(true);
-    setRequestKey(newRequestKey());
-    window.addEventListener(CART_EVENT, refresh);
-    window.addEventListener("storage", refresh);
-    return () => {
-      window.removeEventListener(CART_EVENT, refresh);
-      window.removeEventListener("storage", refresh);
-    };
-  }, []);
 
   const currency = items[0]?.currency || "USD";
   const mixedCurrencies = items.some((item) => item.currency !== currency);
@@ -51,8 +38,10 @@ export function CheckoutForm() {
     setBusy(true);
     setError("");
     const data = new FormData(event.currentTarget);
+    const idempotencyKey = requestKey || newRequestKey();
+    setRequestKey(idempotencyKey);
     const payload = {
-      idempotency_key: requestKey || newRequestKey(),
+      idempotency_key: idempotencyKey,
       customer: {
         first_name: String(data.get("first_name") || ""),
         last_name: String(data.get("last_name") || ""),
@@ -83,10 +72,8 @@ export function CheckoutForm() {
       if (!response.ok) throw new Error(result.error || "We couldn't submit your order request.");
       setOrder(result.order as OrderResult);
       writeCart([]);
-      setItems([]);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "We couldn't submit your order request. Please try again.");
-      setRequestKey(newRequestKey());
     } finally {
       setBusy(false);
     }
@@ -116,7 +103,7 @@ export function CheckoutForm() {
         <section className="checkout-page">
           <p className="eyebrow">SECURE CHECKOUT</p>
           <h1>Delivery details</h1>
-          {!ready ? <p>Loading your bag…</p> : items.length === 0 ? (
+          {items.length === 0 ? (
             <div className="cart-empty"><p>Your bag is empty.</p><Link className="button button-dark" href="/shop">EXPLORE THE COLLECTION <span>↗</span></Link></div>
           ) : (
             <div className="checkout-layout">
@@ -134,7 +121,7 @@ export function CheckoutForm() {
                   <div className="checkout-section-heading"><span>02</span><div><h2>Shipping address</h2><p>Enter the destination where you’d like your order delivered.</p></div></div>
                   <div className="checkout-fields two">
                     <label className="full">Country / Region<input name="country" autoComplete="country-name" required maxLength={100} placeholder="e.g. United States" /></label>
-                    <label>Country code<input name="country_code" autoComplete="country" required minLength={2} maxLength={2} placeholder="US" /></label>
+                    <label>Country code<input name="country_code" required minLength={2} maxLength={2} placeholder="US" /></label>
                     <label>State / Province<input name="state_region" autoComplete="address-level1" maxLength={100} /></label>
                     <label>City<input name="city" autoComplete="address-level2" required maxLength={100} /></label>
                     <label>Postal code<input name="postal_code" autoComplete="postal-code" maxLength={30} /></label>
