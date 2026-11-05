@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getStoreProductBySlug, formatProductPrice } from "@/lib/products";
+import { ProductGallery } from "@/components/storefront/product-gallery";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -32,18 +33,7 @@ export default async function ProductPage({ params }: Props) {
         </nav>
       </header>
       <div className="product-detail">
-        <div className="product-detail-gallery">
-          {primaryImage?.url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img className="product-detail-main-image" src={primaryImage.url} alt={primaryImage.alt_text || product.name} />
-          ) : <div className="product-detail-placeholder">JINQAYA</div>}
-          {images.length > 1 && <div className="product-thumbnail-grid">
-            {images.filter((image) => image.id !== primaryImage?.id).map((image) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img key={image.id} src={image.url!} alt={image.alt_text || product.name} loading="lazy" />
-            ))}
-          </div>}
-        </div>
+        <ProductGallery images={images} productName={product.name} />
         <section className="product-detail-info">
           <p className="eyebrow">{product.brand_name}</p><h1>{product.name}</h1>
           {price && <p className="product-detail-price">{price}</p>}
