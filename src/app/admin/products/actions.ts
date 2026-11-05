@@ -182,11 +182,19 @@ export async function removeVariant(productId:string,variantId:string) {
 
 export async function reorderImages(productId:string, ids:string[]) {
  const supabase=await requireCatalogManager();
+ const {data:owned,error:readError}=await supabase.from("product_images").select("id").eq("product_id",productId);
+ if(readError)return {error:readError.message};
+ const ownedIds=new Set((owned??[]).map(image=>image.id));
+ if(ids.length!==ownedIds.size||ids.some(id=>!ownedIds.has(id))||new Set(ids).size!==ids.length){
+  return {error:"The image list changed. Refresh the page and try again."};
+ }
+ const {error:clearError}=await supabase.from("product_images").update({is_primary:false,image_type:"gallery"}).eq("product_id",productId);
+ if(clearError)return {error:clearError.message};
  for(let i=0;i<ids.length;i++){
   const {error}=await supabase.from("product_images").update({sort_order:i,is_primary:i===0,image_type:i===0?"main":"gallery"}).eq("id",ids[i]).eq("product_id",productId);
   if(error)return {error:error.message};
  }
- revalidatePath("/admin/products"); revalidatePath("/shop"); return {success:true};
+ revalidatePath("/admin/products"); revalidatePath("/shop"); revalidatePath("/products"); return {success:true};
 }
 
 export async function removeImage(productId: string, imageId: string, _path: string) {
@@ -217,8 +225,21 @@ export async function removeImage(productId: string, imageId: string, _path: str
 
   const { error } = await supabase.from("product_images").delete().eq("id", imageId).eq("product_id", productId);
   if (error) return { error: error.message };
+  const { data: remaining, error: remainingError } = await supabase
+    .from("product_images").select("id").eq("product_id", productId).order("sort_order", { ascending: true });
+  if (remainingError) return { error: remainingError.message };
+  const { error: clearError } = await supabase.from("product_images")
+    .update({ is_primary: false, image_type: "gallery" }).eq("product_id", productId);
+  if (clearError) return { error: clearError.message };
+  for (let index = 0; index < (remaining ?? []).length; index++) {
+    const { error: updateError } = await supabase.from("product_images")
+      .update({ sort_order: index, is_primary: index === 0, image_type: index === 0 ? "main" : "gallery" })
+      .eq("id", remaining![index].id).eq("product_id", productId);
+    if (updateError) return { error: updateError.message };
+  }
   revalidatePath("/admin/products");
   revalidatePath("/shop");
+  revalidatePath("/products");
   return { success: true };
 }
 
