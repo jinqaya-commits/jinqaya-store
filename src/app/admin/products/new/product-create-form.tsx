@@ -92,8 +92,15 @@ export function ProductCreateForm({ categories }: { categories: Category[] }) {
       <p className="admin-help">Leave SKU blank to create the product first without a purchasable variant. Inventory and checkout are not connected yet.</p>
     </section>
     <section className="admin-form-section"><div className="admin-form-heading"><span>03</span><div><h2>Product images</h2><p>Upload JPG, PNG, WebP or AVIF images, up to 20 MB each. First image becomes the main image.</p></div></div>
-      <label className="admin-upload">Choose product images<input type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple onChange={(e) => setFiles(Array.from(e.target.files ?? []))} /></label>
-      {files.length > 0 && <p className="admin-help">{files.length} image(s) selected: {files.map((file) => file.name).join(", ")}</p>}
+      <label className="admin-upload">Choose product images<input type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple onChange={(e) => {
+        const selected = Array.from(e.target.files ?? []);
+        setFiles((current) => {
+          const keys = new Set(current.map((file) => file.name + "-" + file.size + "-" + file.lastModified));
+          return [...current, ...selected.filter((file) => !keys.has(file.name + "-" + file.size + "-" + file.lastModified))];
+        });
+        e.currentTarget.value = "";
+      }} /><span className="admin-help">Select several images at once, or add more images in separate selections.</span></label>
+      {files.length > 0 && <div className="admin-selected-images"><p className="admin-help">{files.length} image(s) ready. The first image will be the main product image.</p>{files.map((file, index) => <div className="admin-selected-image" key={file.name + "-" + file.size + "-" + file.lastModified}><span>{String(index + 1).padStart(2, "0")}. {file.name}</span><button type="button" disabled={busy} onClick={() => setFiles((current) => current.filter((_, i) => i !== index))}>Remove</button></div>)}</div>}
     </section>
     <section className="admin-form-section"><div className="admin-form-heading"><span>04</span><div><h2>Publishing</h2><p>Keep the product as a draft until its information is ready.</p></div></div>
       <label>Product status<select value={values.status} onChange={(e) => update("status", e.target.value as "draft" | "active")}><option value="draft">Draft — not visible in the shop</option><option value="active">Active — visible in the shop</option></select></label>
