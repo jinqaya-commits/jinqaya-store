@@ -46,10 +46,10 @@ export async function POST(request: Request) {
     if (productError || !product) return NextResponse.json({ error: "Product not found." }, { status: 404 });
 
     const safeBase = (fileName || "product-image")
-      .replace(/\\.[^.]*$/, "")
+      .split(".").slice(0, -1).join(".")
       .toLowerCase()
-      .replace(/[^a-z0-9-]+/g, "-")
-      .replace(/^-+|-+$/g, "")
+      .split(".").slice(0, -1).join(".")
+      .split(".").slice(0, -1).join(".")
       .slice(0, 60) || "product-image";
     const key = `${productId}/${crypto.randomUUID()}-${safeBase}.${extension}`;
     const config = getR2Config();
