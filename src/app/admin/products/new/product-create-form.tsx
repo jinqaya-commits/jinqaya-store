@@ -15,6 +15,7 @@ const initialValues: CreateProductInput = {
 export function ProductCreateForm({ categories }: { categories: Category[] }) {
   const [values, setValues] = useState(initialValues);
   const [files, setFiles] = useState<File[]>([]);
+  const [createdProductId, setCreatedProductId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
@@ -37,11 +38,16 @@ export function ProductCreateForm({ categories }: { categories: Category[] }) {
         }
       }
 
-      const result = await createProduct(values);
-      if (result.error || !result.productId) {
-        setError(result.error || "Unable to save this product.");
-        setBusy(false);
-        return;
+      let productId = createdProductId;
+      if (!productId) {
+        const result = await createProduct(values);
+        if (result.error || !result.productId) {
+          setError(result.error || "Unable to save this product.");
+          setBusy(false);
+          return;
+        }
+        productId = result.productId;
+        setCreatedProductId(productId);
       }
 
       for (const file of files) {
@@ -49,7 +55,7 @@ export function ProductCreateForm({ categories }: { categories: Category[] }) {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            productId: result.productId,
+            productId,
             fileName: file.name,
             contentType: file.type,
             fileSize: file.size,
@@ -65,8 +71,10 @@ export function ProductCreateForm({ categories }: { categories: Category[] }) {
         });
         if (!uploaded.ok) throw new Error(`R2 upload failed for ${file.name} (${uploaded.status}).`);
 
-        const saved = await addProductImage(result.productId, uploadInfo.storagePath, values.name);
+        const saved = await addProductImage(productId, uploadInfo.storagePath, values.name);
         if (saved.error) throw new Error(saved.error);
+        const completedKey = file.name + "-" + file.size + "-" + file.lastModified;
+        setFiles((current) => current.filter((item) => item.name + "-" + item.size + "-" + item.lastModified !== completedKey));
       }
       router.push("/admin/products");
       router.refresh();
@@ -106,7 +114,7 @@ export function ProductCreateForm({ categories }: { categories: Category[] }) {
       <label>Product status<select value={values.status} onChange={(e) => update("status", e.target.value as "draft" | "active")}><option value="draft">Draft — not visible in the shop</option><option value="active">Active — visible in the shop</option></select></label>
     </section>
     {error && <p className="admin-error" role="alert">{error}</p>}
-    <div className="admin-form-actions"><button type="button" className="admin-secondary-button" disabled={busy} onClick={() => router.push("/admin/products")}>Cancel</button><button type="submit" className="admin-primary-button" disabled={busy || categories.length === 0}>{busy ? "Saving product…" : "Save product"}</button></div>
+    <div className="admin-form-actions"><button type="button" className="admin-secondary-button" disabled={busy} onClick={() => router.push("/admin/products")}>Cancel</button><button type="submit" className="admin-primary-button" disabled={busy || categories.length === 0}>{busy ? "Saving product…" : createdProductId ? "Retry remaining image uploads" : "Save product"}</button></div>
     {categories.length === 0 && <p className="admin-error">No active collections found. Add or activate a category before creating a product.</p>}
   </form>;
 }
