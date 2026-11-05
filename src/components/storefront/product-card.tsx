@@ -3,16 +3,16 @@ import type { StoreProduct } from "@/lib/products";
 import { formatProductPrice } from "@/lib/products";
 
 export function ProductCard({ product }: { product: StoreProduct }) {
-  const image = product.images.find((item) => item.is_primary && item.url)
-    ?? product.images.find((item) => item.url);
+  const image = product.images.find((item) => item.is_primary && item.thumbnail_url)
+    ?? product.images.find((item) => item.thumbnail_url);
   const price = formatProductPrice(product.variants);
 
   return (
     <article className="product-card">
       <Link className="product-card-image" href={`/products/${product.slug}`}>
-        {image?.url ? (
+        {image?.thumbnail_url ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={image.url} alt={image.alt_text || product.name} loading="lazy" />
+          <img src={image.thumbnail_url} alt={image.alt_text || product.name} loading="lazy" />
         ) : (
           <span className="product-image-placeholder">JINQAYA</span>
         )}
