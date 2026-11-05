@@ -17,12 +17,15 @@ export async function proxy(request: NextRequest) {
         return request.cookies.getAll();
       },
       setAll(cookiesToSet) {
+        // Update the request cookies so Server Components see the refreshed session.
         cookiesToSet.forEach(({ name, value }) => {
           request.cookies.set(name, value);
         });
 
+        // Recreate the response with the updated request cookies.
         supabaseResponse = NextResponse.next({ request });
 
+        // Persist refreshed cookies on the outgoing response.
         cookiesToSet.forEach(({ name, value, options }) => {
           supabaseResponse.cookies.set(name, value, options);
         });
@@ -30,7 +33,7 @@ export async function proxy(request: NextRequest) {
     },
   });
 
-  // Refresh the Supabase session and keep refreshed cookies in the response.
+  // Validate the user and refresh the session when required.
   await supabase.auth.getUser();
 
   return supabaseResponse;
@@ -38,10 +41,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Run on application routes, but skip Next.js static/image assets and common
-     * public files that do not need a refreshed authentication session.
-     */
     "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
