@@ -591,3 +591,54 @@ a { color: inherit; text-decoration: none; }
  .checkout-fields label.full { grid-column:auto; }
  .checkout-section-heading h2 { font-size:20px; }
 }
+
+/* Admin order management */
+.admin-filter-row{display:flex;gap:8px;flex-wrap:wrap;padding:16px 0;border-bottom:1px solid #e9e2d8}
+.admin-filter-row a{padding:8px 11px;border:1px solid #e5ded3;color:#766b5e;font-size:9px;letter-spacing:.4px}
+.admin-filter-row a.is-selected{background:#4a3f35;border-color:#4a3f35;color:#fff}
+.admin-order-grid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:20px;align-items:start}
+.admin-order-main,.admin-order-aside{display:grid;gap:20px;min-width:0}
+.admin-order-aside .admin-panel{padding:20px}
+.admin-order-aside p{font-size:12px;color:#766b5e;line-height:1.6;overflow-wrap:anywhere}
+.admin-order-aside small{font-size:10px;color:#92816e}
+.admin-side-title{font:400 20px Georgia,serif;margin:8px 0 12px}
+.admin-address-line{margin:5px 0!important}
+.admin-order-totals{max-width:360px;margin:12px 0 0 auto}
+.admin-order-totals p{display:flex;justify-content:space-between;gap:16px;margin:0;padding:9px 0;border-top:1px solid #eee8df;font-size:11px;color:#766b5e}
+.admin-order-totals strong{color:#40372f;font-weight:500}
+.admin-order-totals .total{font-size:14px}
+.order-actions-panel .order-action-form{padding-top:18px}
+.order-action-form label{display:grid;gap:8px;margin-bottom:16px;color:#6f6255;font-size:10px;letter-spacing:.5px}
+.order-action-form input,.order-action-form textarea{width:100%;min-height:42px;padding:10px 12px;border:1px solid #ddd5ca;background:#fff;color:#40372f;font:12px Arial,sans-serif}
+.order-action-form textarea{resize:vertical}
+.order-note-label{margin-top:16px}
+.order-action-buttons{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.admin-danger-button{min-height:42px;padding:0 16px;border:1px solid #cba69a;background:#fff8f6;color:#8a3d2d;cursor:pointer;font-size:11px}
+.admin-success{padding:12px;background:#e4eee5;color:#47644a;font-size:11px}
+.admin-shipment{padding:18px 0;border-top:1px solid #eee8df}
+.admin-shipment>div{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.admin-shipment p,.admin-shipment small{display:block;color:#82766a;font-size:11px;line-height:1.6}
+.admin-shipment a{font-size:11px;text-decoration:underline}
+.admin-timeline{padding:10px 0}
+.admin-timeline-item{position:relative;margin-left:8px;padding:0 0 22px 22px;border-left:1px solid #d8cbbb}
+.admin-timeline-item:before{content:"";position:absolute;left:-5px;top:3px;width:9px;height:9px;border-radius:50%;background:#8b735e}
+.admin-timeline-item strong{font:400 15px Georgia,serif;text-transform:capitalize}
+.admin-timeline-item span{float:right;color:#92816e;font-size:10px}
+.admin-timeline-item p{margin:7px 0 0;color:#82766a;font-size:11px}
+.admin-reservation{display:grid;gap:4px;padding:10px 0;border-top:1px solid #eee8df;font-size:11px}
+.admin-reservation span,.admin-reservation small{color:#82766a}
+.admin-customer-note{white-space:pre-wrap;overflow-wrap:anywhere}
+.admin-order-aside .admin-kicker:not(:first-child){margin-top:18px}
+.admin-summary:has(>div:nth-child(4)){grid-template-columns:repeat(4,minmax(0,1fr))}
+.admin-help{line-height:1.7}
+.admin-table-action{white-space:nowrap}
+.inventory-adjust-form{min-width:270px;display:grid;grid-template-columns:75px 85px minmax(120px,1fr) auto;gap:6px;align-items:end}
+.inventory-adjust-form label{display:grid;gap:5px;color:#82766a;font-size:8px;letter-spacing:.5px}
+.inventory-adjust-form input{width:100%;min-width:0;height:34px;padding:6px 7px;border:1px solid #ddd5ca;background:#fff;font-size:11px}
+.inventory-adjust-form .admin-secondary-button{min-height:34px;padding:0 10px;white-space:nowrap;font-size:9px}
+.inventory-inline-error,.inventory-inline-success{grid-column:1/-1;font-size:10px}
+.inventory-inline-error{color:#8a3d2d}.inventory-inline-success{color:#47644a}
+.inventory-low{color:#a14c36}
+.inventory-table td{vertical-align:middle}
+@media(max-width:1050px){.admin-order-grid{grid-template-columns:1fr}.admin-order-aside{grid-template-columns:repeat(2,minmax(0,1fr))}.inventory-adjust-form{min-width:260px}}
+@media(max-width:760px){.admin-summary:has(>div:nth-child(4)){grid-template-columns:repeat(2,minmax(0,1fr))}.admin-order-aside{grid-template-columns:1fr}.order-action-buttons{flex-direction:column;align-items:stretch}.inventory-adjust-form{grid-template-columns:repeat(2,minmax(0,1fr));min-width:240px}}
