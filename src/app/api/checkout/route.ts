@@ -36,14 +36,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Please complete your contact and shipping details." }, { status: 400 });
   }
 
-  const items = body.items.map((item) => ({
+  if (body.items.some((item) => !item || typeof item !== "object")) {\n    return NextResponse.json({ error: "Your bag contains an invalid item." }, { status: 400 });\n  }\n\n  const items = body.items.map((item) => ({
     variant_id: String(item.variant_id || ""),
     quantity: Number(item.quantity),
   }));
 
   if (items.length < 1 || items.length > 30 || items.some((item) =>
     !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(item.variant_id) ||
-    !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 10
+    !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 99
   )) {
     return NextResponse.json({ error: "Your bag contains an invalid item. Please return to your bag and try again." }, { status: 400 });
   }
