@@ -37,8 +37,8 @@ export async function POST(request: Request) {
     }
     const extension = contentType ? allowedTypes[contentType] : undefined;
     if (!extension) return NextResponse.json({ error: "Unsupported image format." }, { status: 400 });
-    if (!Number.isInteger(fileSize) || !fileSize || fileSize > 20 * 1024 * 1024) {
-      return NextResponse.json({ error: "Images must be 20 MB or smaller." }, { status: 400 });
+    if (typeof fileSize !== "number" || !Number.isInteger(fileSize) || fileSize <= 0 || fileSize > 20 * 1024 * 1024) {
+      return NextResponse.json({ error: "Images must be larger than 0 bytes and 20 MB or smaller." }, { status: 400 });
     }
 
     const { data: product, error: productError } = await supabase
@@ -47,9 +47,9 @@ export async function POST(request: Request) {
 
     const rawName = (fileName || "product-image").split(/[\\/]/).pop() || "product-image";
     const safeBase = rawName
-      .replace(/\\.[^.]+$/, "")
+      .replace(/\.[^.]+$/, "")
       .normalize("NFKD")
-      .replace(/[\\u0300-\\u036f]/g, "")
+      .replace(/[\u0300-\u036f]/g, "")
       .toLowerCase()
       .replace(/[^a-z0-9_-]+/g, "-")
       .replace(/^-+|-+$/g, "")
