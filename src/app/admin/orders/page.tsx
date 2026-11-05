@@ -53,7 +53,7 @@ export default async function AdminOrdersPage() {
             <div className="admin-empty"><span>✳</span><h3>No orders yet.</h3><p>Customer order requests and purchases will appear here.</p></div>
           ) : (
             <div className="admin-table-wrap"><table className="admin-table">
-              <thead><tr><th>ORDER</th><th>CUSTOMER</th><th>ITEMS</th><th>TOTAL</th><th>STATUS</th><th>DATE</th></tr></thead>
+              <thead><tr><th>ORDER</th><th>CUSTOMER</th><th>ITEMS</th><th>SUBTOTAL</th><th>STATUS</th><th>DATE</th></tr></thead>
               <tbody>{orders.map((order) => {
                 const items = Array.isArray(order.order_items) ? order.order_items : [];
                 const address = order.shipping_address_snapshot as { city?: string; country?: string; country_code?: string } | null;
@@ -61,7 +61,7 @@ export default async function AdminOrdersPage() {
                   <td><strong>{order.order_number}</strong><small>{address?.city ? `${address.city}, ${address.country || address.country_code || ""}` : "Address saved"}</small></td>
                   <td><strong>{order.customer_email}</strong><small>{order.customer_phone || "No phone provided"}</small></td>
                   <td>{items.reduce((sum, item) => sum + Number(item.quantity || 0), 0)} item(s)<small>{items.slice(0,2).map((item) => item.product_name).join(", ")}{items.length > 2 ? "…" : ""}</small></td>
-                  <td><strong>{money(order.total_amount, order.currency)}</strong><small>Items {money(order.subtotal, order.currency)} · Shipping {money(order.shipping_amount, order.currency)}</small></td>
+                  <td><strong>{money(order.subtotal, order.currency)}</strong><small>Final total pending confirmation</small></td>
                   <td><span className={`admin-status ${order.status === "paid" || order.status === "processing" ? "status-active" : "status-draft"}`}>{String(order.status).replaceAll("_", " ")}</span></td>
                   <td>{date(order.created_at)}</td>
                 </tr>;
