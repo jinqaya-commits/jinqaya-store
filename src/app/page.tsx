@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CartLink } from "@/components/storefront/cart-link";
 
 const categories = [
   {
@@ -56,7 +57,7 @@ export default function HomePage() {
           <Link href="#philosophy">OUR PHILOSOPHY</Link>
         </nav>
         <div className="header-actions">
-          <Link href="/shop">DISCOVER THE SHOP ↗</Link>
+          <Link href="/shop">DISCOVER THE SHOP ↗</Link><CartLink />
         </div>
       </header>
 
