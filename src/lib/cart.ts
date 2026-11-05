@@ -15,10 +15,28 @@ export type CartItem = {
 const CART_KEY = "jinqaya-cart-v1";
 export const CART_EVENT = "jinqaya-cart-updated";
 
-export function readCart(): CartItem[] {
-  if (typeof window === "undefined") return [];
+export function getCartSnapshot(): string {
+  if (typeof window === "undefined") return "[]";
   try {
-    const value: unknown = JSON.parse(window.localStorage.getItem(CART_KEY) || "[]");
+    return window.localStorage.getItem(CART_KEY) || "[]";
+  } catch {
+    return "[]";
+  }
+}
+
+export function subscribeCart(listener: () => void) {
+  if (typeof window === "undefined") return () => {};
+  window.addEventListener(CART_EVENT, listener);
+  window.addEventListener("storage", listener);
+  return () => {
+    window.removeEventListener(CART_EVENT, listener);
+    window.removeEventListener("storage", listener);
+  };
+}
+
+export function parseCartSnapshot(snapshot: string): CartItem[] {
+  try {
+    const value: unknown = JSON.parse(snapshot);
     if (!Array.isArray(value)) return [];
     return value.filter((item): item is CartItem =>
       !!item && typeof item === "object" &&
@@ -33,6 +51,10 @@ export function readCart(): CartItem[] {
   } catch {
     return [];
   }
+}
+
+export function readCart(): CartItem[] {
+  return parseCartSnapshot(getCartSnapshot());
 }
 
 export function writeCart(items: CartItem[]) {
