@@ -1,0 +1,8 @@
+"use client";
+import { useState,useTransition,type FormEvent } from "react";
+import { adjustInventoryAction } from "../orders/actions";
+export function InventoryAdjustForm({variantId,sku,onHand,reorderPoint}:{variantId:string;sku:string;onHand:number;reorderPoint:number}){
+ const [quantity,setQuantity]=useState(String(onHand));const [threshold,setThreshold]=useState(String(reorderPoint));const [notes,setNotes]=useState("");const [error,setError]=useState("");const [done,setDone]=useState("");const [busy,start]=useTransition();
+ function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();setError("");setDone("");const fd=new FormData();fd.set("variant_id",variantId);fd.set("on_hand",quantity);fd.set("reorder_point",threshold);fd.set("notes",notes);start(async()=>{const r=await adjustInventoryAction(fd);if(r.error){setError(r.error);return;}setDone("Saved");});}
+ return <form className="inventory-adjust-form" onSubmit={submit}><label>On hand<input aria-label={sku+" on hand"} type="number" min="0" step="1" value={quantity} onChange={e=>setQuantity(e.target.value)}/></label><label>Reorder at<input aria-label={sku+" reorder point"} type="number" min="0" step="1" value={threshold} onChange={e=>setThreshold(e.target.value)}/></label><label>Reason <span className="optional">OPTIONAL</span><input aria-label={sku+" stock adjustment reason"} value={notes} onChange={e=>setNotes(e.target.value)} maxLength={500} placeholder="Opening count / stocktake"/></label><button className="admin-secondary-button" disabled={busy} type="submit">{busy?"Saving…":"Save stock"}</button>{error&&<span className="inventory-inline-error">{error}</span>}{done&&<span className="inventory-inline-success">{done}</span>}</form>;
+}
