@@ -23,11 +23,11 @@ type CheckoutBody = {
 export async function POST(request: Request) {
   let body: CheckoutBody;
   try {
-    const contentLength = Number(request.headers.get("content-length") || 0);
-    if (contentLength > 20_000) {
+    const rawBody = await request.text();
+    if (rawBody.length > 20_000) {
       return NextResponse.json({ error: "Your checkout details are too large." }, { status: 413 });
     }
-    body = (await request.json()) as CheckoutBody;
+    body = JSON.parse(rawBody) as CheckoutBody;
   } catch {
     return NextResponse.json({ error: "Please check your checkout details and try again." }, { status: 400 });
   }
@@ -36,7 +36,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Please complete your contact and shipping details." }, { status: 400 });
   }
 
-  if (body.items.some((item) => !item || typeof item !== "object")) {\n    return NextResponse.json({ error: "Your bag contains an invalid item." }, { status: 400 });\n  }\n\n  const items = body.items.map((item) => ({
+  if (body.items.some((item) => !item || typeof item !== "object")) {
+    return NextResponse.json({ error: "Your bag contains an invalid item." }, { status: 400 });
+  }
+
+  const items = body.items.map((item) => ({
     variant_id: String(item.variant_id || ""),
     quantity: Number(item.quantity),
   }));
@@ -53,23 +57,23 @@ export async function POST(request: Request) {
     const { data, error } = await supabase.rpc("submit_guest_order", {
       p_idempotency_key: body.idempotency_key,
       p_customer: {
-        first_name: body.customer.first_name || "",
-        last_name: body.customer.last_name || "",
-        email: body.customer.email || "",
-        phone: body.customer.phone || "",
+        first_name: String(body.customer.first_name || ""),
+        last_name: String(body.customer.last_name || ""),
+        email: String(body.customer.email || ""),
+        phone: String(body.customer.phone || ""),
       },
       p_shipping_address: {
-        country_code: body.shipping_address.country_code || "",
-        country: body.shipping_address.country || "",
-        state_region: body.shipping_address.state_region || "",
-        city: body.shipping_address.city || "",
-        address_line1: body.shipping_address.address_line1 || "",
-        address_line2: body.shipping_address.address_line2 || "",
-        postal_code: body.shipping_address.postal_code || "",
+        country_code: String(body.shipping_address.country_code || ""),
+        country: String(body.shipping_address.country || ""),
+        state_region: String(body.shipping_address.state_region || ""),
+        city: String(body.shipping_address.city || ""),
+        address_line1: String(body.shipping_address.address_line1 || ""),
+        address_line2: String(body.shipping_address.address_line2 || ""),
+        postal_code: String(body.shipping_address.postal_code || ""),
       },
       p_items: items,
-      p_customer_note: body.customer_note || "",
-      p_honeypot: body.website || "",
+      p_customer_note: String(body.customer_note || ""),
+      p_honeypot: String(body.website || ""),
     });
 
     if (error) {
