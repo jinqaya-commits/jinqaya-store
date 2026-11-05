@@ -28,6 +28,15 @@ export function ProductCreateForm({ categories }: { categories: Category[] }) {
     setBusy(true);
     setError("");
     try {
+      for (const file of files) {
+        if (file.size <= 0 || file.size > 20 * 1024 * 1024) {
+          throw new Error(`${file.name}: image must be larger than 0 bytes and 20 MB or smaller.`);
+        }
+        if (!["image/jpeg", "image/png", "image/webp", "image/avif"].includes(file.type)) {
+          throw new Error(`${file.name}: choose a JPG, PNG, WebP or AVIF image.`);
+        }
+      }
+
       const result = await createProduct(values);
       if (result.error || !result.productId) {
         setError(result.error || "Unable to save this product.");
@@ -36,13 +45,6 @@ export function ProductCreateForm({ categories }: { categories: Category[] }) {
       }
 
       for (const file of files) {
-        if (file.size > 20 * 1024 * 1024) {
-          throw new Error(`${file.name}: image must be 20 MB or smaller.`);
-        }
-        if (!["image/jpeg", "image/png", "image/webp", "image/avif"].includes(file.type)) {
-          throw new Error(`${file.name}: choose a JPG, PNG, WebP or AVIF image.`);
-        }
-
         const prepared = await fetch("/api/admin/product-images/upload-url", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
