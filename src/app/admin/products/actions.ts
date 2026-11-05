@@ -3,6 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { DeleteObjectCommand } from "@aws-sdk/client-s3";
+import { getR2Client, getR2Config } from "@/lib/r2";
 
 async function requireCatalogManager() {
   const supabase = await createClient();
@@ -187,17 +189,44 @@ export async function reorderImages(productId:string, ids:string[]) {
  revalidatePath("/admin/products"); revalidatePath("/shop"); return {success:true};
 }
 
-export async function removeImage(productId:string,imageId:string,path:string) {
- const supabase=await requireCatalogManager();
- const {error}=await supabase.from("product_images").delete().eq("id",imageId).eq("product_id",productId);
- if(error)return {error:error.message};
- if(path){const {error:storageError}=await supabase.storage.from("product-images").remove([path]);if(storageError)return {error:storageError.message};}
- revalidatePath("/admin/products"); revalidatePath("/shop"); return {success:true};
+export async function removeImage(productId: string, imageId: string, _path: string) {
+  const supabase = await requireCatalogManager();
+  const { data: image, error: readError } = await supabase
+    .from("product_images")
+    .select("storage_path")
+    .eq("id", imageId)
+    .eq("product_id", productId)
+    .maybeSingle();
+  if (readError || !image) return { error: readError?.message || "Image not found." };
+
+  const path = image.storage_path as string;
+  try {
+    if (path.startsWith("r2://")) {
+      const config = getR2Config();
+      await getR2Client().send(new DeleteObjectCommand({
+        Bucket: config.bucket,
+        Key: path.slice("r2://".length),
+      }));
+    } else if (path && !/^https?:\\/\\//i.test(path)) {
+      const { error: storageError } = await supabase.storage.from("product-images").remove([path]);
+      if (storageError) return { error: storageError.message };
+    }
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Unable to delete image from storage." };
+  }
+
+  const { error } = await supabase.from("product_images").delete().eq("id", imageId).eq("product_id", productId);
+  if (error) return { error: error.message };
+  revalidatePath("/admin/products");
+  revalidatePath("/shop");
+  return { success: true };
 }
 
 export async function addProductImage(productId: string, storagePath: string, altText: string) {
   const supabase = await requireCatalogManager();
-  if (!storagePath.startsWith(`${productId}/`) || storagePath.includes("..")) {
+  const isR2 = storagePath.startsWith("r2://");
+  const objectKey = isR2 ? storagePath.slice("r2://".length) : storagePath;
+  if (!objectKey.startsWith(`${productId}/`) || objectKey.includes("..")) {
     return { error: "Invalid image storage path." };
   }
   const { data: existing, error: readError } = await supabase
@@ -215,11 +244,20 @@ export async function addProductImage(productId: string, storagePath: string, al
     is_primary: isPrimary,
   });
   if (error) {
-    await supabase.storage.from("product-images").remove([storagePath]);
+    try {
+      if (isR2) {
+        const config = getR2Config();
+        await getR2Client().send(new DeleteObjectCommand({ Bucket: config.bucket, Key: objectKey }));
+      } else {
+        await supabase.storage.from("product-images").remove([storagePath]);
+      }
+    } catch (cleanupError) {
+      console.error("Unable to clean up unlinked product image:", cleanupError);
+    }
     return { error: error.message };
   }
   revalidatePath("/admin/products");
   revalidatePath("/shop");
-  revalidatePath(`/products/`);
+  revalidatePath("/products");
   return { success: true };
 }
