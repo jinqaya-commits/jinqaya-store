@@ -21,7 +21,7 @@ export default async function AdminProductsPage() {
     <main className="admin-shell">
       <aside className="admin-sidebar">
         <Link href="/" className="admin-brand">JINQAYA<span>ADMIN</span></Link>
-        <nav><Link className="active" href="/admin/products">Products</Link><Link href="/shop">View storefront ↗</Link></nav>
+        <nav><Link className="active" href="/admin/products">Products</Link><Link href="/admin/orders">Orders</Link><Link href="/shop">View storefront ↗</Link></nav>
         <p className="admin-sidebar-note">CATALOG MANAGEMENT</p>
       </aside>
       <section className="admin-main">
