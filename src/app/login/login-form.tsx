@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 export function LoginForm() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -53,7 +55,7 @@ export function LoginForm() {
       }
 
       // Force a fresh document request so the server reads the latest auth cookies.
-      window.location.assign("/admin/products");
+      router.replace("/admin/products");
     } catch (cause) {
       setError(
         cause instanceof Error
