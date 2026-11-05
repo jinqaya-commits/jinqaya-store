@@ -16,7 +16,8 @@ export default async function AdminOrderDetail({params}:{params:Promise<{id:stri
   supabase.from("customers").select("id,email,first_name,last_name,phone,created_at").eq("id",order.customer_id).maybeSingle(),
   supabase.from("order_status_history").select("*").eq("order_id",id).order("created_at",{ascending:false}),
   supabase.from("shipments").select("id,status,carrier_name,service_name,tracking_number,tracking_url,shipping_cost,currency,shipped_at,delivered_at,notes,shipment_items(quantity,order_item_id)").eq("order_id",id).order("created_at",{ascending:false}),
-  supabase.from("stock_reservations").select("id,variant_id,quantity,status,expires_at,committed_at,released_at,warehouses(name,code),product_variants(sku)").eq("order_id",id).order("created_at",{ascending:false})
+  supabase.from("stock_reservations").select("id,variant_id,quantity,status,expires_at,committed_at,released_at,warehouses(name,code),product_variants(sku)").eq("order_id",id).order("created_at",{ascending:false}),
+  supabase.from("payments").select("id,provider,status,amount,currency,payment_method_type,provider_payment_id,paid_at,created_at").eq("order_id",id).order("created_at",{ascending:false})
  ]);
  const shipAddress=address(order.shipping_address_snapshot);const billingAddress=address(order.billing_address_snapshot);
  const currency=order.currency.trim()||"USD";
