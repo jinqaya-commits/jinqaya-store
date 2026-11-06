@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
+import { useState, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { createCategory, updateCategory } from "./tree-actions";
 
@@ -13,7 +13,6 @@ export function CategoryTreeManager({ categories }: { categories:Category[] }) {
   const [description,setDescription] = useState("");
   const [error,setError] = useState("");
   const [busy,setBusy] = useState(false);
-  const byParent = useMemo(() => categories.filter(c=>c.parent_id===null),[categories]);
   async function submit(e:FormEvent) {
     e.preventDefault(); setBusy(true); setError("");
     const result = await createCategory({name,parentId:parentId||null,description});
@@ -28,7 +27,7 @@ export function CategoryTreeManager({ categories }: { categories:Category[] }) {
     setBusy(false);
   }
   const children=(parent:string|null)=>categories.filter(c=>c.parent_id===parent);
-  function render(parent:string|null,depth:number):React.ReactNode {
+  function render(parent:string|null,depth:number):ReactNode {
     return children(parent).map(c=><div key={c.id} style={{marginLeft:depth*22,padding:"10px 0",borderBottom:"1px solid var(--admin-border, #e5e5e5)"}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
         <div><strong>{c.name}</strong><div className="admin-help">/{c.slug} · Level {depth+1} · Order {c.sort_order}</div></div>
