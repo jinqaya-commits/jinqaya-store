@@ -1,12 +1,29 @@
-export const categories = [
-  { slug: "walk-travel", number: "01", name: "WALK & TRAVEL", description: "Thoughtful essentials for walks, outings and adventures." },
-  { slug: "home-comfort", number: "02", name: "HOME & COMFORT", description: "Comfort-minded pieces for the spaces you share." },
-  { slug: "play-discover", number: "03", name: "PLAY & DISCOVER", description: "Inviting ways to play, explore and stay curious." },
-  { slug: "care-grooming", number: "04", name: "CARE & GROOMING", description: "Considered essentials for everyday care routines." },
-  { slug: "style-accessories", number: "05", name: "STYLE & ACCESSORIES", description: "Finishing touches for life with cats and dogs." },
-  { slug: "smart-living", number: "06", name: "SMART LIVING", description: "Useful ideas for a more thoughtful daily routine." },
-] as const;
+import { createClient } from "@/lib/supabase/server";
 
-export function getCategory(slug: string) {
-  return categories.find((category) => category.slug === slug);
+export type StoreCategory = {
+  id: string;
+  slug: string;
+  number: string;
+  name: string;
+  description: string;
+};
+
+export async function getRootCategories(): Promise<StoreCategory[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("categories")
+    .select("id,slug,name,description,sort_order")
+    .is("parent_id", null)
+    .eq("is_active", true)
+    .order("sort_order", { ascending: true });
+  if (error) {
+    console.error("Unable to load main categories:", error.message);
+    return [];
+  }
+  return (data ?? []).map((category,index) => ({
+    id: category.id,
+    slug: category.slug,
+    number: String(index + 1).padStart(2,"0"),
+    name: category.name,
+    description: category.description ?? "",
+  }));
 }
