@@ -6,6 +6,8 @@ import { getStoreProducts } from "@/lib/products";
 import { createClient } from "@/lib/supabase/server";
 import { resolveProductImageUrls } from "@/lib/product-images";
 
+export const dynamic = "force-dynamic";
+
 const categoryVisuals = [
   { image: "https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=1400&q=88", alt: "A dog enjoying an outdoor moment" },
   { image: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=1100&q=88", alt: "A cat resting in a quiet home" },
@@ -101,7 +103,7 @@ export default async function HomePage() {
             <Link className={`jq-collection-tile jq-tile-${index + 1}`} href={`/collections/${category.slug}`} key={category.slug}>
               <div className="jq-tile-image">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={categoryImageMap.get(category.slug) || categoryVisuals[index % categoryVisuals.length].image} alt={`${category.name} collection`} loading="lazy" decoding="async" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = categoryVisuals[index % categoryVisuals.length].image; }} />
+                <img src={categoryImageMap.get(category.slug) || categoryVisuals[index % categoryVisuals.length].image} alt={`${category.name} collection`} loading="lazy" decoding="async" />
               </div>
               <div className="jq-tile-meta"><span>{category.number ?? String(index + 1).padStart(2, "0")}</span><span>↗</span></div>
               <div className="jq-tile-title"><h3>{category.name}</h3><p>{category.description}</p></div>
