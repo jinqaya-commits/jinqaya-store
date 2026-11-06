@@ -4,12 +4,13 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { updateProduct, updateVariant, removeVariant, reorderImages, removeImage, addProductImage } from "../../actions";
 
+type Category = {id:string;parent_id:string|null;name:string;slug:string;sort_order:number};
 type Product = { id:string; name:string; pet_type:"cat"|"dog"|"both"|"shared"; short_description:string|null; description:string|null; material:string|null; care_instructions:string|null; status:"draft"|"active"|"archived" };
 type Variant = { id?:string; sku:string; variantName:string; color:string; size:string; price:string; compareAtPrice:string };
 type Image = { id:string; storage_path:string; alt_text:string|null; sort_order:number };
 
-export function ProductEditForm({product,variants: initialVariants,images: initialImages}:{product:Product;variants:Variant[];images:Image[]}) {
- const [fields,setFields]=useState({name:product.name,petType:product.pet_type,shortDescription:product.short_description??"",description:product.description??"",material:product.material??"",careInstructions:product.care_instructions??"",status:product.status});
+export function ProductEditForm({product,categoryId,categories,variants: initialVariants,images: initialImages}:{product:Product;categoryId:string;categories:Category[];variants:Variant[];images:Image[]}) {
+ const [fields,setFields]=useState({name:product.name,categoryId,petType:product.pet_type,shortDescription:product.short_description??"",description:product.description??"",material:product.material??"",careInstructions:product.care_instructions??"",status:product.status});
  const [variants,setVariants]=useState(initialVariants);
  const [images,setImages]=useState([...initialImages].sort((a,b)=>a.sort_order-b.sort_order));
  const [error,setError]=useState(""); const [busy,setBusy]=useState(false); const [uploadBusy,setUploadBusy]=useState(false); const router=useRouter();
@@ -47,6 +48,7 @@ export function ProductEditForm({product,variants: initialVariants,images: initi
   <form onSubmit={submit} className="admin-form-section">
    <div className="admin-form-heading"><span>01</span><div><h2>Product details</h2><p>Edit the product information shown in the shop.</p></div></div>
    <label>Product name<input required value={fields.name} onChange={e=>setFields({...fields,name:e.target.value})}/></label>
+   <label>Product category<select required value={fields.categoryId} onChange={e=>setFields({...fields,categoryId:e.target.value})}><option value="">Choose a product type</option>{categories.filter(category=>category.parent_id!==null).map(category=>{const parent=categories.find(item=>item.id===category.parent_id);const grand=parent?.parent_id?categories.find(item=>item.id===parent.parent_id):null;return <option key={category.id} value={category.id}>{grand?grand.name+" / ":""}{parent?.name??""} / {category.name}</option>;})}</select></label>
    <label>Pet type<select value={fields.petType} onChange={e=>setFields({...fields,petType:e.target.value as Product["pet_type"]})}><option value="both">Cats & dogs</option><option value="cat">Cats</option><option value="dog">Dogs</option><option value="shared">Shared / general</option></select></label>
    <label>Short description<input value={fields.shortDescription} onChange={e=>setFields({...fields,shortDescription:e.target.value})}/></label>
    <label>Full description<textarea rows={5} value={fields.description} onChange={e=>setFields({...fields,description:e.target.value})}/></label>
