@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CartLink } from "@/components/storefront/cart-link";
+import { CategoryNavigation } from "@/components/storefront/category-navigation";
 import { ProductCard } from "@/components/storefront/product-card";
 import { categories } from "@/lib/catalog";
 import { getStoreProducts } from "@/lib/products";
@@ -66,11 +67,7 @@ export default async function HomePage() {
 
       <header className="jq-header">
         <Link className="jq-wordmark" href="/" aria-label="JINQAYA home">JINQAYA<span>®</span></Link>
-        <nav className="jq-nav" aria-label="Main navigation">
-          <Link href="/shop">THE SHOP</Link>
-          <Link href="#collections">COLLECTIONS</Link>
-          <Link href="#point-of-view">OUR POINT OF VIEW</Link>
-        </nav>
+        <CategoryNavigation />
         <div className="jq-header-actions"><Link href="/shop" className="jq-shop-link">DISCOVER <span>↗</span></Link><CartLink /></div>
       </header>
 
