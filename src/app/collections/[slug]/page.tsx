@@ -32,7 +32,7 @@ export default async function CollectionPage({ params }: Props) {
       <header className="inner-page-header">
         <Link className="wordmark" href="/">JINQAYA<span>®</span></Link>
         <nav className="inner-nav" aria-label="Main navigation">
-          <Link href="/shop">SHOP ALL</Link><Link href="/#philosophy">OUR PHILOSOPHY</Link><Link href="/">HOME</Link>
+          <Link href="/shop">SHOP ALL</Link><Link href="/#point-of-view">OUR PHILOSOPHY</Link><Link href="/">HOME</Link>
         </nav>
       </header>
       <section className="collection-intro">
