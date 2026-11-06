@@ -36,9 +36,9 @@ export async function createCategory(input:{name:string;parentId:string|null;des
   revalidatePath("/");revalidatePath("/shop");revalidatePath("/admin/categories");
   return {success:true};
 }
-export async function updateCategory(id:string,input:{isActive:boolean}) {
+export async function updateCategory(id:string,input:{isActive?:boolean;name?:string;sortOrder?:number}) {
   const auth=await manager();if("error" in auth)return auth;
-  const {error}=await auth.supabase.from("categories").update({is_active:input.isActive}).eq("id",id);
+  const values:{is_active?:boolean;name?:string;slug?:string;sort_order?:number;updated_at:string}={updated_at:new Date().toISOString()};\n  if(input.isActive!==undefined)values.is_active=input.isActive;\n  if(input.sortOrder!==undefined&&Number.isInteger(input.sortOrder)&&input.sortOrder>=0)values.sort_order=input.sortOrder;\n  if(input.name!==undefined){const name=input.name.trim(),slug=slugify(name);if(!name||!slug)return {error:"Enter a valid category name."};const {data:conflict}=await auth.supabase.from("categories").select("id").eq("slug",slug).neq("id",id).maybeSingle();if(conflict)return {error:"That category URL is already in use."};values.name=name;values.slug=slug;}\n  const {error}=await auth.supabase.from("categories").update(values).eq("id",id);
   if(error)return {error:error.message};
   revalidatePath("/");revalidatePath("/shop");revalidatePath("/admin/categories");
   return {success:true};
