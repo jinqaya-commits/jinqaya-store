@@ -33,7 +33,7 @@ export function CategoryImageManager({categories}:{categories:Category[]}) {
 
   return <section className="admin-panel jq-category-admin">
     <div className="admin-panel-heading"><div><p className="admin-kicker">STOREFRONT IMAGERY</p><h2>Collection cover images</h2></div><span>{categories.length} COLLECTIONS</span></div>
-    <p className="admin-help">Upload one landscape or portrait cover image for each collection. Recommended: 4:5 or 3:2 composition, JPG/WebP, up to 20 MB. Images appear on the homepage collection tiles.</p>
+    <p className="admin-help">Upload one landscape or portrait cover image for each collection. Recommended: 4:5 portrait composition, with the main subject near the center so it remains visible across desktop and mobile crops. JPG/WebP, up to 20 MB. Images appear on the homepage collection tiles.</p>
     {error&&<p className="admin-error" role="alert">{error}</p>}
     <div className="jq-category-admin-grid">
       {categories.map(category=><article className="jq-category-admin-card" key={category.id}>
