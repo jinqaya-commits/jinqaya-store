@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const supabase = await createClient();
   const { data: category } = await supabase.from("categories").select("name,description").eq("slug",slug).eq("is_active",true).maybeSingle();
   if (!category) return { title: "Category Not Found" };
-  return { title: category.name.toLowerCase().replace(/\b\w/g, letter => letter.toUpperCase()), description: category.description ?? undefined };
+  return { title: category.name.toLowerCase().replace(/\b\w/g, (letter: string) => letter.toUpperCase()), description: category.description ?? undefined };
 }
 
 export default async function CollectionPage({ params }: Props) {
