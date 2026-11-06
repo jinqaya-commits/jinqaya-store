@@ -69,7 +69,7 @@ export default async function HomePage() {
       <header className="jq-header">
         <Link className="jq-wordmark" href="/" aria-label="JINQAYA home">JINQAYA<span>®</span></Link>
         <CategoryNavigation />
-        <div className="jq-header-actions"><Link href="/shop" className="jq-shop-link">DISCOVER <span>↗</span></Link><CartLink /></div>
+        <div className="jq-header-actions"><CartLink /></div>
       </header>
 
       <section className="jq-hero">
