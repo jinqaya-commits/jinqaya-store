@@ -921,3 +921,25 @@ a { color: inherit; text-decoration: none; }
 .jq-homepage-media-preview img{display:block;width:100%;height:100%;object-fit:cover}
 @media(max-width:900px){.jq-homepage-media-grid{grid-template-columns:1fr}}
 @media(max-width:520px){.jq-homepage-media-card{grid-template-columns:1fr}.jq-homepage-media-preview{aspect-ratio:16/9}}
+
+
+/* JINQAYA category navigation */
+.jq-category-nav { display:flex; align-items:center; gap:clamp(14px,2vw,30px); }
+.jq-nav-category { position:relative; }
+.jq-nav-category summary { list-style:none; cursor:pointer; white-space:nowrap; }
+.jq-nav-category summary::-webkit-details-marker { display:none; }
+.jq-nav-category summary::after { content:"⌄"; margin-left:6px; font-size:.8em; opacity:.65; }
+.jq-nav-dropdown { position:absolute; z-index:60; top:calc(100% + 18px); left:50%; transform:translateX(-50%); width:min(680px,88vw); max-height:min(72vh,620px); overflow:auto; padding:24px 28px; background:#f8f7f3; color:#24251f; border:1px solid rgba(36,37,31,.12); box-shadow:0 18px 50px rgba(20,20,18,.14); display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px 24px; }
+.jq-nav-category:not([open]) .jq-nav-dropdown { display:none; }
+.jq-nav-all { grid-column:1/-1; padding-bottom:12px; border-bottom:1px solid rgba(36,37,31,.16); font-size:.72rem; letter-spacing:.08em; text-transform:uppercase; }
+.jq-nav-group { display:flex; flex-direction:column; gap:9px; min-width:0; }
+.jq-nav-group>a { font-size:.72rem; font-weight:650; letter-spacing:.04em; text-transform:uppercase; }
+.jq-nav-group>div { display:flex; flex-direction:column; gap:7px; }
+.jq-nav-group>div a { font-size:.78rem; opacity:.7; line-height:1.35; }
+.jq-nav-group a:hover,.jq-nav-all:hover { opacity:.58; }
+.collection-subcategories { display:flex; flex-wrap:wrap; gap:10px; margin-top:24px; }
+.collection-subcategories a { border:1px solid currentColor; border-radius:99px; padding:9px 15px; font-size:.75rem; }
+@media(max-width:900px) {
+ .jq-category-nav { gap:12px; flex-wrap:wrap; }
+ .jq-nav-dropdown { position:fixed; top:110px; left:5vw; transform:none; width:90vw; grid-template-columns:repeat(2,minmax(0,1fr)); }
+}
