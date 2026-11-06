@@ -16,7 +16,7 @@ const categoryVisuals = [
 ];
 
 export default async function HomePage() {
-  const [allProducts, categoryImageRows] = await Promise.all([
+  const [allProducts, categoryImageRows, homepageMediaRows] = await Promise.all([
     getStoreProducts(),
     (async () => {
       try {
@@ -30,6 +30,23 @@ export default async function HomePage() {
       }
     })(),
   ]);
+  const homepageMediaRows = await (async () => {
+    try {
+      const supabase = await createClient();
+      const { data, error } = await supabase.from("homepage_media").select("media_key,image_path");
+      if (error) { console.error("Unable to load homepage media:", error.message); return []; }
+      return data ?? [];
+    } catch (error) {
+      console.error("Unable to load homepage media:", error);
+      return [];
+    }
+  })();
+  const homepageMediaMap = new Map(homepageMediaRows.map((item) => [
+    item.media_key,
+    item.image_path ? resolveProductImageUrls(item.image_path).detailUrl : null,
+  ]));
+  const heroImage = homepageMediaMap.get("hero") || "https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=2400&q=90";
+  const lifestyleImage = homepageMediaMap.get("lifestyle") || "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=1800&q=88";
   const categoryImageMap = new Map(categoryImageRows.map((item) => [
     item.slug,
     item.image_path ? resolveProductImageUrls(item.image_path).detailUrl : null,
@@ -55,7 +72,7 @@ export default async function HomePage() {
       <section className="jq-hero">
         <div className="jq-hero-image">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=2400&q=90" alt="A golden retriever in a sunlit outdoor setting" fetchPriority="high" />
+          <img src={heroImage} alt="A golden retriever in a sunlit outdoor setting" fetchPriority="high" />
         </div>
         <div className="jq-hero-shade" />
         <div className="jq-hero-top"><span>ISSUE Nº 01</span><span>THE ART OF LIVING TOGETHER</span></div>
@@ -123,7 +140,7 @@ export default async function HomePage() {
       <section className="jq-closing" id="life-with-pets">
         <div className="jq-closing-image">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=1800&q=88" alt="A cat enjoying a peaceful moment at home" loading="lazy" />
+          <img src={lifestyleImage} alt="A cat enjoying a peaceful moment at home" loading="lazy" />
           <span>THE QUIET JOY OF BEING TOGETHER</span>
         </div>
         <div className="jq-closing-copy">
