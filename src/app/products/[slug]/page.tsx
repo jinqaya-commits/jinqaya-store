@@ -5,6 +5,7 @@ import { getStoreProductBySlug, formatProductPrice } from "@/lib/products";
 import { ProductGallery } from "@/components/storefront/product-gallery";
 import { AddToCart } from "@/components/storefront/add-to-cart";
 import { CartLink } from "@/components/storefront/cart-link";
+import { CategoryNavigation } from "@/components/storefront/category-navigation";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -29,9 +30,7 @@ export default async function ProductPage({ params }: Props) {
     <main className="inner-page">
       <header className="inner-page-header">
         <Link className="wordmark" href="/">JINQAYA<span>®</span></Link>
-        <nav className="inner-nav" aria-label="Main navigation">
-          <Link href="/shop">SHOP ALL</Link><Link href="/#philosophy">OUR PHILOSOPHY</Link><CartLink />
-        </nav>
+        <CategoryNavigation /><CartLink />
       </header>
       <div className="product-detail">
         <ProductGallery images={images} productName={product.name} />
