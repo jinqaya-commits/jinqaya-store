@@ -11,7 +11,7 @@ export async function CategoryNavigation() {
   const rows = (data ?? []) as CategoryRow[];
   const roots = rows.filter(row => row.parent_id === null);
   return <nav className="jq-nav jq-category-nav" aria-label="Shop categories">
-    <Link href="/shop">THE SHOP</Link>
+    <Link href="/shop">SHOP ALL</Link>
     {roots.map(root => {
       const children = rows.filter(row => row.parent_id === root.id);
       return <details className="jq-nav-category" key={root.id}>
@@ -27,6 +27,6 @@ export async function CategoryNavigation() {
         </div>
       </details>;
     })}
-    <Link href="/#point-of-view">OUR POINT OF VIEW</Link>
+    <Link href="/#point-of-view">OUR STORY</Link>
   </nav>;
 }
