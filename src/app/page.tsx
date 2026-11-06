@@ -16,7 +16,7 @@ const categoryVisuals = [
 ];
 
 export default async function HomePage() {
-  const [allProducts, categoryImageRows, homepageMediaRows] = await Promise.all([
+  const [allProducts, categoryImageRows] = await Promise.all([
     getStoreProducts(),
     (async () => {
       try {
