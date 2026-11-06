@@ -19,8 +19,9 @@ const categoryVisuals = [
 ];
 
 export default async function HomePage() {
-  const [allProducts, categoryImageRows] = await Promise.all([
+  const [allProducts, categories, categoryImageRows] = await Promise.all([
     getStoreProducts(),
+    getRootCategories(),
     (async () => {
       try {
         const supabase = await createClient();
