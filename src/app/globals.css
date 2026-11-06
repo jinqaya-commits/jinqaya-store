@@ -883,3 +883,33 @@ a { color: inherit; text-decoration: none; }
 .jq-category-admin-copy>.admin-help{margin:0}
 @media(max-width:760px){.jq-category-admin-grid{grid-template-columns:1fr}}
 @media(max-width:460px){.jq-category-admin-card{grid-template-columns:110px minmax(0,1fr);gap:12px;padding:10px}.jq-category-admin-copy h3{font-size:16px}.jq-category-upload{font-size:10px;padding:10px}}
+
+
+/* JINQAYA — responsive image framing and resilient editorial crops */
+.jq-tile-image{position:relative;isolation:isolate;background:#e4ded4;overflow:hidden}
+.jq-tile-image img{width:100%;height:100%;object-fit:cover;object-position:center center;display:block}
+.jq-tile-1 .jq-tile-image img{object-position:center 42%}
+.jq-tile-2 .jq-tile-image img{object-position:center 48%}
+.jq-tile-3 .jq-tile-image img{object-position:center 42%}
+.jq-tile-4 .jq-tile-image img{object-position:center 50%}
+.jq-tile-5 .jq-tile-image img{object-position:center 45%}
+.jq-tile-6 .jq-tile-image img{object-position:center 50%}
+.jq-hero-image img{object-fit:cover;object-position:center 47%}
+.jq-closing-image img{object-fit:cover;object-position:center 48%}
+.jq-category-admin-preview{position:relative;background:#e9e4dc}
+.jq-category-admin-preview img{object-fit:cover;object-position:center}
+.jq-collection-tile:focus-visible,.jq-round-link:focus-visible,.jq-header a:focus-visible,.jq-footer a:focus-visible{outline:2px solid #8f765e;outline-offset:4px}
+@media(max-width:900px){
+ .jq-tile-1 .jq-tile-image img,.jq-tile-3 .jq-tile-image img{object-position:center 40%}
+}
+@media(max-width:600px){
+ .jq-hero-image img{object-position:58% center}
+ .jq-tile-1 .jq-tile-image img{object-position:center 43%}
+ .jq-tile-4 .jq-tile-image img{object-position:center 48%}
+ .jq-tile-2 .jq-tile-image,.jq-tile-3 .jq-tile-image,.jq-tile-5 .jq-tile-image,.jq-tile-6 .jq-tile-image{aspect-ratio:4/5}
+ .jq-tile-1 .jq-tile-image{aspect-ratio:1.08}
+ .jq-tile-4 .jq-tile-image{aspect-ratio:1.35}
+}
+@media(prefers-reduced-motion:reduce){
+ .jq-collection-tile:hover .jq-tile-image img{transform:none}
+}
