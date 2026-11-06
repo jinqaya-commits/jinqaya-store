@@ -2,7 +2,7 @@ import Link from "next/link";
 import { CartLink } from "@/components/storefront/cart-link";
 import { CategoryNavigation } from "@/components/storefront/category-navigation";
 import { ProductCard } from "@/components/storefront/product-card";
-import { categories } from "@/lib/catalog";
+import { getRootCategories } from "@/lib/catalog";
 import { getStoreProducts } from "@/lib/products";
 import { createClient } from "@/lib/supabase/server";
 import { resolveProductImageUrls } from "@/lib/product-images";
