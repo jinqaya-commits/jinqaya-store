@@ -11,6 +11,7 @@ export function CategoryTreeManager({ categories }: { categories:Category[] }) {
   const [name,setName] = useState("");
   const [parentId,setParentId] = useState("");
   const [description,setDescription] = useState("");
+  const [drafts,setDrafts] = useState<Record<string,{name:string;sortOrder:string}>>({});
   const [error,setError] = useState("");
   const [busy,setBusy] = useState(false);
   async function submit(e:FormEvent) {
@@ -18,6 +19,14 @@ export function CategoryTreeManager({ categories }: { categories:Category[] }) {
     const result = await createCategory({name,parentId:parentId||null,description});
     if(result.error) setError(result.error);
     else {setName("");setDescription("");router.refresh();}
+    setBusy(false);
+  }
+  async function save(category:Category) {
+    const draft=drafts[category.id]??{name:category.name,sortOrder:String(category.sort_order)};
+    setBusy(true);setError("");
+    const result=await updateCategory(category.id,{name:draft.name,sortOrder:Number(draft.sortOrder)});
+    if(result.error)setError(result.error);
+    else {setDrafts(current=>{const next={...current};delete next[category.id];return next;});router.refresh();}
     setBusy(false);
   }
   async function toggle(category:Category) {
@@ -28,13 +37,21 @@ export function CategoryTreeManager({ categories }: { categories:Category[] }) {
   }
   const children=(parent:string|null)=>categories.filter(c=>c.parent_id===parent);
   function render(parent:string|null,depth:number):ReactNode {
-    return children(parent).map(c=><div key={c.id} style={{marginLeft:depth*22,padding:"10px 0",borderBottom:"1px solid var(--admin-border, #e5e5e5)"}}>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:12}}>
-        <div><strong>{c.name}</strong><div className="admin-help">/{c.slug} · Level {depth+1} · Order {c.sort_order}</div></div>
-        <button type="button" className="admin-secondary-button" disabled={busy} onClick={()=>void toggle(c)}>{c.is_active?"Deactivate":"Activate"}</button>
-      </div>
-      {render(c.id,depth+1)}
-    </div>);
+    return children(parent).map(c=>{
+      const draft=drafts[c.id]??{name:c.name,sortOrder:String(c.sort_order)};
+      return <div key={c.id} style={{marginLeft:depth*22,padding:"12px 0",borderBottom:"1px solid var(--admin-border, #e5e5e5)"}}>
+        <div className="admin-form-grid" style={{alignItems:"end"}}>
+          <label>Category name<input value={draft.name} onChange={e=>setDrafts(current=>({...current,[c.id]:{...draft,name:e.target.value}}))}/></label>
+          <label>Sort order<input type="number" min="0" step="1" value={draft.sortOrder} onChange={e=>setDrafts(current=>({...current,[c.id]:{...draft,sortOrder:e.target.value}}))}/></label>
+          <div className="admin-form-actions">
+            <button type="button" className="admin-primary-button" disabled={busy||!draft.name.trim()} onClick={()=>void save(c)}>Save</button>
+            <button type="button" className="admin-secondary-button" disabled={busy} onClick={()=>void toggle(c)}>{c.is_active?"Deactivate":"Activate"}</button>
+          </div>
+        </div>
+        <div className="admin-help">/{c.slug} · Level {depth+1} · {c.is_active?"Active":"Inactive"}</div>
+        {render(c.id,depth+1)}
+      </div>;
+    });
   }
   return <section className="admin-panel">
     <div className="admin-panel-heading"><div><p className="admin-kicker">PRODUCT TAXONOMY</p><h2>Category hierarchy</h2></div><span>{categories.length} CATEGORIES</span></div>
@@ -44,7 +61,7 @@ export function CategoryTreeManager({ categories }: { categories:Category[] }) {
       <h3>Add a category</h3>
       <div className="admin-form-grid">
         <label>Category name<input required value={name} onChange={e=>setName(e.target.value)} placeholder="e.g. Cat Carriers"/></label>
-        <label>Parent category<select value={parentId} onChange={e=>setParentId(e.target.value)}><option value="">Top-level category</option>{categories.filter(c=>c.parent_id===null||categories.some(p=>p.id===c.parent_id&&p.parent_id===null)).map(c=><option key={c.id} value={c.id}>{c.parent_id? "— ":""}{c.name}</option>)}</select></label>
+        <label>Parent category<select value={parentId} onChange={e=>setParentId(e.target.value)}><option value="">Top-level category</option>{categories.filter(c=>c.parent_id===null||categories.some(p=>p.id===c.parent_id&&p.parent_id===null)).map(c=><option key={c.id} value={c.id}>{c.parent_id?"— ":""}{c.name}</option>)}</select></label>
       </div>
       <label>Description<input value={description} onChange={e=>setDescription(e.target.value)} placeholder="Short customer-facing description"/></label>
       <button className="admin-primary-button" disabled={busy||!name.trim()} type="submit">{busy?"Saving…":"Add category"}</button>
