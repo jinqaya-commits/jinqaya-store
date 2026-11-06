@@ -81,7 +81,7 @@ export default async function HomePage() {
             <Link className={`jq-collection-tile jq-tile-${index + 1}`} href={`/collections/${category.slug}`} key={category.slug}>
               <div className="jq-tile-image">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={categoryImageMap.get(category.slug) || categoryVisuals[index % categoryVisuals.length].image} alt={`${category.name} collection`} loading="lazy" decoding="async" />
+                <img src={categoryImageMap.get(category.slug) || categoryVisuals[index % categoryVisuals.length].image} alt={`${category.name} collection`} loading="lazy" decoding="async" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = categoryVisuals[index % categoryVisuals.length].image; }} />
               </div>
               <div className="jq-tile-meta"><span>{category.number ?? String(index + 1).padStart(2, "0")}</span><span>↗</span></div>
               <div className="jq-tile-title"><h3>{category.name}</h3><p>{category.description}</p></div>
