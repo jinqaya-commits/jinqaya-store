@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { categories, getCategory } from "@/lib/catalog";
+import { createClient } from "@/lib/supabase/server";
 import { getStoreProducts } from "@/lib/products";
 import { ProductCard } from "@/components/storefront/product-card";
 
@@ -11,18 +11,21 @@ export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const category = getCategory(slug);
-  if (!category) return { title: "Collection Not Found" };
-  return {
-    title: category.name.toLowerCase().replace(/\b\w/g, (letter) => letter.toUpperCase()),
-    description: category.description,
-  };
+  const supabase = await createClient();
+  const { data: category } = await supabase.from("categories").select("name,description").eq("slug",slug).eq("is_active",true).maybeSingle();
+  if (!category) return { title: "Category Not Found" };
+  return { title: category.name.toLowerCase().replace(/\b\w/g, letter => letter.toUpperCase()), description: category.description ?? undefined };
 }
 
 export default async function CollectionPage({ params }: Props) {
   const { slug } = await params;
-  const category = getCategory(slug);
+  const supabase = await createClient();
+  const [{ data: category }, { data: allCategories }] = await Promise.all([
+    supabase.from("categories").select("id,parent_id,name,slug,description,sort_order").eq("slug",slug).eq("is_active",true).maybeSingle(),
+    supabase.from("categories").select("id,parent_id,name,slug,sort_order").eq("is_active",true).order("sort_order")
+  ]);
   if (!category) notFound();
+  const childCategories = (allCategories ?? []).filter(item => item.parent_id === category.id);
   const products = await getStoreProducts(slug);
 
   return (
@@ -34,8 +37,8 @@ export default async function CollectionPage({ params }: Props) {
         </nav>
       </header>
       <section className="collection-intro">
-        <p className="eyebrow">COLLECTION {category.number}</p>
-        <h1>{category.name}</h1><p>{category.description}</p>
+        <p className="eyebrow">JINQAYA / CATEGORY</p>
+        <h1>{category.name}</h1><p>{category.description}</p>\n        {childCategories.length > 0 && <div className="collection-subcategories">{childCategories.map(child => <Link key={child.id} href={`/collections/${child.slug}`}>{child.name} ↗</Link>)}</div>}
         <Link className="back-link" href="/shop">← ALL COLLECTIONS</Link>
       </section>
       {products.length ? (
