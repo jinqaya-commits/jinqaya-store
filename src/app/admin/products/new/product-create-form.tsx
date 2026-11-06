@@ -4,7 +4,7 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { addProductImage, createProduct, type CreateProductInput } from "../actions";
 
-type Category = { id: string; name: string };
+type Category = { id: string; parent_id: string|null; name: string; slug:string; sort_order:number };
 
 const initialValues: CreateProductInput = {
   name: "", categoryId: "", petType: "both", shortDescription: "", description: "",
@@ -88,7 +88,7 @@ export function ProductCreateForm({ categories }: { categories: Category[] }) {
   return <form className="admin-form" onSubmit={submit}>
     <section className="admin-form-section"><div className="admin-form-heading"><span>01</span><div><h2>Product information</h2><p>Start with the details customers will see.</p></div></div>
       <label>Product name<input required value={values.name} onChange={(e) => update("name", e.target.value)} placeholder="e.g. Everyday Travel Carrier" /></label>
-      <div className="admin-form-grid"><label>Collection<select required value={values.categoryId} onChange={(e) => update("categoryId", e.target.value)}><option value="">Choose a collection</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}</select></label>
+      <div className="admin-form-grid"><label>Product category<select required value={values.categoryId} onChange={(e) => update("categoryId", e.target.value)}><option value="">Choose a product type</option>{categories.filter(category => category.parent_id !== null).map((category) => { const parent = categories.find(item => item.id === category.parent_id); const grand = parent?.parent_id ? categories.find(item => item.id === parent.parent_id) : null; return <option key={category.id} value={category.id}>{grand ? grand.name + " / " : ""}{parent?.name ?? ""} / {category.name}</option>; })}</select></label>
       <label>Made for<select value={values.petType} onChange={(e) => update("petType", e.target.value as CreateProductInput["petType"])}><option value="both">Cats & dogs</option><option value="cat">Cats</option><option value="dog">Dogs</option><option value="shared">Shared / general</option></select></label></div>
       <label>Short description<input value={values.shortDescription} onChange={(e) => update("shortDescription", e.target.value)} placeholder="A concise product introduction" /></label>
       <label>Full description<textarea rows={5} value={values.description} onChange={(e) => update("description", e.target.value)} placeholder="Describe the product, its features and intended use." /></label>
