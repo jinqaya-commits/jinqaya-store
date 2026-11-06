@@ -134,7 +134,7 @@ export async function setProductStatus(productId: string, status: "draft" | "act
 
 export async function updateProduct(productId: string, values: {
   name: string; petType: "cat"|"dog"|"both"|"shared"; shortDescription: string;
-  description: string; material: string; careInstructions: string; status: "draft"|"active"|"archived";
+  description: string; material: string; careInstructions: string; status: "draft"|"active"|"archived"; categoryId?: string;
 }) {
   const supabase = await requireCatalogManager();
   const name = values.name.trim();
@@ -149,6 +149,14 @@ export async function updateProduct(productId: string, values: {
     published_at: values.status === "active" ? new Date().toISOString() : null,
   }).eq("id",productId);
   if (error) return { error: error.message };
+  if (values.categoryId) {
+    const { data: category } = await supabase.from("categories").select("id,parent_id,is_active").eq("id",values.categoryId).maybeSingle();
+    if (!category || !category.is_active || !category.parent_id) return { error: "Choose an active product subcategory." };
+    const { error: clearPrimaryError } = await supabase.from("product_categories").delete().eq("product_id",productId).eq("is_primary",true);
+    if (clearPrimaryError) return { error: clearPrimaryError.message };
+    const { error: assignError } = await supabase.from("product_categories").upsert({product_id:productId,category_id:values.categoryId,is_primary:true},{onConflict:"product_id,category_id"});
+    if (assignError) return { error: assignError.message };
+  }
   revalidatePath("/admin/products"); revalidatePath("/shop"); revalidatePath("/collections");
   return { success: true };
 }
