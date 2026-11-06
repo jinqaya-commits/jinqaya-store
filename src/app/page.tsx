@@ -35,16 +35,18 @@ export default async function HomePage() {
       const supabase = await createClient();
       const { data, error } = await (supabase as any).from("homepage_media").select("media_key,image_path");
       if (error) { console.error("Unable to load homepage media:", error.message); return []; }
-      return data ?? [];
+      return (data ?? []) as HomepageMediaRow[];
     } catch (error) {
       console.error("Unable to load homepage media:", error);
       return [];
     }
   })();
-  const homepageMediaMap = new Map(homepageMediaRows.map((item) => [
-    item.media_key,
-    item.image_path ? resolveProductImageUrls(item.image_path).detailUrl : null,
-  ]));
+  const homepageMediaMap = new Map<string, string | null>(
+    homepageMediaRows.map((item): [string, string | null] => [
+      item.media_key,
+      item.image_path ? resolveProductImageUrls(item.image_path).detailUrl : null,
+    ]),
+  );
   const heroImage = homepageMediaMap.get("hero") || "https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=2400&q=90";
   const lifestyleImage = homepageMediaMap.get("lifestyle") || "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=1800&q=88";
   const categoryImageMap = new Map(categoryImageRows.map((item) => [
