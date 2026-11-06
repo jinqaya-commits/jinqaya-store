@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ShopMenu, type ShopNavCategory } from "./shop-menu";
 
@@ -21,8 +22,8 @@ export async function CategoryNavigation() {
   return (
     <nav className="jq-nav jq-category-nav" aria-label="Main navigation">
       <ShopMenu roots={roots} />
-      <a href="/#collections">DISCOVER</a>
-      <a href="/#point-of-view">OUR STORY</a>
+      <Link href="/#collections">DISCOVER</Link>
+      <Link href="/#point-of-view">OUR STORY</Link>
     </nav>
   );
 }
