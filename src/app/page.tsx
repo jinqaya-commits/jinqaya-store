@@ -41,10 +41,10 @@ export default async function HomePage() {
         <div className="jq-hero-shade" />
         <div className="jq-hero-top"><span>ISSUE Nº 01</span><span>THE ART OF LIVING TOGETHER</span></div>
         <div className="jq-hero-copy">
-          <p className="jq-kicker">A LIFE WITH PETS, CONSIDERED</p>
-          <h1>Life is better<br /><em>in good company.</em></h1>
+          <p className="jq-kicker">THE JINQAYA CAMPAIGN / 001</p>
+          <h1>A life,<br /><em>well shared.</em></h1>
           <div className="jq-hero-bottom">
-            <p>Thoughtful essentials for the rituals, rooms and little adventures we share with cats and dogs.</p>
+            <p>Objects and essentials for the life we share with cats and dogs. Considered in form. Made for living.</p>
             <Link href="/shop" className="jq-round-link" aria-label="Explore the shop"><span>EXPLORE<br />THE SHOP</span><b>↗</b></Link>
           </div>
         </div>
