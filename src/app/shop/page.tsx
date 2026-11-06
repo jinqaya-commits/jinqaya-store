@@ -3,6 +3,7 @@ import Link from "next/link";
 import { categories } from "@/lib/catalog";
 import { getStoreProducts } from "@/lib/products";
 import { ProductCard } from "@/components/storefront/product-card";
+import { CategoryNavigation } from "@/components/storefront/category-navigation";
 
 export const metadata: Metadata = {
   title: "Shop Pet Lifestyle Essentials",
@@ -16,11 +17,7 @@ export default async function ShopPage() {
     <main className="inner-page">
       <header className="inner-page-header">
         <Link className="wordmark" href="/">JINQAYA<span>®</span></Link>
-        <nav className="inner-nav" aria-label="Main navigation">
-          <Link href="/shop">SHOP ALL</Link>
-          <Link href="/#philosophy">OUR PHILOSOPHY</Link>
-          <Link href="/">HOME</Link>
-        </nav>
+        <CategoryNavigation />
       </header>
       <section className="page-intro">
         <p className="eyebrow">THE JINQAYA COLLECTION</p>
