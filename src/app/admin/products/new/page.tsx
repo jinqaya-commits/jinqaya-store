@@ -13,7 +13,7 @@ export default async function NewProductPage() {
   if (error || canManage !== true) redirect("/");
 
   const { data: categories } = await supabase
-    .from("categories").select("id, name").eq("is_active", true).order("sort_order");
+    .from("categories").select("id,parent_id,name,slug,sort_order").eq("is_active", true).order("sort_order");
 
   return <main className="admin-shell">
     <aside className="admin-sidebar"><Link href="/" className="admin-brand">JINQAYA<span>ADMIN</span></Link><nav><Link className="active" href="/admin/products">Products</Link><Link href="/shop">View storefront ↗</Link></nav><p className="admin-sidebar-note">CATALOG MANAGEMENT</p></aside>
