@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getStoreProducts } from "@/lib/products";
 import { ProductCard } from "@/components/storefront/product-card";
+import { CategoryNavigation } from "@/components/storefront/category-navigation";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -32,9 +33,7 @@ export default async function CollectionPage({ params }: Props) {
     <main className="inner-page">
       <header className="inner-page-header">
         <Link className="wordmark" href="/">JINQAYA<span>®</span></Link>
-        <nav className="inner-nav" aria-label="Main navigation">
-          <Link href="/shop">SHOP ALL</Link><Link href="/#point-of-view">OUR PHILOSOPHY</Link><Link href="/">HOME</Link>
-        </nav>
+        <CategoryNavigation />
       </header>
       <section className="collection-intro">
         <p className="eyebrow">JINQAYA / CATEGORY</p>
