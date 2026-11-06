@@ -133,20 +133,23 @@ export async function getStoreProducts(categorySlug?: string): Promise<StoreProd
   let productIds: string[] | null = null;
 
   if (categorySlug) {
-    const { data: category, error: categoryError } = await supabase
-      .from("categories")
-      .select("id")
-      .eq("slug", categorySlug)
-      .eq("is_active", true)
-      .maybeSingle();
-
-    if (categoryError || !category) return [];
-
+    const { data: categoryRows, error: categoryError } = await supabase
+      .from("categories").select("id,parent_id,slug,is_active");
+    if (categoryError) {
+      console.error("Unable to load categories:", categoryError.message);
+      return [];
+    }
+    const category = (categoryRows ?? []).find(row => row.slug === categorySlug && row.is_active);
+    if (!category) return [];
+    const descendants = new Set<string>([category.id]);
+    let frontier = [category.id];
+    while (frontier.length) {
+      const next = (categoryRows ?? []).filter(row => row.is_active && row.parent_id && frontier.includes(row.parent_id)).map(row => row.id);
+      next.forEach(id => descendants.add(id));
+      frontier = next;
+    }
     const { data: assignments, error: assignmentError } = await supabase
-      .from("product_categories")
-      .select("product_id")
-      .eq("category_id", category.id);
-
+      .from("product_categories").select("product_id").in("category_id", [...descendants]);
     if (assignmentError) {
       console.error("Unable to load category products:", assignmentError.message);
       return [];
