@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { categories } from "@/lib/catalog";
+import { getRootCategories } from "@/lib/catalog";
 import { getStoreProducts } from "@/lib/products";
 import { ProductCard } from "@/components/storefront/product-card";
 import { CategoryNavigation } from "@/components/storefront/category-navigation";
@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 };
 
 export default async function ShopPage() {
-  const products = await getStoreProducts();
+  const [products, categories] = await Promise.all([getStoreProducts(), getRootCategories()]);
 
   return (
     <main className="inner-page">
