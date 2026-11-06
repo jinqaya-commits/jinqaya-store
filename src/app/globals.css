@@ -841,3 +841,27 @@ a { color: inherit; text-decoration: none; }
 @media(prefers-reduced-motion:reduce){.jq-home *{scroll-behavior:auto!important;transition:none!important}}
 
 
+
+
+/* JINQAYA — final homepage journey and shopping information */
+.jq-shopping-confidence{padding:112px 8% 120px;display:grid;grid-template-columns:.9fr 1.4fr;gap:9%;align-items:center;background:#e8e4dc}
+.jq-shopping-heading .jq-kicker{color:#827b6e}
+.jq-shopping-heading h2{margin:22px 0 18px;font:400 clamp(46px,5.2vw,70px)/1.02 Georgia,serif;letter-spacing:-2.4px}
+.jq-shopping-heading h2 em{color:#9d8a73;font-weight:400}
+.jq-shopping-heading>p:last-child{max-width:330px;margin:0;color:#727168;font:13px/1.9 Georgia,serif}
+.jq-shopping-points{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px}
+.jq-shopping-points article{min-height:190px;padding:20px 0 0;border-top:1px solid #bdb6aa}
+.jq-shopping-points article>span{color:#9d8a73;font:italic 17px Georgia,serif}
+.jq-shopping-points h3{margin:25px 0 12px;font-size:8px;letter-spacing:1.35px}
+.jq-shopping-points p{margin:0;color:#727168;font:12px/1.8 Georgia,serif}
+@media(max-width:900px){
+ .jq-shopping-confidence{padding:88px 7%;grid-template-columns:1fr;gap:45px}
+ .jq-shopping-points{gap:18px}
+}
+@media(max-width:600px){
+ .jq-shopping-confidence{padding:72px 6% 78px;gap:34px}
+ .jq-shopping-heading h2{font-size:58px}
+ .jq-shopping-points{grid-template-columns:1fr;gap:26px}
+ .jq-shopping-points article{min-height:unset;padding-top:15px}
+ .jq-shopping-points h3{margin:14px 0 8px}
+}
