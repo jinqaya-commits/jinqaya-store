@@ -33,7 +33,7 @@ export default async function HomePage() {
   const homepageMediaRows = await (async () => {
     try {
       const supabase = await createClient();
-      const { data, error } = await supabase.from("homepage_media").select("media_key,image_path");
+      const { data, error } = await (supabase as any).from("homepage_media").select("media_key,image_path");
       if (error) { console.error("Unable to load homepage media:", error.message); return []; }
       return data ?? [];
     } catch (error) {
