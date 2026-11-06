@@ -37,7 +37,8 @@ export default async function CollectionPage({ params }: Props) {
       </header>
       <section className="collection-intro">
         <p className="eyebrow">JINQAYA / CATEGORY</p>
-        <h1>{category.name}</h1><p>{category.description}</p>\n        {childCategories.length > 0 && <div className="collection-subcategories">{childCategories.map(child => <Link key={child.id} href={`/collections/${child.slug}`}>{child.name} ↗</Link>)}</div>}
+        <h1>{category.name}</h1><p>{category.description}</p>
+        {childCategories.length > 0 && <div className="collection-subcategories">{childCategories.map(child => <Link key={child.id} href={`/collections/${child.slug}`}>{child.name} ↗</Link>)}</div>}
         <Link className="back-link" href="/shop">← ALL COLLECTIONS</Link>
       </section>
       {products.length ? (
