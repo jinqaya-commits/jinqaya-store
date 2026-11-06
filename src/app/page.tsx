@@ -3,6 +3,8 @@ import { CartLink } from "@/components/storefront/cart-link";
 import { ProductCard } from "@/components/storefront/product-card";
 import { categories } from "@/lib/catalog";
 import { getStoreProducts } from "@/lib/products";
+import { createClient } from "@/lib/supabase/server";
+import { resolveProductImageUrls } from "@/lib/product-images";
 
 const categoryVisuals = [
   { image: "https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=1400&q=88", alt: "A dog enjoying an outdoor moment" },
@@ -14,7 +16,24 @@ const categoryVisuals = [
 ];
 
 export default async function HomePage() {
-  const allProducts = await getStoreProducts();
+  const [allProducts, categoryImageRows] = await Promise.all([
+    getStoreProducts(),
+    (async () => {
+      try {
+        const supabase = await createClient();
+        const { data, error } = await supabase.from("categories").select("slug,image_path").eq("is_active", true);
+        if (error) { console.error("Unable to load collection cover images:", error.message); return []; }
+        return data ?? [];
+      } catch (error) {
+        console.error("Unable to load collection cover images:", error);
+        return [];
+      }
+    })(),
+  ]);
+  const categoryImageMap = new Map(categoryImageRows.map((item) => [
+    item.slug,
+    item.image_path ? resolveProductImageUrls(item.image_path).detailUrl : null,
+  ]));
   const featuredProducts = [...allProducts]
     .sort((a, b) => Number(b.is_featured) - Number(a.is_featured) || Number(b.is_new_arrival) - Number(a.is_new_arrival))
     .slice(0, 4);
@@ -62,7 +81,7 @@ export default async function HomePage() {
             <Link className={`jq-collection-tile jq-tile-${index + 1}`} href={`/collections/${category.slug}`} key={category.slug}>
               <div className="jq-tile-image">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={categoryVisuals[index % categoryVisuals.length].image} alt={categoryVisuals[index % categoryVisuals.length].alt} loading="lazy" />
+                <img src={categoryImageMap.get(category.slug) || categoryVisuals[index % categoryVisuals.length].image} alt={categoryVisuals[index % categoryVisuals.length].alt} loading="lazy" />
               </div>
               <div className="jq-tile-meta"><span>{category.number ?? String(index + 1).padStart(2, "0")}</span><span>↗</span></div>
               <div className="jq-tile-title"><h3>{category.name}</h3><p>{category.description}</p></div>
