@@ -30,7 +30,8 @@ export default async function HomePage() {
       }
     })(),
   ]);
-  type HomepageMediaRow = { media_key: "hero" | "lifestyle"; image_path: string | null };\n  const homepageMediaRows: HomepageMediaRow[] = await (async () => {
+  type HomepageMediaRow = { media_key: "hero" | "lifestyle"; image_path: string | null };
+  const homepageMediaRows: HomepageMediaRow[] = await (async () => {
     try {
       const supabase = await createClient();
       const { data, error } = await (supabase as any).from("homepage_media").select("media_key,image_path");
