@@ -913,3 +913,11 @@ a { color: inherit; text-decoration: none; }
 @media(prefers-reduced-motion:reduce){
  .jq-collection-tile:hover .jq-tile-image img{transform:none}
 }
+
+/* Homepage campaign media manager */
+.jq-homepage-media-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;margin-top:24px}
+.jq-homepage-media-card{display:grid;grid-template-columns:minmax(150px,.9fr) minmax(0,1fr);gap:18px;align-items:center;padding:14px;border:1px solid var(--admin-border,#e7e3dc);background:#fff}
+.jq-homepage-media-preview{aspect-ratio:16/10;overflow:hidden;background:#eeeae3}
+.jq-homepage-media-preview img{display:block;width:100%;height:100%;object-fit:cover}
+@media(max-width:900px){.jq-homepage-media-grid{grid-template-columns:1fr}}
+@media(max-width:520px){.jq-homepage-media-card{grid-template-columns:1fr}.jq-homepage-media-preview{aspect-ratio:16/9}}
