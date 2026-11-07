@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import type { Database } from "@/types/database";
 
 export const dynamic = "force-dynamic";
 
@@ -37,7 +38,7 @@ export async function GET(request: NextRequest) {
     .select("id,order_number,status,currency,customer_email,customer_phone,subtotal,shipping_amount,total_amount,shipping_method_name,shipping_address_snapshot,created_at,order_items(quantity,product_name,sku)")
     .order("created_at", { ascending: false })
     .limit(1000);
-  if (status !== "all") query = query.eq("status", status);
+  if (status !== "all") query = query.eq("status", status as Database["public"]["Enums"]["order_status"]);
   if (search) query = query.or("order_number.ilike.%" + search + "%,customer_email.ilike.%" + search + "%,customer_phone.ilike.%" + search + "%");
   if (from) query = query.gte("created_at", from);
   if (to) {
