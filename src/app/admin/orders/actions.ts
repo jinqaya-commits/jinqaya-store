@@ -342,3 +342,19 @@ export async function inspectShipmentReturnAction(orderId: string, receiptId: st
   revalidatePath("/admin/inventory");
   return { success: true };
 }
+
+export async function recordAfterSalesReturnAction(orderId: string, caseId: string, orderItemId: string, quantity: number, warehouseId: string, notes: string) {
+  const supabase = await requireOrderManager();
+  if (!/^[0-9a-f-]{36}$/i.test(orderId) || !/^[0-9a-f-]{36}$/i.test(caseId) ||
+      !/^[0-9a-f-]{36}$/i.test(orderItemId) || !/^[0-9a-f-]{36}$/i.test(warehouseId) ||
+      !Number.isInteger(quantity) || quantity < 1 || quantity > 100000 ||
+      typeof notes !== "string" || notes.length > 1000) return { error: "Enter a valid returned item, quantity and warehouse." };
+  const { error } = await supabase.rpc("admin_record_after_sales_return", {
+    p_case_id: caseId, p_order_item_id: orderItemId, p_quantity: quantity,
+    p_warehouse_id: warehouseId, p_notes: notes.trim() || null,
+  });
+  if (error) return { error: error.message };
+  revalidatePath("/admin/orders/" + orderId);
+  revalidatePath("/admin/inventory");
+  return { success: true };
+}
