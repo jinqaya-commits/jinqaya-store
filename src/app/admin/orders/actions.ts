@@ -146,16 +146,18 @@ export async function adjustInventoryAction(formData: FormData) {
 
 export async function createPurchaseOrderAction(formData: FormData) {
   const supabase = await requireOrderManager();
+  const supplierId = String(formData.get("supplier_id") ?? "").trim() || null;
   const supplierName = String(formData.get("supplier_name") ?? "").trim();
   const supplierEmail = String(formData.get("supplier_email") ?? "").trim();
   const supplierPhone = String(formData.get("supplier_phone") ?? "").trim();
+  const saveSupplier = formData.get("save_supplier") === "on";
   const currency = String(formData.get("currency") ?? "USD").toUpperCase();
   const supplierReference = String(formData.get("supplier_reference") ?? "").trim();
   const expectedDate = String(formData.get("expected_date") ?? "").trim();
   const notes = String(formData.get("notes") ?? "").trim();
   let items: Array<{variant_id:string;quantity:number;unit_cost:string}>;
   try { items = JSON.parse(String(formData.get("items") ?? "[]")); } catch { return { error: "Invalid purchase order items." }; }
-  if (!supplierName || supplierName.length > 160 || supplierEmail.length > 254 || supplierPhone.length > 60 ||
+  if ((!supplierId && (!supplierName || supplierName.length > 160)) || supplierEmail.length > 254 || supplierPhone.length > 60 ||
       !/^[A-Z]{3}$/.test(currency) || supplierReference.length > 160 || notes.length > 3000 ||
       (expectedDate && !/^\\d{4}-\\d{2}-\\d{2}$/.test(expectedDate)) ||
       !Array.isArray(items) || items.length < 1 || items.length > 100 ||
@@ -163,14 +165,15 @@ export async function createPurchaseOrderAction(formData: FormData) {
         item.unit_cost === "" || !Number.isFinite(Number(item.unit_cost)) || Number(item.unit_cost) < 0)) {
     return { error: "Check supplier details, currency, expected date, and each SKU, quantity and unit cost." };
   }
-  const { data, error } = await supabase.rpc("admin_create_purchase_order_v2", {
-    p_supplier_name: supplierName, p_supplier_email: supplierEmail || null, p_supplier_phone: supplierPhone || null,
-    p_currency: currency, p_supplier_reference: supplierReference || null, p_notes: notes || null,
+  const { data, error } = await supabase.rpc("admin_create_purchase_order_v3", {
+    p_supplier_id: supplierId, p_supplier_name: supplierName, p_supplier_email: supplierEmail || null,
+    p_supplier_phone: supplierPhone || null, p_save_supplier: saveSupplier, p_currency: currency,
+    p_supplier_reference: supplierReference || null, p_notes: notes || null,
     p_expected_date: expectedDate || null, p_items: items,
   });
   if (error) return { error: error.message };
   const result = data as { id?: string };
-  revalidatePath("/admin/purchase-orders"); revalidatePath("/admin/inventory");
+  revalidatePath("/admin/purchase-orders"); revalidatePath("/admin/inventory"); revalidatePath("/admin/suppliers");
   return { success: true, id: result?.id };
 }
 
