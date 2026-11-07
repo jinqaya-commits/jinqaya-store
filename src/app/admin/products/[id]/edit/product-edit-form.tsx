@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { updateProduct, updateVariant, removeVariant, reorderImages, removeImage, addProductImage } from "../../actions";
+import { updateProduct, updateVariant, removeVariant, reorderImages, removeImage, addProductImage, updateProductImageAlt } from "../../actions";
 
 type Category = {id:string;parent_id:string|null;name:string;slug:string;sort_order:number};
 type Product = { id:string; name:string; pet_type:"cat"|"dog"|"both"|"shared"; short_description:string|null; description:string|null; material:string|null; care_instructions:string|null; seo_title:string|null; seo_description:string|null; status:"draft"|"active"|"archived" };
@@ -20,6 +20,7 @@ export function ProductEditForm({product,categoryId,categories,variants: initial
  async function dropVariant(v:Variant,index:number){if(v.id){const ok=await run(()=>removeVariant(product.id,v.id!));if(!ok)return;}setVariants(current=>current.filter((_,i)=>i!==index));setBusy(false);}
  async function moveImage(i:number,delta:-1|1){const next=[...images];const j=i+delta;if(j<0||j>=next.length)return;[next[i],next[j]]=[next[j],next[i]];setImages(next);await run(()=>reorderImages(product.id,next.map(x=>x.id)));}
  async function dropImage(img:Image){const ok=await run(()=>removeImage(product.id,img.id,img.storage_path));if(ok)setImages(current=>current.filter(x=>x.id!==img.id));}
+ async function saveImageAlt(img:Image){const ok=await run(()=>updateProductImageAlt(product.id,img.id,img.alt_text??""));if(ok)router.refresh();}
  async function uploadImages(selected:File[]){
   if(!selected.length)return;
   for(const file of selected){
@@ -73,7 +74,7 @@ export function ProductEditForm({product,categoryId,categories,variants: initial
    <label>Upload product images<input type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple disabled={uploadBusy||busy} onChange={e=>{const selected=Array.from(e.currentTarget.files??[]);e.currentTarget.value="";void uploadImages(selected);}}/></label>
    <p className="admin-help">Select multiple images at once. Each image can be up to 20 MB.</p>
    {uploadBusy&&<p className="admin-help">Uploading image…</p>}
-   {images.length===0?<p className="admin-help">No images uploaded.</p>:images.map((img,i)=><div className="admin-form-grid" key={img.id}><div><strong>{i===0?"Main image":"Image "+(i+1)}</strong><p className="admin-help">{img.alt_text??img.storage_path}</p></div><div className="admin-form-actions"><button type="button" className="admin-secondary-button" disabled={busy||uploadBusy||i===0} onClick={()=>void moveImage(i,-1)}>Move up</button><button type="button" className="admin-secondary-button" disabled={busy||uploadBusy||i===images.length-1} onClick={()=>void moveImage(i,1)}>Move down</button><button type="button" className="admin-secondary-button" disabled={busy||uploadBusy} onClick={()=>void dropImage(img)}>Delete</button></div></div>)}
+   {images.length===0?<p className="admin-help">No images uploaded.</p>:images.map((img,i)=><div className="admin-form-grid" key={img.id}><div><strong>{i===0?"Main image":"Image "+(i+1)}</strong><label>Image description (Alt text)<input maxLength={180} value={img.alt_text??""} onChange={e=>setImages(current=>current.map(x=>x.id===img.id?{...x,alt_text:e.target.value}:x))} placeholder="Describe what is visible in this image"/></label><button type="button" className="admin-secondary-button" disabled={busy||uploadBusy} onClick={()=>void saveImageAlt(img)}>Save image description</button></div><div className="admin-form-actions"><button type="button" className="admin-secondary-button" disabled={busy||uploadBusy||i===0} onClick={()=>void moveImage(i,-1)}>Move up</button><button type="button" className="admin-secondary-button" disabled={busy||uploadBusy||i===images.length-1} onClick={()=>void moveImage(i,1)}>Move down</button><button type="button" className="admin-secondary-button" disabled={busy||uploadBusy} onClick={()=>void dropImage(img)}>Delete</button></div></div>)}
   </section>
   {error&&<p className="admin-error" role="alert">{error}</p>}
   <div className="admin-form-actions"><button type="button" className="admin-secondary-button" onClick={()=>router.push("/admin/products")}>Back to products</button></div>
