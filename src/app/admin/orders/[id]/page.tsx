@@ -20,7 +20,7 @@ export default async function AdminOrderDetail({params}:{params:Promise<{id:stri
   supabase.from("stock_reservations").select("id,variant_id,quantity,status,expires_at,committed_at,released_at,warehouses(name,code),product_variants(sku)").eq("order_id",id).order("created_at",{ascending:false}),
   supabase.from("payments").select("id,provider,status,amount,currency,payment_method_type,provider_payment_id,paid_at,created_at").eq("order_id",id).order("created_at",{ascending:false}),
   supabase.from("activity_logs").select("id,action,old_values,new_values,created_at").eq("entity_type","order").eq("entity_id",id).order("created_at",{ascending:false}).limit(100),
-  supabase.from("after_sales_cases").select("id,case_number,status,customer_description,resolution,refund_status,refund_amount,refund_reference,created_at,after_sales_case_events(id,description,created_at)").eq("order_id",id).order("created_at",{ascending:false})
+  supabase.from("after_sales_cases").select("id,case_number,status,customer_description,evidence_urls,resolution,refund_status,refund_amount,refund_reference,created_at,after_sales_case_events(id,description,created_at)").eq("order_id",id).order("created_at",{ascending:false})
  ]);
  const shipAddress=address(order.shipping_address_snapshot);const billingAddress=address(order.billing_address_snapshot);
  const currency=order.currency.trim()||"USD";
