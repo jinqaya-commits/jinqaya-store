@@ -39,11 +39,6 @@ BEGIN
     RETURN NEW;
   END IF;
 
-  IF OLD.subtotal IS NOT DISTINCT FROM NEW.subtotal
-     AND OLD.currency IS NOT DISTINCT FROM NEW.currency THEN
-    RETURN NEW;
-  END IF;
-
   SELECT pg_catalog.concat_ws(' ',
       NULLIF(pg_catalog.btrim(c.first_name), ''),
       NULLIF(pg_catalog.btrim(c.last_name), '')
