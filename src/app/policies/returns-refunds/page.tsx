@@ -4,6 +4,8 @@ import { CartLink } from "@/components/storefront/cart-link";
 import { CategoryNavigation } from "@/components/storefront/category-navigation";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/policies/returns-refunds" },
+
   title: "Returns & Refunds Policy",
   description: "Learn about JINQAYA's policy for items with confirmed quality issues.",
 };
