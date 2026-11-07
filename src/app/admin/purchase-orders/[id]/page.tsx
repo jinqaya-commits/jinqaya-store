@@ -8,7 +8,8 @@ export default async function PurchaseOrderDetailPage({params}:{params:Promise<{
  const {data:allowed,error:permissionError}=await supabase.rpc("can_manage_catalog");if(permissionError||allowed!==true)redirect("/");
  const [{data:order,error},{data:receipts},{data:payments}]=await Promise.all([
   supabase.from("purchase_orders").select("id,po_number,status,currency,order_date,expected_date,subtotal,shipping_cost,tax_amount,total_amount,supplier_reference,notes,created_at,submitted_at,supplier_name_snapshot,supplier_email_snapshot,supplier_phone_snapshot,suppliers(company_name,contact_name,email,phone),purchase_order_items(id,variant_id,quantity_ordered,quantity_received,unit_cost,line_total,product_variants(sku,products(name)))").eq("id",id).maybeSingle(),
-  supabase.from("goods_receipts").select("id,receipt_number,status,received_at,supplier_delivery_reference,notes,goods_receipt_items(quantity_received,quantity_damaged,purchase_order_item_id)").eq("purchase_order_id",id).order("created_at",{ascending:false})
+  supabase.from("goods_receipts").select("id,receipt_number,status,received_at,supplier_delivery_reference,notes,goods_receipt_items(quantity_received,quantity_damaged,purchase_order_item_id)").eq("purchase_order_id",id).order("created_at",{ascending:false}),
+  supabase.from("purchase_order_payments").select("id,amount,currency,payment_date,payment_method,reference_number,notes,created_at").eq("purchase_order_id",id).order("payment_date",{ascending:false}).order("created_at",{ascending:false})
  ]);
  if(error||!order)notFound();
  const items=Array.isArray(order.purchase_order_items)?order.purchase_order_items:[];
