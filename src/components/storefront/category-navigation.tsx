@@ -23,7 +23,7 @@ export async function CategoryNavigation() {
     <nav className="jq-nav jq-category-nav" aria-label="Main navigation">
       <ShopMenu roots={roots} />
       <Link href="/#collections">DISCOVER</Link>
-      <Link href="/#point-of-view">OUR STORY</Link>
+      <Link href="/about">OUR STORY</Link>
     </nav>
   );
 }
