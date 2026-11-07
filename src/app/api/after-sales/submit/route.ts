@@ -19,7 +19,6 @@ export async function POST(req:NextRequest){
   }
   const {data,error}=await supabase.rpc("submit_customer_after_sales_case",{p_order_id:orderId,p_token_hash:sha256(token),p_description:description,p_evidence_keys:evidence});
   if(error)throw error;
-  if(evidence.length){const {error:consumeError}=await supabase.rpc("consume_after_sales_upload_tickets",{p_order_id:orderId,p_token_hash:sha256(token),p_object_keys:evidence});if(consumeError)throw consumeError;}
   const response=NextResponse.json({ok:true,caseNumber:data.case_number});
   response.cookies.set(sessionCookieName,"",{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"strict",path:"/api/after-sales",maxAge:0});
   return response;
