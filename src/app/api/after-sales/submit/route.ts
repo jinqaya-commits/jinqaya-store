@@ -12,9 +12,14 @@ export async function POST(req:NextRequest){
   const supabase=await createClient();const {data:valid}=await supabase.rpc("check_after_sales_customer_session",{p_order_id:orderId,p_token_hash:sha256(token)});
   if(valid!==true)return NextResponse.json({error:"Your verification has expired."},{status:401});
   // Confirm every referenced object exists in the private R2 bucket and has an allowed MIME type/size.
-  await Promise.all(evidence.map((key:string)=>verifyEvidenceObject(key,orderId)));
+  const metadata=await Promise.all(evidence.map((key:string)=>verifyEvidenceObject(key,orderId)));
+  for(let i=0;i<evidence.length;i++){
+   const {data:ticket,error:ticketError}=await supabase.rpc("validate_after_sales_upload_ticket",{p_order_id:orderId,p_token_hash:sha256(token),p_object_key:evidence[i],p_content_type:metadata[i].contentType,p_actual_size:metadata[i].size});
+   if(ticketError||ticket!==true)return NextResponse.json({error:"One or more files were not authorized for this session. Please upload them again."},{status:400});
+  }
   const {data,error}=await supabase.rpc("submit_customer_after_sales_case",{p_order_id:orderId,p_token_hash:sha256(token),p_description:description,p_evidence_keys:evidence});
   if(error)throw error;
+  if(evidence.length){const {error:consumeError}=await supabase.rpc("consume_after_sales_upload_tickets",{p_order_id:orderId,p_token_hash:sha256(token),p_object_keys:evidence});if(consumeError)throw consumeError;}
   const response=NextResponse.json({ok:true,caseNumber:data.case_number});
   response.cookies.set(sessionCookieName,"",{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"strict",path:"/api/after-sales",maxAge:0});
   return response;
