@@ -21,7 +21,24 @@ export default async function PurchaseOrderDetailPage({params}:{params:Promise<{
  const paymentRows=payments||[];
  const paidTotal=paymentRows.reduce((sum,p)=>sum+Number(p.amount),0);
  const outstanding=Math.max(0,Number(order.total_amount)-paidTotal);
- const paymentAction=recordPurchaseOrderPaymentAction.bind(null,order.id);
+ const issueAction = async (formData: FormData): Promise<void> => {
+  "use server";
+  const result = await issuePurchaseOrderAction(formData);
+  if (result.error) throw new Error(result.error);
+  redirect("/admin/purchase-orders/" + id + "?updated=1");
+ };
+ const receiveAction = async (formData: FormData): Promise<void> => {
+  "use server";
+  const result = await receivePurchaseOrderItemAction(formData);
+  if (result.error) throw new Error(result.error);
+  redirect("/admin/purchase-orders/" + id + "?received=1");
+ };
+ const paymentAction = async (formData: FormData): Promise<void> => {
+  "use server";
+  const result = await recordPurchaseOrderPaymentAction(order.id, formData);
+  if (result.error) throw new Error(result.error);
+  redirect("/admin/purchase-orders/" + id + "?payment=recorded");
+ };
  const today=new Date().toISOString().slice(0,10);
  return <main className="admin-shell"><aside className="admin-sidebar"><Link href="/" className="admin-brand">JINQAYA<span>ADMIN</span></Link><nav><Link href="/admin">Dashboard</Link><Link href="/admin/products">Products</Link><Link href="/admin/orders">Orders</Link><Link className="active" href="/admin/purchase-orders">Purchase orders</Link><Link href="/admin/inventory">Inventory</Link><Link href="/admin/payables">Accounts payable</Link></nav><p className="admin-sidebar-note">COMMERCE MANAGEMENT</p></aside><section className="admin-main">
  <header className="admin-topbar"><div><p className="admin-kicker">JINQAYA / PROCUREMENT</p><h1>{order.po_number}</h1><p className="admin-help">Supplier: {supplierName}</p></div><Link className="admin-back-link" href="/admin/purchase-orders">← ALL PURCHASE ORDERS</Link></header>
@@ -30,10 +47,10 @@ export default async function PurchaseOrderDetailPage({params}:{params:Promise<{
  <p className="admin-help">{supplier?.contact_name||"No contact name"} · {supplierEmail||"No email"} · {supplierPhone||"No phone"}</p>
  <p className="admin-help">Supplier reference: {order.supplier_reference||"—"} · Expected delivery: {order.expected_date||"Not specified"}</p>
  {order.notes&&<p>{order.notes}</p>}
- {order.status==="draft"&&<form action={issuePurchaseOrderAction} className="purchase-form-actions"><input type="hidden" name="purchase_order_id" value={order.id}/><button className="admin-primary-button" type="submit">Submit purchase order</button><p className="admin-help">Submitting confirms the order was placed with the supplier. It does not add inventory.</p></form>}
+ {order.status==="draft"&&<form action={issueAction} className="purchase-form-actions"><input type="hidden" name="purchase_order_id" value={order.id}/><button className="admin-primary-button" type="submit">Submit purchase order</button><p className="admin-help">Submitting confirms the order was placed with the supplier. It does not add inventory.</p></form>}
  </section>
  <section className="admin-panel" style={{marginTop:24}}><div className="admin-panel-heading"><div><p className="admin-kicker">PURCHASE ORDER LINES</p><h2>Receiving</h2></div><span>RECORD ACTUAL QUANTITIES</span></div>
- <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>PRODUCT / SKU</th><th>ORDERED</th><th>RECEIVED</th><th>REMAINING</th><th>UNIT COST</th><th>RECEIVE STOCK</th></tr></thead><tbody>{items.map(item=>{const remaining=Number(item.quantity_ordered)-Number(item.quantity_received);const variant=Array.isArray(item.product_variants)?item.product_variants[0]:item.product_variants;const product=variant?(Array.isArray(variant.products)?variant.products[0]:variant.products):null;return <tr key={item.id}><td><strong>{product?.name||"Product"}</strong><small>{variant?.sku||"SKU"}</small></td><td>{item.quantity_ordered}</td><td>{item.quantity_received}</td><td>{remaining}</td><td>{amount(item.unit_cost,order.currency)}</td><td>{remaining>0&&["submitted","partially_received"].includes(order.status)?<form action={receivePurchaseOrderItemAction} className="purchase-receive-form"><input type="hidden" name="purchase_order_item_id" value={item.id}/><label>Received<input aria-label={"Received quantity for "+(variant?.sku||"SKU")} type="number" name="quantity" min="1" max={remaining} step="1" defaultValue={remaining} required/></label><label>Damaged<input aria-label={"Damaged quantity for "+(variant?.sku||"SKU")} type="number" name="damaged" min="0" max={remaining} step="1" defaultValue="0"/></label><input aria-label="Supplier delivery reference" type="text" name="supplier_delivery_reference" maxLength={160} placeholder="Delivery ref"/><input aria-label="Receiving note" type="text" name="notes" maxLength={500} placeholder="Receiving note"/><button className="admin-secondary-button" type="submit">Receive</button></form>:<span className="admin-help">{remaining===0?"Complete":"Submit PO first"}</span>}</td></tr>})}</tbody></table></div>
+ <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>PRODUCT / SKU</th><th>ORDERED</th><th>RECEIVED</th><th>REMAINING</th><th>UNIT COST</th><th>RECEIVE STOCK</th></tr></thead><tbody>{items.map(item=>{const remaining=Number(item.quantity_ordered)-Number(item.quantity_received);const variant=Array.isArray(item.product_variants)?item.product_variants[0]:item.product_variants;const product=variant?(Array.isArray(variant.products)?variant.products[0]:variant.products):null;return <tr key={item.id}><td><strong>{product?.name||"Product"}</strong><small>{variant?.sku||"SKU"}</small></td><td>{item.quantity_ordered}</td><td>{item.quantity_received}</td><td>{remaining}</td><td>{amount(item.unit_cost,order.currency)}</td><td>{remaining>0&&["submitted","partially_received"].includes(order.status)?<form action={receiveAction} className="purchase-receive-form"><input type="hidden" name="purchase_order_item_id" value={item.id}/><label>Received<input aria-label={"Received quantity for "+(variant?.sku||"SKU")} type="number" name="quantity" min="1" max={remaining} step="1" defaultValue={remaining} required/></label><label>Damaged<input aria-label={"Damaged quantity for "+(variant?.sku||"SKU")} type="number" name="damaged" min="0" max={remaining} step="1" defaultValue="0"/></label><input aria-label="Supplier delivery reference" type="text" name="supplier_delivery_reference" maxLength={160} placeholder="Delivery ref"/><input aria-label="Receiving note" type="text" name="notes" maxLength={500} placeholder="Receiving note"/><button className="admin-secondary-button" type="submit">Receive</button></form>:<span className="admin-help">{remaining===0?"Complete":"Submit PO first"}</span>}</td></tr>})}</tbody></table></div>
  <p className="admin-help" style={{marginTop:16}}>Received units increase physical stock. Damaged units are recorded separately and excluded from available stock. Each receipt creates a goods receipt and linked inventory movement. Excess quantities are rejected.</p>
  </section>
 
