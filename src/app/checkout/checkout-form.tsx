@@ -138,7 +138,7 @@ export function CheckoutForm() {
                 <button className="button button-dark checkout-submit" type="submit" disabled={busy || mixedCurrencies}>
                   {busy ? "SUBMITTING…" : "SUBMIT ORDER REQUEST"} <span>↗</span>
                 </button>
-                <p className="checkout-disclaimer">Submitting this request does not charge your payment method. We’ll confirm availability, shipping and the final total with you first.</p>
+                <p className="checkout-disclaimer">Submitting this request does not charge your payment method. We’ll confirm availability, shipping and the final total with you first. By submitting, you acknowledge our <Link href="/policies/terms">Terms of Service</Link> and <Link href="/policies/privacy">Privacy Policy</Link>.</p>
               </form>
 
               <aside className="checkout-summary">
