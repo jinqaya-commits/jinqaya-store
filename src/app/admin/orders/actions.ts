@@ -361,7 +361,7 @@ export async function inspectShipmentReturnAction(orderId: string, receiptId: st
     return { error: "Choose a valid inspection result and note." };
   }
   const { error } = await supabase.rpc("admin_inspect_shipment_return", {
-    p_receipt_id: receiptId, p_condition: condition, p_notes: notes.trim() || null,
+    p_receipt_id: receiptId, p_condition: condition, p_notes: notes.trim() || undefined,
   });
   if (error) return { error: error.message };
   revalidatePath("/admin/orders/" + orderId);
