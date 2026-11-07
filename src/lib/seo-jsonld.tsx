@@ -37,10 +37,6 @@ export function WebsiteJsonLd() {
 
 export function ProductJsonLd({ product }: { product: StoreProduct }) {
   const imageUrls = product.images.map((image) => image.detail_url).filter((url): url is string => Boolean(url));
-  const pricedVariants = product.variants.filter((variant) => variant.price !== null && Number.isFinite(variant.price));
-  const currencies = [...new Set(pricedVariants.map((variant) => variant.currency))];
-  const prices = pricedVariants.map((variant) => variant.price as number);
-  const currency = currencies.length === 1 ? currencies[0] : undefined;
   const data: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "Product",
@@ -53,17 +49,8 @@ export function ProductJsonLd({ product }: { product: StoreProduct }) {
     material: clean(product.material),
     category: product.pet_type,
   };
-  if (prices.length && currency) {
-    data.offers = {
-      "@type": "AggregateOffer",
-      priceCurrency: currency,
-      lowPrice: Math.min(...prices),
-      highPrice: Math.max(...prices),
-      offerCount: prices.length,
-      url: `${SITE_URL}/products/${product.slug}`,
-      seller: { "@id": `${SITE_URL}/#organization` },
-    };
-  }
+  // The current checkout submits an order request and does not collect payment.
+  // Do not publish Offer, price or stock claims as purchasable inventory yet.
   return jsonLd(data);
 }
 
