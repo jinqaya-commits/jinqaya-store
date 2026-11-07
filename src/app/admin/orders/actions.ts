@@ -240,3 +240,21 @@ export async function recordPurchaseOrderPaymentAction(purchaseOrderId: string, 
   revalidatePath("/admin");
   return { success: true };
 }
+
+export async function updateShipmentStatusAction(shipmentId: string, newStatus: string, note: string) {
+  const supabase = await requireOrderManager();
+  if (!/^[0-9a-f-]{36}$/i.test(shipmentId) ||
+      !["label_created", "shipped", "in_transit", "exception", "returned", "cancelled"].includes(newStatus) ||
+      note.length > 500) {
+    return { error: "Check the shipment status and note." };
+  }
+  const { error } = await supabase.rpc("admin_update_shipment_status", {
+    p_shipment_id: shipmentId,
+    p_new_status: newStatus,
+    p_note: note.trim() || null,
+  });
+  if (error) return { error: error.message };
+  revalidatePath("/admin/orders");
+  revalidatePath("/admin/orders/" + shipmentId);
+  return { success: true };
+}
