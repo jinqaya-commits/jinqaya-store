@@ -33,12 +33,13 @@ export default async function ProductPage({ params }: Props) {
   const product = await getStoreProductBySlug(slug);
   if (!product) notFound();
   const price = formatProductPrice(product.variants);
+  const breadcrumbs = [{ name: "Home", path: "/" }, { name: "Shop", path: "/shop" }, ...(product.primary_category ? [{ name: product.primary_category.name, path: `/collections/${product.primary_category.slug}` }] : []), { name: product.name, path: `/products/${product.slug}` }];
   const images = product.images.filter((image) => image.url);
 
   return (
     <main className="inner-page">
       <ProductJsonLd product={product} />
-      <BreadcrumbJsonLd items={[{ name: "Home", path: "/" }, { name: "Shop", path: "/shop" }, { name: product.name, path: `/products/${product.slug}` }]} />
+      <BreadcrumbJsonLd items={breadcrumbs} />
       <header className="inner-page-header">
         <Link className="wordmark" href="/">JINQAYA<span>®</span></Link>
         <CategoryNavigation /><CartLink />
@@ -60,6 +61,7 @@ export default async function ProductPage({ params }: Props) {
           {product.material && <p className="product-detail-meta"><strong>Material</strong> {product.material}</p>}
           {product.care_instructions && <p className="product-detail-meta"><strong>Care</strong> {product.care_instructions}</p>}
           <AddToCart product={product} />
+          {product.primary_category && <Link className="back-link" href={`/collections/${product.primary_category.slug}`}>← BACK TO {product.primary_category.name.toUpperCase()}</Link>}
           <Link className="back-link" href="/shop">← BACK TO SHOP</Link>
         </section>
       </div>
