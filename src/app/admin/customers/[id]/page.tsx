@@ -42,6 +42,13 @@ export default async function AdminCustomerDetailPage({ params }: { params: Prom
   ]);
   if (ordersError) throw new Error("Unable to load customer orders.");
   if (followUpsError) throw new Error("Unable to load customer follow-ups.");
+  const followUpStatuses = ["pending", "completed", "cancelled"] as const;
+  const normalizedFollowUps = (followUps ?? []).map((item) => {
+    if (!followUpStatuses.includes(item.status as (typeof followUpStatuses)[number])) {
+      throw new Error("A customer follow-up has an unsupported status.");
+    }
+    return { ...item, status: item.status as (typeof followUpStatuses)[number] };
+  });
 
   const paidOrders = (orders || []).filter(order => ["paid", "processing", "partially_shipped", "shipped", "delivered"].includes(order.status));
   const currencies = [...new Set(paidOrders.map(order => order.currency.trim() || "USD"))];
@@ -71,7 +78,7 @@ export default async function AdminCustomerDetailPage({ params }: { params: Prom
       </section>
       <section className="admin-panel">
         <div className="admin-panel-heading"><div><p className="admin-kicker">CUSTOMER RELATIONSHIP</p><h2>Follow-ups</h2></div><span>INTERNAL ONLY</span></div>
-        <CustomerFollowUps customerId={customer.id} initialFollowUps={followUps || []} />
+        <CustomerFollowUps customerId={customer.id} initialFollowUps={normalizedFollowUps} />
       </section>
       <section className="admin-panel">
         <div className="admin-panel-heading"><div><p className="admin-kicker">PURCHASE HISTORY</p><h2>Orders</h2></div><span>{orderCount ?? 0} TOTAL</span></div>
