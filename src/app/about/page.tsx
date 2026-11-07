@@ -4,6 +4,9 @@ import { CartLink } from "@/components/storefront/cart-link";
 import { CategoryNavigation } from "@/components/storefront/category-navigation";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/about" },
+  openGraph: { type: "website", url: "https://jinqaya.com/about", title: "About JINQAYA", description: "Discover the JINQAYA point of view on life shared with cats and dogs." },
+
   title: "About JINQAYA",
   description: "Discover JINQAYA, a pet lifestyle brand shaped around the everyday life people share with cats and dogs.",
 };
