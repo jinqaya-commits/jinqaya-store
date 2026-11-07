@@ -4,6 +4,8 @@ import { CartLink } from "@/components/storefront/cart-link";
 import { CategoryNavigation } from "@/components/storefront/category-navigation";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/policies/privacy" },
+
   title: "Privacy Policy",
   description: "Learn how JINQAYA handles personal information submitted through our website.",
 };
