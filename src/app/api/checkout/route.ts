@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendOrderRequestEmails } from "@/lib/order-email";
 
@@ -84,10 +84,16 @@ export async function POST(request: Request) {
       const subtotal = typeof data.subtotal === "number" || typeof data.subtotal === "string" ? data.subtotal : 0;
       const currency = typeof data.currency === "string" ? data.currency : "USD";
       if (orderNumber && customerEmail) {
-        void sendOrderRequestEmails({
-          orderNumber, customerName,
-          customerEmail, subtotal, currency,
-        }).catch((error) => console.error("Order request notification failed:", error));
+        after(async () => {
+          try {
+            await sendOrderRequestEmails({
+              orderNumber, customerName,
+              customerEmail, subtotal, currency,
+            });
+          } catch (error) {
+            console.error("Order request notification failed:", error);
+          }
+        });
       }
     }
     return NextResponse.json({ order: data }, { status: 201 });
