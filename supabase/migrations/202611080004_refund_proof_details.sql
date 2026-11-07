@@ -100,6 +100,7 @@ begin
    ' values(v_order_id,''after_sales_case'',p_case_id,p_refund_amount,v_order.currency,nullif(trim(coalesce(p_refund_reference,'''')),''''),p_refund_method,p_transaction_number,auth.uid());';
   if position(v_old in v_def)=0 then raise exception 'After-sales refund ledger insert was not found.'; end if;
   v_def:=replace(v_def,v_old,v_new);
+  v_def:=replace(v_def,'''order_status'',v_new_status','''order_status'',v_order.status');
   execute v_def;
  elsif to_regprocedure('public.admin_confirm_after_sales_refund(uuid,numeric,text,text,text)') is null then
   raise exception 'After-sales refund function is missing.';
