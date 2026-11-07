@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getStoreProducts } from "@/lib/products";
 import { ProductCard } from "@/components/storefront/product-card";
 import { CategoryNavigation } from "@/components/storefront/category-navigation";
+import { BreadcrumbJsonLd } from "@/lib/seo-jsonld";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -31,6 +32,7 @@ export default async function CollectionPage({ params }: Props) {
 
   return (
     <main className="inner-page">
+      <BreadcrumbJsonLd items={[{ name: "Home", path: "/" }, { name: "Collections", path: "/shop" }, { name: category.name, path: `/collections/${category.slug}` }]} />
       <header className="inner-page-header">
         <Link className="wordmark" href="/">JINQAYA<span>®</span></Link>
         <CategoryNavigation />
