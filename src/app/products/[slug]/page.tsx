@@ -23,7 +23,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: product.seo_title || product.name,
       description: product.seo_description || product.short_description || product.description || undefined,
       url: `https://jinqaya.com/products/${product.slug}`,
+      siteName: "JINQAYA",
       images: product.images.filter((image) => image.detail_url).slice(0, 4).map((image) => ({ url: image.detail_url as string, alt: image.alt_text || product.name })),
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: product.seo_title || product.name,
+      description: product.seo_description || product.short_description || product.description || undefined,
+      images: product.images.filter((image) => image.detail_url).slice(0, 1).map((image) => ({ url: image.detail_url as string, alt: image.alt_text || product.name })),
     },
   };
 }
