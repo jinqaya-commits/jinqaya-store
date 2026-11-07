@@ -20,7 +20,7 @@ export default async function AdminCustomersPage({ searchParams }: { searchParam
   const params = await searchParams;
   const search = cleanSearch(params.q || "");
   let query = supabase.from("customers")
-    .select("id,email,first_name,last_name,phone,accepts_marketing,created_at,orders(count)")
+    .select("id,email,first_name,last_name,phone,accepts_marketing,tags,created_at,orders(count)")
     .order("created_at", { ascending: false }).limit(200);
   if (search) query = query.or(`email.ilike.%${search}%,first_name.ilike.%${search}%,last_name.ilike.%${search}%,phone.ilike.%${search}%`);
   const [{ data: customers, error }, { count: total }, { count: optedIn }] = await Promise.all([
@@ -40,10 +40,10 @@ export default async function AdminCustomersPage({ searchParams }: { searchParam
           <label>Search customers<input type="search" name="q" defaultValue={search} placeholder="Name, email or phone" /></label>
           <button type="submit">Search</button><Link href="/admin/customers">Clear</Link>
         </form>
-        {error ? <p className="admin-error">Unable to load customers: {error.message}</p> : !customers?.length ? <div className="admin-empty"><span>✳</span><h3>No customers found.</h3><p>Customers are added when an order request is submitted.</p></div> : <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>CUSTOMER</th><th>CONTACT</th><th>ORDERS</th><th>MARKETING</th><th>ADDED</th><th></th></tr></thead><tbody>{customers.map(customer => {
+        {error ? <p className="admin-error">Unable to load customers: {error.message}</p> : !customers?.length ? <div className="admin-empty"><span>✳</span><h3>No customers found.</h3><p>Customers are added when an order request is submitted.</p></div> : <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>CUSTOMER</th><th>CONTACT</th><th>ORDERS</th><th>TAGS</th><th>MARKETING</th><th>ADDED</th><th></th></tr></thead><tbody>{customers.map(customer => {
           const name = [customer.first_name, customer.last_name].filter(Boolean).join(" ") || "Customer";
           const orderCount = Array.isArray(customer.orders) ? Number(customer.orders[0]?.count || 0) : 0;
-          return <tr key={customer.id}><td><strong>{name}</strong><small>{customer.email}</small></td><td>{customer.phone || "—"}</td><td><strong>{orderCount}</strong></td><td><span className={`admin-status ${customer.accepts_marketing ? "status-active" : "status-draft"}`}>{customer.accepts_marketing ? "Opted in" : "Not opted in"}</span></td><td>{formatDate(customer.created_at)}</td><td><Link className="admin-table-action" href={`/admin/customers/${customer.id}`}>View customer →</Link></td></tr>;
+          return <tr key={customer.id}><td><strong>{name}</strong><small>{customer.email}</small></td><td>{customer.phone || "—"}</td><td><strong>{orderCount}</strong></td><td>{customer.tags?.length ? customer.tags.map((tag: string) => <span className="admin-crm-tag" key={tag}>{tag}</span>) : "—"}</td><td><span className={`admin-status ${customer.accepts_marketing ? "status-active" : "status-draft"}`}>{customer.accepts_marketing ? "Opted in" : "Not opted in"}</span></td><td>{formatDate(customer.created_at)}</td><td><Link className="admin-table-action" href={`/admin/customers/${customer.id}`}>View customer →</Link></td></tr>;
         })}</tbody></table></div>}
       </section>
       <p className="admin-help" style={{ marginTop: 16 }}>Marketing consent is shown as recorded. Customers are not automatically subscribed to marketing emails.</p>
