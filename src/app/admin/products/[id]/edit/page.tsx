@@ -21,11 +21,16 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
     supabase.from("categories").select("id,parent_id,name,slug,sort_order").eq("is_active",true).order("sort_order"),
   ]);
   if (!product) notFound();
+  const validPetTypes = ["cat", "dog", "both", "shared"] as const;
+  if (!validPetTypes.includes(product.pet_type as (typeof validPetTypes)[number])) {
+    throw new Error("This product has an unsupported pet type.");
+  }
+  const productForForm = { ...product, pet_type: product.pet_type as (typeof validPetTypes)[number] };
   return <main className="admin-shell">
     <aside className="admin-sidebar"><Link href="/" className="admin-brand">JINQAYA<span>ADMIN</span></Link><nav><Link className="active" href="/admin/products">Products</Link><Link href="/shop">View storefront ↗</Link></nav><p className="admin-sidebar-note">CATALOG MANAGEMENT</p></aside>
     <section className="admin-main">
       <header className="admin-topbar"><div><p className="admin-kicker">JINQAYA / CATALOG / EDIT</p><h1>Edit product</h1></div><Link className="admin-back-link" href="/admin/products">← Back to products</Link></header>
-      <ProductEditForm product={product} categoryId={categoryLinks?.[0]?.category_id ?? ""} categories={categories ?? []} variants={(variants ?? []).map(v=>({id:v.id,sku:v.sku,variantName:v.variant_name ?? "",color:v.color ?? "",size:v.size ?? "",price:v.price == null ? "" : String(v.price),compareAtPrice:v.compare_at_price == null ? "" : String(v.compare_at_price)}))} images={images ?? []}/>
+      <ProductEditForm product={productForForm} categoryId={categoryLinks?.[0]?.category_id ?? ""} categories={categories ?? []} variants={(variants ?? []).map(v=>({id:v.id,sku:v.sku,variantName:v.variant_name ?? "",color:v.color ?? "",size:v.size ?? "",price:v.price == null ? "" : String(v.price),compareAtPrice:v.compare_at_price == null ? "" : String(v.compare_at_price)}))} images={images ?? []}/>
     </section>
   </main>;
 }
