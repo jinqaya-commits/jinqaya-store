@@ -40,7 +40,8 @@ export async function processOrderAction(
   if (error) return { error: error.message };
 
   // Notify the customer only after the database confirms the corresponding state transition.
-  const result = data && typeof data === "object" ? data as { status?: string } : {};
+  const result = data && typeof data === "object" && !Array.isArray(data) &&
+    typeof data.status === "string" ? { status: data.status } : {};
   const notificationEvents: Record<string, { event: "quote_confirmed" | "payment_received" | "shipped" | "delivered" | "cancelled"; expectedStatus: string }> = {
     confirm_quote: { event: "quote_confirmed", expectedStatus: "pending_payment" },
     confirm_payment: { event: "payment_received", expectedStatus: "paid" },
@@ -187,9 +188,11 @@ export async function createPurchaseOrderAction(formData: FormData) {
     purchaseOrderArgs as Database["public"]["Functions"]["admin_create_purchase_order_v3"]["Args"]
   );
   if (error) return { error: error.message };
-  const result = data as { id?: string };
+  if (!data || typeof data !== "object" || Array.isArray(data) || typeof data.id !== "string") {
+    return { error: "The database returned an unexpected purchase order result." };
+  }
   revalidatePath("/admin/purchase-orders"); revalidatePath("/admin/inventory"); revalidatePath("/admin/suppliers");
-  return { success: true, id: result?.id };
+  return { success: true, id: data.id };
 }
 
 export async function issuePurchaseOrderAction(formData: FormData) {
