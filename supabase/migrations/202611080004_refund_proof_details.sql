@@ -84,44 +84,48 @@ for each row execute function public.audit_order_refund_ledger();
 do $$
 declare v_def text; v_old text; v_new text;
 begin
- select pg_get_functiondef('public.admin_confirm_after_sales_refund(uuid,numeric,text)'::regprocedure) into v_def;
- v_old:='CREATE OR REPLACE FUNCTION public.admin_confirm_after_sales_refund(p_case_id uuid, p_refund_amount numeric, p_refund_reference text DEFAULT NULL::text)';
- v_new:='CREATE OR REPLACE FUNCTION public.admin_confirm_after_sales_refund(p_case_id uuid, p_refund_amount numeric, p_refund_reference text DEFAULT NULL::text, p_refund_method text DEFAULT NULL::text, p_transaction_number text DEFAULT NULL::text)';
- if position(v_old in v_def)=0 then raise exception 'After-sales refund function signature was not found.'; end if;
- v_def:=replace(v_def,v_old,v_new);
- v_def:=replace(v_def,
-  ' if p_case_id is null or p_refund_amount is null or p_refund_amount<=0',
-  ' if p_refund_method is null or p_refund_method not in (''bank_transfer'',''card'',''paypal'',''cash'',''other'') or length(trim(coalesce(p_transaction_number,'''')))<1 or length(p_transaction_number)>200 then raise exception ''Select the actual refund method and enter its transaction or receipt number.''; end if;'||chr(10)||
-  ' if p_case_id is null or p_refund_amount is null or p_refund_amount<=0');
- v_old:='insert into public.order_refunds(order_id,source_type,source_id,amount,currency,reference,recorded_by)'||chr(10)||
-  ' values(v_order_id,''after_sales_case'',p_case_id,p_refund_amount,v_order.currency,nullif(trim(coalesce(p_refund_reference,'''')),''''),auth.uid());';
- v_new:='insert into public.order_refunds(order_id,source_type,source_id,amount,currency,reference,refund_method,transaction_number,recorded_by)'||chr(10)||
-  ' values(v_order_id,''after_sales_case'',p_case_id,p_refund_amount,v_order.currency,nullif(trim(coalesce(p_refund_reference,'''')),''''),p_refund_method,p_transaction_number,auth.uid());';
- if position(v_old in v_def)=0 then raise exception 'After-sales refund ledger insert was not found.'; end if;
- v_def:=replace(v_def,v_old,v_new);
- execute v_def;
- revoke all on function public.admin_confirm_after_sales_refund(uuid,numeric,text) from public,anon,authenticated;
- grant execute on function public.admin_confirm_after_sales_refund(uuid,numeric,text,text,text) to authenticated;
+ if to_regprocedure('public.admin_confirm_after_sales_refund(uuid,numeric,text)') is not null then
+  select pg_get_functiondef('public.admin_confirm_after_sales_refund(uuid,numeric,text)'::regprocedure) into v_def;
+  v_old:='CREATE OR REPLACE FUNCTION public.admin_confirm_after_sales_refund(p_case_id uuid, p_refund_amount numeric, p_refund_reference text DEFAULT NULL::text)';
+  v_new:='CREATE OR REPLACE FUNCTION public.admin_confirm_after_sales_refund(p_case_id uuid, p_refund_amount numeric, p_refund_reference text DEFAULT NULL::text, p_refund_method text DEFAULT NULL::text, p_transaction_number text DEFAULT NULL::text)';
+  if position(v_old in v_def)=0 then raise exception 'After-sales refund function signature was not found.'; end if;
+  v_def:=replace(v_def,v_old,v_new);
+  v_def:=replace(v_def,
+   ' if p_case_id is null or p_refund_amount is null or p_refund_amount<=0',
+   ' if p_refund_method is null or p_refund_method not in (''bank_transfer'',''card'',''paypal'',''cash'',''other'') or length(trim(coalesce(p_transaction_number,'''')))<1 or length(p_transaction_number)>200 then raise exception ''Select the actual refund method and enter its transaction or receipt number.''; end if;'||chr(10)||
+   ' if p_case_id is null or p_refund_amount is null or p_refund_amount<=0');
+  v_old:='insert into public.order_refunds(order_id,source_type,source_id,amount,currency,reference,recorded_by)'||chr(10)||
+   ' values(v_order_id,''after_sales_case'',p_case_id,p_refund_amount,v_order.currency,nullif(trim(coalesce(p_refund_reference,'''')),''''),auth.uid());';
+  v_new:='insert into public.order_refunds(order_id,source_type,source_id,amount,currency,reference,refund_method,transaction_number,recorded_by)'||chr(10)||
+   ' values(v_order_id,''after_sales_case'',p_case_id,p_refund_amount,v_order.currency,nullif(trim(coalesce(p_refund_reference,'''')),''''),p_refund_method,p_transaction_number,auth.uid());';
+  if position(v_old in v_def)=0 then raise exception 'After-sales refund ledger insert was not found.'; end if;
+  v_def:=replace(v_def,v_old,v_new);
+  execute v_def;
+ elsif to_regprocedure('public.admin_confirm_after_sales_refund(uuid,numeric,text,text,text)') is null then
+  raise exception 'After-sales refund function is missing.';
+ end if;
 
- select pg_get_functiondef('public.admin_update_shipment_issue(uuid,text,text,text,numeric,text,boolean)'::regprocedure) into v_def;
- v_old:='CREATE OR REPLACE FUNCTION public.admin_update_shipment_issue(p_issue_id uuid, p_status text, p_resolution_action text, p_resolution_notes text, p_refund_amount numeric DEFAULT NULL::numeric, p_refund_reference text DEFAULT NULL::text, p_confirm_refund boolean DEFAULT false)';
- v_new:='CREATE OR REPLACE FUNCTION public.admin_update_shipment_issue(p_issue_id uuid, p_status text, p_resolution_action text, p_resolution_notes text, p_refund_amount numeric DEFAULT NULL::numeric, p_refund_reference text DEFAULT NULL::text, p_confirm_refund boolean DEFAULT false, p_refund_method text DEFAULT NULL::text, p_transaction_number text DEFAULT NULL::text)';
- if position(v_old in v_def)=0 then raise exception 'Shipment issue refund function signature was not found.'; end if;
- v_def:=replace(v_def,v_old,v_new);
- v_old:=' if p_confirm_refund then'||chr(10)||
-  '  if p_resolution_action is distinct from ''refund'' or p_refund_amount is null';
- v_new:=' if p_confirm_refund then'||chr(10)||
-  '  if p_refund_method is null or p_refund_method not in (''bank_transfer'',''card'',''paypal'',''cash'',''other'') or length(trim(coalesce(p_transaction_number,'''')))<1 or length(p_transaction_number)>200 then raise exception ''Select the actual refund method and enter its transaction or receipt number.''; end if;'||chr(10)||
-  '  if p_resolution_action is distinct from ''refund'' or p_refund_amount is null';
- if position(v_old in v_def)=0 then raise exception 'Shipment issue refund validation block was not found.'; end if;
- v_def:=replace(v_def,v_old,v_new);
- v_old:='  insert into public.order_refunds(order_id,source_type,source_id,amount,currency,reference,recorded_by) values(v_order_id,''shipment_issue'',p_issue_id,p_refund_amount,v_order.currency,nullif(trim(coalesce(p_refund_reference,'''')),''''),auth.uid());';
- v_new:='  insert into public.order_refunds(order_id,source_type,source_id,amount,currency,reference,refund_method,transaction_number,recorded_by) values(v_order_id,''shipment_issue'',p_issue_id,p_refund_amount,v_order.currency,nullif(trim(coalesce(p_refund_reference,'''')),''''),p_refund_method,p_transaction_number,auth.uid());';
- if position(v_old in v_def)=0 then raise exception 'Shipment issue refund ledger insert was not found.'; end if;
- v_def:=replace(v_def,v_old,v_new);
- execute v_def;
- revoke all on function public.admin_update_shipment_issue(uuid,text,text,text,numeric,text,boolean) from public,anon,authenticated;
- grant execute on function public.admin_update_shipment_issue(uuid,text,text,text,numeric,text,boolean,text,text) to authenticated;
+ if to_regprocedure('public.admin_update_shipment_issue(uuid,text,text,text,numeric,text,boolean)') is not null then
+  select pg_get_functiondef('public.admin_update_shipment_issue(uuid,text,text,text,numeric,text,boolean)'::regprocedure) into v_def;
+  v_old:='CREATE OR REPLACE FUNCTION public.admin_update_shipment_issue(p_issue_id uuid, p_status text, p_resolution_action text, p_resolution_notes text, p_refund_amount numeric DEFAULT NULL::numeric, p_refund_reference text DEFAULT NULL::text, p_confirm_refund boolean DEFAULT false)';
+  v_new:='CREATE OR REPLACE FUNCTION public.admin_update_shipment_issue(p_issue_id uuid, p_status text, p_resolution_action text, p_resolution_notes text, p_refund_amount numeric DEFAULT NULL::numeric, p_refund_reference text DEFAULT NULL::text, p_confirm_refund boolean DEFAULT false, p_refund_method text DEFAULT NULL::text, p_transaction_number text DEFAULT NULL::text)';
+  if position(v_old in v_def)=0 then raise exception 'Shipment issue refund function signature was not found.'; end if;
+  v_def:=replace(v_def,v_old,v_new);
+  v_old:=' if p_confirm_refund then'||chr(10)||
+   '  if p_resolution_action is distinct from ''refund'' or p_refund_amount is null';
+  v_new:=' if p_confirm_refund then'||chr(10)||
+   '  if p_refund_method is null or p_refund_method not in (''bank_transfer'',''card'',''paypal'',''cash'',''other'') or length(trim(coalesce(p_transaction_number,'''')))<1 or length(p_transaction_number)>200 then raise exception ''Select the actual refund method and enter its transaction or receipt number.''; end if;'||chr(10)||
+   '  if p_resolution_action is distinct from ''refund'' or p_refund_amount is null';
+  if position(v_old in v_def)=0 then raise exception 'Shipment issue refund validation block was not found.'; end if;
+  v_def:=replace(v_def,v_old,v_new);
+  v_old:='  insert into public.order_refunds(order_id,source_type,source_id,amount,currency,reference,recorded_by) values(v_order_id,''shipment_issue'',p_issue_id,p_refund_amount,v_order.currency,nullif(trim(coalesce(p_refund_reference,'''')),''''),auth.uid());';
+  v_new:='  insert into public.order_refunds(order_id,source_type,source_id,amount,currency,reference,refund_method,transaction_number,recorded_by) values(v_order_id,''shipment_issue'',p_issue_id,p_refund_amount,v_order.currency,nullif(trim(coalesce(p_refund_reference,'''')),''''),p_refund_method,p_transaction_number,auth.uid());';
+  if position(v_old in v_def)=0 then raise exception 'Shipment issue refund ledger insert was not found.'; end if;
+  v_def:=replace(v_def,v_old,v_new);
+  execute v_def;
+ elsif to_regprocedure('public.admin_update_shipment_issue(uuid,text,text,text,numeric,text,boolean,text,text)') is null then
+  raise exception 'Shipment issue refund function is missing.';
+ end if;
 end $$;
 
 drop function if exists public.admin_confirm_after_sales_refund(uuid,numeric,text);
