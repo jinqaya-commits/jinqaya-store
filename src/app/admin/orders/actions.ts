@@ -243,9 +243,9 @@ export async function recordPurchaseOrderPaymentAction(purchaseOrderId: string, 
 
 export async function updateShipmentStatusAction(shipmentId: string, orderId: string, newStatus: string, note: string) {
   const supabase = await requireOrderManager();
-  if (!/^[0-9a-f-]{36}$/i.test(shipmentId) ||
+  if (!/^[0-9a-f-]{36}$/i.test(shipmentId) || !/^[0-9a-f-]{36}$/i.test(orderId) ||
       !["label_created", "shipped", "in_transit", "exception", "returned", "cancelled"].includes(newStatus) ||
-      note.length > 500) {
+      typeof note !== "string" || note.length > 500) {
     return { error: "Check the shipment status and note." };
   }
   const { error } = await supabase.rpc("admin_update_shipment_status", {
