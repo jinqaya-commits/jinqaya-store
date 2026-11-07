@@ -258,3 +258,53 @@ export async function updateShipmentStatusAction(shipmentId: string, orderId: st
   revalidatePath("/admin/orders/" + orderId);
   return { success: true };
 }
+
+export async function createShipmentIssueAction(orderId: string, shipmentId: string, issueType: string, reason: string) {
+  const supabase = await requireOrderManager();
+  if (!/^[0-9a-f-]{36}$/i.test(orderId) || !/^[0-9a-f-]{36}$/i.test(shipmentId) ||
+      !["exception", "returned"].includes(issueType) || typeof reason !== "string" || reason.trim().length < 3 || reason.length > 3000) {
+    return { error: "Enter a valid issue type and reason." };
+  }
+  const { error } = await supabase.rpc("admin_create_shipment_issue", {
+    p_shipment_id: shipmentId, p_issue_type: issueType, p_reason: reason.trim(),
+  });
+  if (error) return { error: error.message };
+  revalidatePath("/admin/orders/" + orderId);
+  return { success: true };
+}
+
+export async function updateShipmentIssueAction(orderId: string, issueId: string, status: string, action: string | null, notes: string, amount: string, reference: string, confirmRefund: boolean) {
+  const supabase = await requireOrderManager();
+  if (!/^[0-9a-f-]{36}$/i.test(orderId) || !/^[0-9a-f-]{36}$/i.test(issueId) ||
+      !["open", "in_progress", "resolved"].includes(status) ||
+      (action !== null && !["awaiting_carrier", "reship", "refund", "other"].includes(action)) ||
+      typeof notes !== "string" || notes.length > 3000 || typeof reference !== "string" || reference.length > 200) {
+    return { error: "Check the issue status, resolution and notes." };
+  }
+  const parsedAmount = confirmRefund ? Number(amount) : null;
+  if (confirmRefund && (!Number.isFinite(parsedAmount) || parsedAmount! <= 0)) return { error: "Enter the actual refunded amount." };
+  const { error } = await supabase.rpc("admin_update_shipment_issue", {
+    p_issue_id: issueId, p_status: status, p_resolution_action: action,
+    p_resolution_notes: notes.trim() || null, p_refund_amount: parsedAmount,
+    p_refund_reference: reference.trim() || null, p_confirm_refund: confirmRefund,
+  });
+  if (error) return { error: error.message };
+  revalidatePath("/admin/orders/" + orderId);
+  return { success: true };
+}
+
+export async function createReplacementShipmentAction(orderId: string, issueId: string, carrier: string, tracking: string, url: string) {
+  const supabase = await requireOrderManager();
+  if (!/^[0-9a-f-]{36}$/i.test(orderId) || !/^[0-9a-f-]{36}$/i.test(issueId) ||
+      typeof carrier !== "string" || carrier.trim().length < 2 || carrier.length > 100 ||
+      typeof tracking !== "string" || tracking.trim().length < 3 || tracking.length > 150 ||
+      typeof url !== "string" || url.length > 2000 || (url && !/^https?:\/\//i.test(url))) {
+    return { error: "Enter a valid carrier, tracking number and tracking URL." };
+  }
+  const { error } = await supabase.rpc("admin_create_replacement_shipment", {
+    p_issue_id: issueId, p_carrier_name: carrier.trim(), p_tracking_number: tracking.trim(), p_tracking_url: url.trim() || null,
+  });
+  if (error) return { error: error.message };
+  revalidatePath("/admin/orders/" + orderId);
+  return { success: true };
+}
