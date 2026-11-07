@@ -283,7 +283,7 @@ export async function updateShipmentIssueAction(orderId: string, issueId: string
   }
   const parsedAmount = confirmRefund ? Number(amount) : null;
   if (confirmRefund && (!Number.isFinite(parsedAmount) || parsedAmount! <= 0)) return { error: "Enter the actual refunded amount." };
-  const { error } = await supabase.rpc("admin_update_shipment_issue", {
+  const { data, error } = await supabase.rpc("admin_update_shipment_issue", {
     p_issue_id: issueId, p_status: status, p_resolution_action: action,
     p_resolution_notes: notes.trim() || null, p_refund_amount: parsedAmount,
     p_refund_reference: reference.trim() || null, p_confirm_refund: confirmRefund,
@@ -357,4 +357,21 @@ export async function recordAfterSalesReturnAction(orderId: string, caseId: stri
   revalidatePath("/admin/orders/" + orderId);
   revalidatePath("/admin/inventory");
   return { success: true };
+}
+
+export async function confirmAfterSalesRefundAction(orderId: string, caseId: string, amount: string, reference: string) {
+  const supabase = await requireOrderManager();
+  if (!/^[0-9a-f-]{36}$/i.test(orderId) || !/^[0-9a-f-]{36}$/i.test(caseId) ||
+      typeof amount !== "string" || !/^\\d+(?:\\.\\d{1,2})?$/.test(amount) ||
+      !Number.isFinite(Number(amount)) || Number(amount) <= 0 ||
+      typeof reference !== "string" || reference.length > 200) {
+    return { error: "Enter a positive refund amount with up to two decimal places and a valid reference." };
+  }
+  const { data, error } = await supabase.rpc("admin_confirm_after_sales_refund", {
+    p_case_id: caseId, p_refund_amount: Number(amount), p_refund_reference: reference.trim() || null,
+  });
+  if (error) return { error: error.message };
+  revalidatePath("/admin/orders");
+  revalidatePath("/admin/orders/" + orderId);
+  return { success: true, data };
 }
