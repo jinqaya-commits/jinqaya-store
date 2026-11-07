@@ -1127,3 +1127,24 @@ a { color: inherit; text-decoration: none; }
 .admin-order-search>a[href*="orders?status"],.admin-order-search>a:not([href*="export"]){border-color:#d8d1c6;background:transparent;color:#655747}
 .admin-order-search>a[href*="/export"]{border-color:#a99a84;background:#eeeae3;color:#51463a}
 @media(max-width:700px){.admin-order-search{align-items:stretch}.admin-order-search label,.admin-order-search label:first-of-type{min-width:100%;flex:auto}.admin-order-search button,.admin-order-search>a{flex:1}}
+
+
+/* Customer CRM notes and tags */
+.admin-crm-editor{display:grid;gap:24px;padding:22px 0}
+.admin-crm-tags{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.admin-crm-tag{display:inline-flex;align-items:center;gap:9px;padding:7px 10px;background:#eeeae3;color:#51463a;font-size:11px}
+.admin-crm-tag button{border:0;background:transparent;color:#655747;font-size:16px;line-height:1;cursor:pointer}
+.admin-crm-tag-entry{display:flex;gap:8px;max-width:480px}
+.admin-crm-tag-entry input,.admin-crm-notes textarea{width:100%;border:1px solid #d8d1c6;border-radius:0;background:#fbfaf7;padding:11px 12px;color:#37362f;font:12px Arial,sans-serif}
+.admin-crm-tag-entry button,.admin-crm-footer button{border:1px solid #655747;background:#655747;color:white;padding:0 16px;font-size:9px;letter-spacing:1px;text-transform:uppercase;cursor:pointer}
+.admin-crm-suggestions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.admin-crm-suggestions button{border:1px solid #d8d1c6;background:transparent;padding:7px 9px;color:#655747;font-size:10px;cursor:pointer}
+.admin-crm-suggestions button:disabled{opacity:.4;cursor:default}
+.admin-crm-notes{display:grid;gap:9px;max-width:760px}
+.admin-crm-notes textarea{resize:vertical;min-height:110px;line-height:1.6}
+.admin-crm-notes small{color:#81786b;font-size:10px}
+.admin-crm-footer{display:flex;flex-wrap:wrap;align-items:center;gap:14px}
+.admin-crm-footer button{min-height:42px}
+.admin-crm-footer button:disabled{opacity:.55;cursor:wait}
+.admin-crm-footer span{font-size:11px;color:#655747}
+@media(max-width:600px){.admin-crm-tag-entry{max-width:none}.admin-crm-tag-entry input{min-width:0}.admin-crm-tag-entry button{min-height:42px}}
