@@ -12,7 +12,8 @@ type Image = { id:string; storage_path:string; alt_text:string|null; sort_order:
 export function ProductEditForm({product,categoryId,categories,variants: initialVariants,images: initialImages}:{product:Product;categoryId:string;categories:Category[];variants:Variant[];images:Image[]}) {
  const [fields,setFields]=useState({name:product.name,categoryId,petType:product.pet_type,shortDescription:product.short_description??"",description:product.description??"",material:product.material??"",careInstructions:product.care_instructions??"",seoTitle:product.seo_title??"",seoDescription:product.seo_description??"",status:product.status});
  const [variants,setVariants]=useState(initialVariants);
- const [images,setImages]=useState([...initialImages].sort((a,b)=>a.sort_order-b.sort_order));\n const [draggedImageId,setDraggedImageId]=useState<string|null>(null);
+ const [images,setImages]=useState([...initialImages].sort((a,b)=>a.sort_order-b.sort_order));
+ const [draggedImageId,setDraggedImageId]=useState<string|null>(null);
  const [error,setError]=useState(""); const [busy,setBusy]=useState(false); const [uploadBusy,setUploadBusy]=useState(false); const router=useRouter();
  async function run(action:()=>Promise<{error?:string;success?:boolean}>) {setBusy(true);setError("");try{const result=await action();if(result.error){setError(result.error);setBusy(false);return false;}setBusy(false);router.refresh();return true;}catch(e){setError(e instanceof Error?e.message:"Unable to save.");setBusy(false);return false;}}
  async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();await run(()=>updateProduct(product.id,fields));}
