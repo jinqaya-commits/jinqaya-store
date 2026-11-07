@@ -1,0 +1,54 @@
+create or replace function public.admin_record_after_sales_return(
+ p_case_id uuid,p_order_item_id uuid,p_quantity integer,p_warehouse_id uuid,p_notes text default null
+) returns uuid language plpgsql security definer set search_path=''
+as $function$
+declare v_case public.after_sales_cases%rowtype; v_item public.order_items%rowtype; v_already integer; v_wh public.warehouses%rowtype; v_receipt_id uuid;
+begin
+ if not public.can_manage_catalog() then raise exception 'You do not have permission to record returned goods.'; end if;
+ if p_case_id is null or p_order_item_id is null or p_quantity is null or p_quantity<1 or p_quantity>100000 or p_warehouse_id is null or length(coalesce(p_notes,''))>1000 then raise exception 'Enter valid return receipt details.'; end if;
+ select * into v_case from public.after_sales_cases where id=p_case_id for update;
+ if not found then raise exception 'After-sales case not found.'; end if;
+ if v_case.status not in ('approved','under_review') then raise exception 'Only approved or under-review after-sales cases can receive returned goods.'; end if;
+ select * into v_item from public.order_items where id=p_order_item_id and order_id=v_case.order_id for update;
+ if not found then raise exception 'Order item does not belong to this case order.'; end if;
+ select coalesce(sum(quantity_received),0)::integer into v_already from public.shipment_return_receipts where order_item_id=p_order_item_id;
+ if v_already+p_quantity>v_item.quantity then raise exception 'Returned quantity exceeds the ordered quantity. Ordered: %, already recorded: %, new: %.',v_item.quantity,v_already,p_quantity; end if;
+ select * into v_wh from public.warehouses where id=p_warehouse_id and is_active=true;
+ if not found then raise exception 'Select an active warehouse.'; end if;
+ insert into public.shipment_return_receipts(issue_id,after_sales_case_id,order_item_id,warehouse_id,quantity_received,condition,notes,created_by)
+ values(null,p_case_id,p_order_item_id,v_wh.id,p_quantity,'pending_inspection',nullif(trim(p_notes),''),auth.uid()) returning id into v_receipt_id;
+ insert into public.activity_logs(actor_user_id,action,entity_type,entity_id,new_values)
+ values(auth.uid(),'after_sales_return.received','after_sales_case',p_case_id,jsonb_build_object('receipt_id',v_receipt_id,'order_item_id',p_order_item_id,'quantity',p_quantity,'condition','pending_inspection','warehouse_id',v_wh.id));
+ return v_receipt_id;
+end;
+$function$;
+revoke all on function public.admin_record_after_sales_return(uuid,uuid,integer,uuid,text) from public,anon;
+grant execute on function public.admin_record_after_sales_return(uuid,uuid,integer,uuid,text) to authenticated;
+
+create or replace function public.admin_record_shipment_return(
+ p_issue_id uuid,p_order_item_id uuid,p_quantity integer,p_warehouse_id uuid,p_condition text,p_notes text default null
+) returns uuid language plpgsql security definer set search_path=''
+as $function$
+declare v_issue public.shipment_issue_cases%rowtype; v_shipment_item_qty integer; v_already_received integer; v_item public.order_items%rowtype; v_wh public.warehouses%rowtype; v_receipt_id uuid;
+begin
+ if not public.can_manage_catalog() then raise exception 'You do not have permission to record returned goods.'; end if;
+ if p_issue_id is null or p_order_item_id is null or p_quantity is null or p_quantity<1 or p_quantity>100000 or p_warehouse_id is null or p_condition is null or p_condition<>'pending_inspection' or length(coalesce(p_notes,''))>1000 then raise exception 'New return receipts must be recorded as pending inspection.'; end if;
+ select * into v_issue from public.shipment_issue_cases where id=p_issue_id for update;
+ if not found then raise exception 'Shipment issue not found.'; end if;
+ select * into v_item from public.order_items where id=p_order_item_id and order_id=v_issue.order_id for update;
+ if not found then raise exception 'Order item does not belong to this order.'; end if;
+ select coalesce(sum(quantity),0)::integer into v_shipment_item_qty from public.shipment_items where shipment_id=v_issue.shipment_id and order_item_id=p_order_item_id;
+ if v_shipment_item_qty<1 then raise exception 'This item was not included in the original shipment.'; end if;
+ select coalesce(sum(quantity_received),0)::integer into v_already_received from public.shipment_return_receipts where order_item_id=p_order_item_id;
+ if v_already_received+p_quantity>least(v_shipment_item_qty,v_item.quantity) then raise exception 'Returned quantity exceeds the remaining eligible quantity. Shipped: %, ordered: %, already recorded: %, new: %.',v_shipment_item_qty,v_item.quantity,v_already_received,p_quantity; end if;
+ select * into v_wh from public.warehouses where id=p_warehouse_id and is_active=true;
+ if not found then raise exception 'Select an active warehouse.'; end if;
+ insert into public.shipment_return_receipts(issue_id,after_sales_case_id,order_item_id,warehouse_id,quantity_received,condition,notes,created_by)
+ values(p_issue_id,null,p_order_item_id,v_wh.id,p_quantity,'pending_inspection',nullif(trim(p_notes),''),auth.uid()) returning id into v_receipt_id;
+ insert into public.activity_logs(actor_user_id,action,entity_type,entity_id,new_values)
+ values(auth.uid(),'shipment_return.received','shipment_issue',p_issue_id,jsonb_build_object('receipt_id',v_receipt_id,'order_item_id',p_order_item_id,'quantity',p_quantity,'condition','pending_inspection','warehouse_id',v_wh.id));
+ return v_receipt_id;
+end;
+$function$;
+revoke all on function public.admin_record_shipment_return(uuid,uuid,integer,uuid,text,text) from public,anon;
+grant execute on function public.admin_record_shipment_return(uuid,uuid,integer,uuid,text,text) to authenticated;
