@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { LoginForm } from "./login-form";
 
-export const metadata = { title: "Admin sign in" };
+export const metadata = { title: "Admin sign in", robots: { index: false, follow: false, googleBot: { index: false, follow: false } } };
 
 export default function LoginPage() {
   return <main className="admin-login-page">
