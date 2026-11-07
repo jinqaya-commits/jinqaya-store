@@ -2,7 +2,7 @@ type MailMessage = { to: string; subject: string; html: string; text: string };
 
 const FROM = process.env.ORDER_EMAIL_FROM;
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const STAFF_EMAIL = process.env.ORDER_NOTIFICATION_EMAIL || "info@jinqaya.com";
+const STAFF_EMAIL = process.env.ORDER_NOTIFICATION_EMAIL || "jinqaya@gmail.com";
 
 function escapeHtml(value: unknown): string {
   return String(value ?? "").replace(/[&<>"']/g, (char) => ({
