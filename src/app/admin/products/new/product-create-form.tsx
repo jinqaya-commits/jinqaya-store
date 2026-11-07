@@ -113,7 +113,7 @@ export function ProductCreateForm({ categories }: { categories: Category[] }) {
       {files.length > 0 && <div className="admin-selected-images"><p className="admin-help">{files.length} image(s) ready. The first image will be the main product image.</p>{files.map((file, index) => <div className="admin-selected-image" key={file.name + "-" + file.size + "-" + file.lastModified}><span>{String(index + 1).padStart(2, "0")}. {file.name}</span><button type="button" disabled={busy} onClick={() => setFiles((current) => current.filter((_, i) => i !== index))}>Remove</button></div>)}</div>}
     </section>
     <section className="admin-form-section"><div className="admin-form-heading"><span>04</span><div><h2>Publishing</h2><p>Keep the product as a draft until its information is ready.</p></div></div>
-      <label>Product status<select value={values.status} onChange={(e) => update("status", e.target.value as "draft" | "active")}><option value="draft">Draft — not visible in the shop</option><option value="active">Active — visible in the shop</option></select></label>
+      <p className="admin-help">New products are saved as drafts. Complete the product checklist, add specific image descriptions and a priced SKU, then publish from the product list.</p>
     </section>
     {error && <p className="admin-error" role="alert">{error}</p>}
     <div className="admin-form-actions"><button type="button" className="admin-secondary-button" disabled={busy} onClick={() => router.push("/admin/products")}>Cancel</button><button type="submit" className="admin-primary-button" disabled={busy || categories.length === 0}>{busy ? "Saving product…" : createdProductId ? "Retry remaining image uploads" : "Save product"}</button></div>
