@@ -36,6 +36,8 @@ export type CreateProductInput = {
   description: string;
   material: string;
   careInstructions: string;
+  seoTitle: string;
+  seoDescription: string;
   sku: string;
   variantName: string;
   color: string;
@@ -66,6 +68,8 @@ export async function createProduct(input: CreateProductInput) {
       description: input.description.trim() || null,
       material: input.material.trim() || null,
       care_instructions: input.careInstructions.trim() || null,
+      seo_title: input.seoTitle.trim() || null,
+      seo_description: input.seoDescription.trim() || null,
       status: input.status,
       brand_name: "JINQAYA",
       published_at: input.status === "active" ? new Date().toISOString() : null,
@@ -292,4 +296,22 @@ export async function addProductImage(productId: string, storagePath: string, al
   revalidatePath("/shop");
   revalidatePath("/products");
   return { success: true, imageId: insertedImage.id };
+}
+
+
+export async function updateProductImageAlt(productId: string, imageId: string, altText: string) {
+  const supabase = await requireCatalogManager();
+  const cleanAlt = altText.trim();
+  if (!cleanAlt) return { error: "Image alt text cannot be empty." };
+  if (cleanAlt.length > 180) return { error: "Image alt text must be 180 characters or fewer." };
+  const { error } = await supabase.from("product_images")
+    .update({ alt_text: cleanAlt })
+    .eq("id", imageId)
+    .eq("product_id", productId);
+  if (error) return { error: error.message };
+  const { data: product } = await supabase.from("products").select("slug").eq("id", productId).maybeSingle();
+  revalidatePath("/admin/products");
+  if (product?.slug) revalidatePath(`/products/${product.slug}`);
+  revalidatePath("/shop");
+  return { success: true };
 }
