@@ -11,7 +11,6 @@ export const metadata: Metadata = {
   description:
     "Discover JINQAYA, a considered pet lifestyle collection for cats and dogs. Explore everyday essentials designed to belong in the life you share.",
   applicationName: "JINQAYA",
-  alternates: { canonical: "/" },
   openGraph: {
     type: "website",
     siteName: "JINQAYA",
