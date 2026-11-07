@@ -8,6 +8,19 @@ type SearchParams = Promise<{ q?: string; status?: string }>;
 
 export default async function AdminSuppliersPage({ searchParams }: { searchParams: SearchParams }) {
   const params = await searchParams;
+  async function saveSupplierFormAction(formData: FormData): Promise<void> {
+    "use server";
+    const result = await saveSupplierAction(formData);
+    if (result.error) throw new Error(result.error);
+    redirect("/admin/suppliers?saved=1");
+  }
+  async function setSupplierActiveFormAction(formData: FormData): Promise<void> {
+    "use server";
+    const result = await setSupplierActiveAction(formData);
+    if (result.error) throw new Error(result.error);
+    redirect("/admin/suppliers?updated=1");
+  }
+
   const supabase = await createClient();
   const { data: claims } = await supabase.auth.getClaims();
   if (!claims?.claims?.sub) redirect("/login");
@@ -29,7 +42,7 @@ export default async function AdminSuppliersPage({ searchParams }: { searchParam
       <header className="admin-topbar"><div><p className="admin-kicker">JINQAYA / PROCUREMENT</p><h1>Suppliers</h1><p className="admin-help">Manage supplier contacts and purchasing terms. Inactive suppliers remain on historical purchase orders.</p></div><Link className="admin-back-link" href="/admin/purchase-orders">← PURCHASE ORDERS</Link></header>
       <div className="admin-summary"><div><span>SHOWING SUPPLIERS</span><strong>{suppliers?.length ?? 0}</strong></div><div><span>VIEW</span><strong>{params.status === "inactive" ? "INACTIVE" : params.status === "all" ? "ALL" : "ACTIVE"}</strong></div></div>
       <section className="admin-panel supplier-panel"><div className="admin-panel-heading"><div><p className="admin-kicker">SUPPLIER DIRECTORY</p><h2>Add a supplier</h2></div><span>OPTIONAL DETAILS</span></div>
-        <form action={saveSupplierAction} className="supplier-form">
+        <form action={saveSupplierFormAction} className="supplier-form">
           <input type="hidden" name="id" value="" />
           <label>Company / supplier name *<input name="company_name" required minLength={2} maxLength={160} /></label>
           <label>Contact person<input name="contact_name" maxLength={160} /></label>
@@ -67,7 +80,7 @@ export default async function AdminSuppliersPage({ searchParams }: { searchParam
             <label className="supplier-wide">Internal notes<textarea name="notes" rows={3} maxLength={3000} defaultValue={s.notes||""} /></label>
             <div className="supplier-form-actions"><button type="submit">Save changes</button><span className="admin-help">Updated {new Date(s.updated_at).toLocaleDateString("en-US",{dateStyle:"medium"})}</span></div>
           </form>
-          <form action={setSupplierActiveAction} className="supplier-status-form"><input type="hidden" name="id" value={s.id}/><input type="hidden" name="active" value={s.is_active?"false":"true"}/><button type="submit" className="supplier-secondary-button">{s.is_active?"Deactivate supplier":"Reactivate supplier"}</button><small>{s.is_active?"New purchase orders can select this supplier.":"This supplier is hidden from new purchase order selection. Historical orders are unchanged."}</small></form>
+          <form action={setSupplierActiveFormAction} className="supplier-status-form"><input type="hidden" name="id" value={s.id}/><input type="hidden" name="active" value={s.is_active?"false":"true"}/><button type="submit" className="supplier-secondary-button">{s.is_active?"Deactivate supplier":"Reactivate supplier"}</button><small>{s.is_active?"New purchase orders can select this supplier.":"This supplier is hidden from new purchase order selection. Historical orders are unchanged."}</small></form>
         </details>)}</div>}
       </section>
     </section>
