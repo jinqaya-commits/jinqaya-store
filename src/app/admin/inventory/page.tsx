@@ -90,7 +90,7 @@ export default async function AdminInventoryPage() {
             <h1>Inventory</h1>
             <p className="admin-help">{warehouse ? warehouse.name + " · " + warehouse.code : "No default warehouse configured"}</p>
           </div>
-          <Link className="admin-back-link" href="/admin/orders">← ORDERS</Link>
+          <div className="admin-topbar-actions"><Link className="admin-back-link" href="/admin/inventory/replenishment-export">EXPORT REPLENISHMENT CSV ↓</Link><Link className="admin-back-link" href="/admin/orders">← ORDERS</Link></div>
         </header>
 
         <div className="admin-summary inventory-summary">
