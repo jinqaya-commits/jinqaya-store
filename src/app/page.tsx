@@ -165,17 +165,20 @@ export default async function HomePage() {
           <article>
             <span>01</span>
             <h3>DELIVERY DETAILS</h3>
-            <p>Review available delivery methods, destinations and estimated timing during checkout.</p>
+            <p>JINQAYA orders are dispatched directly from our factory in China. Review available destinations, delivery methods and estimates before checkout.</p>
+            <Link className="jq-policy-link" href="/policies/shipping">READ SHIPPING POLICY ↗</Link>
           </article>
           <article>
             <span>02</span>
             <h3>RETURNS &amp; QUESTIONS</h3>
-            <p>Please review the store’s return information and product details before making a purchase.</p>
+            <p>Returns are accepted for confirmed quality issues, subject to applicable consumer rights.</p>
+            <Link className="jq-policy-link" href="/policies/returns-refunds">READ RETURNS POLICY ↗</Link>
           </article>
           <article>
             <span>03</span>
             <h3>HERE TO HELP</h3>
-            <p>Need more information about an item? Check its product page for details before ordering.</p>
+            <p>For product-specific information, review the details and dimensions on each product page before ordering.</p>
+            <Link className="jq-policy-link" href="/shop">BROWSE THE SHOP ↗</Link>
           </article>
         </div>
       </section>
@@ -183,7 +186,7 @@ export default async function HomePage() {
       <footer className="jq-footer">
         <div className="jq-footer-main">
           <div><Link className="jq-wordmark" href="/">JINQAYA<span>®</span></Link><p>Life is better in good company.</p></div>
-          <div className="jq-footer-links"><Link href="/shop">THE SHOP</Link><Link href="#collections">COLLECTIONS</Link><Link href="#point-of-view">OUR POINT OF VIEW</Link></div>
+          <div className="jq-footer-links"><Link href="/shop">THE SHOP</Link><Link href="#collections">COLLECTIONS</Link><Link href="#point-of-view">OUR POINT OF VIEW</Link><Link href="/policies/shipping">SHIPPING POLICY</Link><Link href="/policies/returns-refunds">RETURNS &amp; REFUNDS</Link></div>
           <span className="jq-footer-note">FOR CATS, DOGS<br />AND THE LIFE BETWEEN.</span>
         </div>
         <div className="jq-footer-bottom"><span>© {new Date().getFullYear()} JINQAYA. ALL RIGHTS RESERVED.</span><span>DESIGNED FOR LIFE, SHARED.</span></div>
