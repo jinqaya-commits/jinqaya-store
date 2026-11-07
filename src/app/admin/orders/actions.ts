@@ -298,7 +298,8 @@ export async function createReplacementShipmentAction(orderId: string, issueId: 
   if (!/^[0-9a-f-]{36}$/i.test(orderId) || !/^[0-9a-f-]{36}$/i.test(issueId) ||
       typeof carrier !== "string" || carrier.trim().length < 2 || carrier.length > 100 ||
       typeof tracking !== "string" || tracking.trim().length < 3 || tracking.length > 150 ||
-      typeof url !== "string" || url.length > 2000 || (url && !/^https?:\/\//i.test(url))) {
+      typeof url !== "string" || url.length > 2000 || (url && !/^https?:\/\//i.test(url)) ||
+      !["returned_item", "new_inventory"].includes(stockSource)) {
     return { error: "Enter a valid carrier, tracking number and tracking URL." };
   }
   const { error } = await supabase.rpc("admin_create_replacement_shipment", {
