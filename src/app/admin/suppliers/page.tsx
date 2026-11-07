@@ -64,7 +64,7 @@ export default async function AdminSuppliersPage({ searchParams }: { searchParam
         {error ? <p className="admin-error">{error.message}</p> : !suppliers?.length ? <p className="admin-help">No suppliers found in this view. You can add one above or save one while creating a purchase order.</p> :
         <div className="supplier-list">{suppliers.map(s=><details className="supplier-record" key={s.id}>
           <summary><span><strong>{s.company_name}</strong><small>{[s.contact_name,s.email,s.phone].filter(Boolean).join(" · ") || "No contact details"}</small></span><span className={"admin-status "+(s.is_active?"status-active":"status-draft")}>{s.is_active?"ACTIVE":"INACTIVE"}</span></summary>
-          <form action={saveSupplierAction} className="supplier-form supplier-edit-form">
+          <form action={saveSupplierFormAction} className="supplier-form supplier-edit-form">
             <input type="hidden" name="id" value={s.id} />
             <label>Company / supplier name *<input name="company_name" required minLength={2} maxLength={160} defaultValue={s.company_name} /></label>
             <label>Contact person<input name="contact_name" maxLength={160} defaultValue={s.contact_name||""} /></label>
