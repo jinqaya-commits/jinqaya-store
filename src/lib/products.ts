@@ -45,6 +45,7 @@ export type StoreProduct = {
   seo_description: string | null;
   variants: StoreProductVariant[];
   images: StoreProductImage[];
+  primary_category?: { name: string; slug: string } | null;
 };
 
 type ProductRow = Omit<StoreProduct, "variants" | "images">;
@@ -191,7 +192,14 @@ export async function getStoreProductBySlug(slug: string): Promise<StoreProduct 
 
   if (error || !data) return null;
   const products = await attachProductData([data as ProductRow]);
-  return products[0] ?? null;
+  const { data: categoryLink } = await supabase
+    .from("product_categories")
+    .select("categories(name,slug)")
+    .eq("product_id", data.id)
+    .eq("is_primary", true)
+    .maybeSingle();
+  const linked = categoryLink?.categories as unknown as { name: string; slug: string } | null;
+  return products[0] ? { ...products[0], primary_category: linked ?? null } : null;
 }
 
 export function formatProductPrice(variants: StoreProductVariant[]): string | null {
