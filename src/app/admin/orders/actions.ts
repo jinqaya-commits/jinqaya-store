@@ -241,7 +241,7 @@ export async function recordPurchaseOrderPaymentAction(purchaseOrderId: string, 
   return { success: true };
 }
 
-export async function updateShipmentStatusAction(shipmentId: string, newStatus: string, note: string) {
+export async function updateShipmentStatusAction(shipmentId: string, orderId: string, newStatus: string, note: string) {
   const supabase = await requireOrderManager();
   if (!/^[0-9a-f-]{36}$/i.test(shipmentId) ||
       !["label_created", "shipped", "in_transit", "exception", "returned", "cancelled"].includes(newStatus) ||
@@ -255,6 +255,6 @@ export async function updateShipmentStatusAction(shipmentId: string, newStatus: 
   });
   if (error) return { error: error.message };
   revalidatePath("/admin/orders");
-  revalidatePath("/admin/orders/" + shipmentId);
+  revalidatePath("/admin/orders/" + orderId);
   return { success: true };
 }
