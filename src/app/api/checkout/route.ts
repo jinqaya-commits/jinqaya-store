@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { sendOrderRequestEmails } from "@/lib/order-email";
 
 export const runtime = "nodejs";
 
@@ -90,6 +91,22 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "We couldn't submit your order request. Please try again." }, { status: 500 });
     }
 
+    // Email delivery is best-effort and must not undo a successfully recorded order request.
+    if (data && typeof data === "object") {
+      const order = data as {
+        order_number?: string; customer_email?: string; customer_name?: string;
+        subtotal?: number | string; currency?: string;
+      };
+      if (order.order_number && order.customer_email) {
+        void sendOrderRequestEmails({
+          orderNumber: order.order_number,
+          customerName: order.customer_name || String(body.customer.first_name || ""),
+          customerEmail: order.customer_email,
+          subtotal: order.subtotal ?? 0,
+          currency: order.currency || "USD",
+        }).catch((error) => console.error("Order request notification failed:", error));
+      }
+    }
     return NextResponse.json({ order: data }, { status: 201 });
   } catch {
     return NextResponse.json({ error: "Checkout is temporarily unavailable. Please try again shortly." }, { status: 503 });
