@@ -1,6 +1,6 @@
 import { after, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sendOrderRequestEmails } from "@/lib/order-email";
+import { processOrderEmailOutbox } from "@/lib/order-email-outbox";
 
 export const runtime = "nodejs";
 
@@ -78,20 +78,13 @@ export async function POST(request: Request) {
     }
 
     if (data && typeof data === "object" && !Array.isArray(data)) {
-      const orderNumber = typeof data.order_number === "string" ? data.order_number : "";
-      const customerEmail = typeof data.customer_email === "string" ? data.customer_email : "";
-      const customerName = typeof data.customer_name === "string" ? data.customer_name : String(body.customer.first_name || "");
-      const subtotal = typeof data.subtotal === "number" || typeof data.subtotal === "string" ? data.subtotal : 0;
-      const currency = typeof data.currency === "string" ? data.currency : "USD";
-      if (orderNumber && customerEmail) {
+      const orderId = typeof data.order_id === "string" ? data.order_id : "";
+      if (orderId) {
         after(async () => {
           try {
-            await sendOrderRequestEmails({
-              orderNumber, customerName,
-              customerEmail, subtotal, currency,
-            });
+            await processOrderEmailOutbox({ orderId, limit: 20 });
           } catch (error) {
-            console.error("Order request notification failed:", error);
+            console.error("[checkout] order email outbox processing failed", error);
           }
         });
       }
