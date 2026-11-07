@@ -8,7 +8,7 @@ export async function POST(req:NextRequest){
   if(!orderNumber||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||!/^\d{6}$/.test(code))return NextResponse.json({error:"Enter the six-digit code."},{status:400});
   const token=newSessionToken();const supabase=createAdminClient();
   const {data:orderId,error}=await supabase.rpc("verify_after_sales_email_code",{p_order_number:orderNumber,p_email:email,p_code:code,p_token_hash:sha256(token)});
-  if(error||!orderId)return NextResponse.json({error:"The code is invalid or expired. Request a new code and try again."},{status:400});
+  if(error||typeof orderId !== "string")return NextResponse.json({error:"The code is invalid or expired. Request a new code and try again."},{status:400});
   const response=NextResponse.json({ok:true,orderId});
   response.cookies.set(sessionCookieName,token,{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"strict",path:"/api/after-sales",maxAge:1800});
   return response;
