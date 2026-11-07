@@ -59,17 +59,24 @@ export default async function ProductPage({ params }: Props) {
           {price && <p className="product-detail-price">{price}</p>}
           {product.short_description && <p className="product-detail-short">{product.short_description}</p>}
           {product.description && <div className="product-description">{product.description}</div>}
-          {product.variants.length > 0 && <div className="product-variant-list">
-            <p className="eyebrow">{product.variants.length === 1 ? "PRODUCT SPECIFICATION" : "AVAILABLE OPTIONS"}</p>
+          <div className="product-specifications">
+            <p className="eyebrow">PRODUCT DETAILS</p>
+            <dl className="product-specification-grid">
+              {product.material && <div><dt>Material</dt><dd>{product.material}</dd></div>}
+              <div><dt>Made for</dt><dd>{product.pet_type === "both" ? "Cats & dogs" : product.pet_type === "shared" ? "Shared / general" : product.pet_type === "cat" ? "Cats" : "Dogs"}</dd></div>
+              {product.primary_category && <div><dt>Collection</dt><dd>{product.primary_category.name}</dd></div>}
+              {product.variants.length > 0 && [...new Set(product.variants.map((variant) => variant.color).filter((value): value is string => Boolean(value)))].length > 0 && <div><dt>Color</dt><dd>{[...new Set(product.variants.map((variant) => variant.color).filter((value): value is string => Boolean(value)))].join(", ")}</dd></div>}
+              {product.variants.length > 0 && [...new Set(product.variants.map((variant) => variant.size).filter((value): value is string => Boolean(value)))].length > 0 && <div><dt>Size</dt><dd>{[...new Set(product.variants.map((variant) => variant.size).filter((value): value is string => Boolean(value)))].join(", ")}</dd></div>}
+            </dl>
+          </div>
+          {product.variants.length > 0 && product.variants.some((variant) => variant.color || variant.size || variant.variant_name) && <div className="product-variant-list">
+            <p className="eyebrow">AVAILABLE OPTIONS</p>
             {product.variants.map((variant) => <div className="product-variant-row" key={variant.id}>
-              <span>{[variant.color, variant.size, variant.material].filter(Boolean).join(" / ") || variant.variant_name || variant.sku}</span>
+              <span>{[variant.color, variant.size].filter(Boolean).join(" / ") || variant.variant_name}</span>
               {variant.price !== null && <span>{new Intl.NumberFormat("en-US", { style: "currency", currency: variant.currency }).format(variant.price)}</span>}
             </div>)}
           </div>}
-          {product.material && <p className="product-detail-meta"><strong>Material</strong> {product.material}</p>}
-          <p className="product-detail-meta"><strong>Made for</strong> {product.pet_type === "both" ? "Cats & dogs" : product.pet_type === "shared" ? "Shared / general" : product.pet_type === "cat" ? "Cats" : "Dogs"}</p>
-          {product.primary_category && <p className="product-detail-meta"><strong>Collection</strong> {product.primary_category.name}</p>}
-          {product.care_instructions && <p className="product-detail-meta"><strong>Care</strong> {product.care_instructions}</p>}
+          {product.care_instructions && <div className="product-care-block"><p className="eyebrow">CARE</p><p>{product.care_instructions}</p></div>}
           <AddToCart product={product} />
           {product.primary_category && <Link className="back-link" href={`/collections/${product.primary_category.slug}`}>← BACK TO {product.primary_category.name.toUpperCase()}</Link>}
           <Link className="back-link" href="/shop">← BACK TO SHOP</Link>
