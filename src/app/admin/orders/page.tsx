@@ -37,7 +37,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
 
   const params = await searchParams;
   const validStatuses = new Set(filters.map(([value]) => value));
-  const selected = params.status && validStatuses.has(params.status as typeof filters[number][0]) ? params.status : "all";
+  const selected = filters.find(([value]) => value === params.status)?.[0] ?? "all";
   const search = cleanSearch(params.q || "");
   const from = dateBoundary(params.from);
   const to = dateBoundary(params.to);
@@ -50,7 +50,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
   const exportHref = `/admin/orders/export${queryString ? `?${queryString}` : ""}`;
 
   let q = supabase.from("orders").select("id,order_number,status,currency,customer_email,customer_phone,subtotal,shipping_amount,shipping_address_snapshot,created_at,order_items(quantity,product_name)").order("created_at", { ascending: false }).limit(200);
-  if (selected !== "all") q = q.eq("status", selected);
+  if (selected !== "all") q = q.eq("status", selected as Exclude<(typeof filters)[number][0], "all">);
   if (search) q = q.or(`order_number.ilike.%${search}%,customer_email.ilike.%${search}%,customer_phone.ilike.%${search}%`);
   if (from) q = q.gte("created_at", from);
   if (to) {
