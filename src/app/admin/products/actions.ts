@@ -145,7 +145,10 @@ export async function updateProduct(productId: string, values: {
     name, slug: conflict ? slug + "-" + productId.slice(0,8) : slug,
     pet_type: values.petType, short_description: values.shortDescription.trim() || null,
     description: values.description.trim() || null, material: values.material.trim() || null,
-    care_instructions: values.careInstructions.trim() || null,\n    seo_title: values.seoTitle.trim() || null,\n    seo_description: values.seoDescription.trim() || null, status: values.status,
+    care_instructions: values.careInstructions.trim() || null,
+    seo_title: values.seoTitle.trim() || null,
+    seo_description: values.seoDescription.trim() || null,
+    status: values.status,
     published_at: values.status === "active" ? new Date().toISOString() : null,
   }).eq("id",productId);
   if (error) return { error: error.message };
