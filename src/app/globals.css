@@ -1011,3 +1011,35 @@ a { color: inherit; text-decoration: none; }
 .jq-policy-back a{border-bottom:1px solid #a69d90;padding-bottom:7px}
 .jq-shopping-points .jq-policy-link{display:inline-block;margin-top:18px;padding-bottom:5px;border-bottom:1px solid #a69d90;color:#38372f;font-size:8px;letter-spacing:1.1px}
 @media(max-width:600px){.jq-policy-hero{padding:76px 7% 65px}.jq-policy-hero h1{font-size:65px}.jq-policy-content{padding:58px 7% 75px}.jq-policy-content h2{font-size:22px}.jq-policy-note{padding:20px}}
+
+
+/* JINQAYA — About page */
+.jq-about-page{min-height:100vh;background:#f8f7f3}
+.jq-about-hero{min-height:590px;display:grid;grid-template-columns:1.05fr .95fr;background:#e8e4dc}
+.jq-about-hero-copy{padding:100px 8% 75px 12%;display:flex;flex-direction:column;align-items:flex-start;justify-content:center}
+.jq-about-hero-copy .jq-kicker,.jq-about-values-heading .jq-kicker,.jq-about-origin .jq-kicker{color:#827b6e}
+.jq-about-hero-copy h1{margin:28px 0 24px;font:400 clamp(58px,7.2vw,96px)/.98 Georgia,serif;letter-spacing:-3px}
+.jq-about-hero-copy h1 em,.jq-about-statement h2 em,.jq-about-values-heading h2 em,.jq-about-origin h2 em,.jq-about-end h2 em{color:#9d8a73;font-weight:400}
+.jq-about-hero-copy>p:not(.jq-kicker){max-width:420px;margin:0;color:#6f6d63;font:15px/1.9 Georgia,serif}
+.jq-about-hero-index{margin-top:55px;color:#827b6e;font-size:8px;letter-spacing:1.7px}
+.jq-about-hero-art{min-height:590px;position:relative;display:flex;align-items:flex-end;padding:28px;background:linear-gradient(145deg,rgba(40,35,28,.02),rgba(40,35,28,.22)),url('https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=1500&q=88') center/cover no-repeat}
+.jq-about-hero-art span{color:#fff;font-size:8px;letter-spacing:1.8px;text-shadow:0 1px 8px #333}
+.jq-about-statement{padding:115px 20px 125px;text-align:center}
+.jq-about-statement h2,.jq-about-end h2{margin:24px 0;font:400 clamp(58px,7vw,88px)/.98 Georgia,serif;letter-spacing:-2.8px}
+.jq-about-statement>p:last-child{max-width:540px;margin:0 auto;color:#727168;font:15px/2 Georgia,serif}
+.jq-about-values{padding:100px 10%;display:grid;grid-template-columns:.85fr 1.15fr;gap:10%;background:#e8e4dc}
+.jq-about-values-heading h2,.jq-about-origin h2{margin:23px 0 0;font:400 clamp(46px,5.4vw,68px)/1.02 Georgia,serif;letter-spacing:-2px}
+.jq-about-value-list article{display:grid;grid-template-columns:42px 1fr;gap:18px;padding:24px 0;border-top:1px solid #c5beb2}
+.jq-about-value-list article:last-child{border-bottom:1px solid #c5beb2}
+.jq-about-value-list article>span{color:#9d8a73;font:italic 17px Georgia,serif}
+.jq-about-value-list h3{margin:0 0 10px;font-size:9px;letter-spacing:1.4px}
+.jq-about-value-list p,.jq-about-origin>div:last-child>p{margin:0;color:#727168;font:13px/1.9 Georgia,serif}
+.jq-about-origin{padding:110px 12%;display:grid;grid-template-columns:1fr 1fr;gap:10%;align-items:center}
+.jq-about-origin>div:last-child{max-width:430px}
+.jq-about-link{display:inline-block;margin-top:25px;padding-bottom:7px;border-bottom:1px solid #a69d90;font-size:8px;letter-spacing:1.3px}
+.jq-about-end{padding:100px 20px 110px;text-align:center;background:#4a443b;color:#f8f7f3}
+.jq-about-end .jq-kicker{color:#d0c6b6}
+.jq-about-end h2 em{color:#d7c9b2}
+.jq-about-end .jq-closing-cta{display:inline-flex;margin-top:12px}
+@media(max-width:800px){.jq-about-hero{grid-template-columns:1fr}.jq-about-hero-copy{padding:85px 8% 65px}.jq-about-hero-art{min-height:420px}.jq-about-values{grid-template-columns:1fr;gap:45px}.jq-about-origin{padding:85px 8%;grid-template-columns:1fr;gap:28px}}
+@media(max-width:600px){.jq-about-hero-copy h1{font-size:64px}.jq-about-hero-art{min-height:340px}.jq-about-statement{padding:80px 7% 88px}.jq-about-statement h2,.jq-about-end h2{font-size:65px}.jq-about-values{padding:78px 7%}.jq-about-origin{padding:78px 7%}.jq-about-end{padding:78px 7% 85px}}
