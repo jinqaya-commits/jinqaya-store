@@ -47,7 +47,12 @@ export function ProductJsonLd({ product }: { product: StoreProduct }) {
     sku: product.variants.length === 1 ? product.variants[0].sku : undefined,
     brand: { "@type": "Brand", name: clean(product.brand_name) || "JINQAYA" },
     material: clean(product.material),
-    category: product.pet_type,
+    category: product.primary_category?.name || undefined,
+    additionalProperty: [
+      { "@type": "PropertyValue", name: "Pet type", value: product.pet_type },
+      ...product.variants.flatMap((variant) => variant.size ? [{ "@type": "PropertyValue", name: "Size", value: variant.size }] : []),
+      ...product.variants.flatMap((variant) => variant.color ? [{ "@type": "PropertyValue", name: "Color", value: variant.color }] : []),
+    ],
   };
   // The current checkout submits an order request and does not collect payment.
   // Do not publish Offer, price or stock claims as purchasable inventory yet.
