@@ -1235,3 +1235,11 @@ a { color: inherit; text-decoration: none; }
 .supplier-secondary-button{background:transparent;color:#655747}
 @media(max-width:760px){.supplier-form{grid-template-columns:1fr 1fr}}
 @media(max-width:520px){.supplier-form{grid-template-columns:1fr}.supplier-wide,.supplier-form-actions{grid-column:auto}.supplier-filters{flex-wrap:wrap}.supplier-filters input{flex-basis:100%}.supplier-filters select{flex:1}.supplier-record summary{align-items:flex-start}}
+
+/* Supplier payment tracking */
+.payment-summary{grid-template-columns:repeat(3,minmax(0,1fr));margin:18px 0 22px}
+.payment-summary>div{background:#f8f5ef;border:1px solid #e5ded3}
+.payment-summary strong{font-size:23px}
+.payment-form{max-width:none;margin:0 0 24px;padding:20px;background:#f8f5ef;border:1px solid #e5ded3}
+.payment-form .supplier-form-actions{align-items:flex-start}
+@media(max-width:600px){.payment-summary{grid-template-columns:1fr}.payment-form{padding:14px}}
