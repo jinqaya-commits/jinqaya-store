@@ -18,6 +18,7 @@ returns boolean language plpgsql security definer set search_path=''
 as $function$
 declare v_order public.orders%rowtype; v_email text:=lower(trim(p_email));
 begin
+ perform pg_advisory_xact_lock(hashtextextended(v_email,0));
  select * into v_order from public.orders
  where lower(order_number)=lower(trim(p_order_number)) and lower(customer_email)=v_email
  for update;
@@ -79,3 +80,17 @@ $function$;
 
 grant execute on function public.reserve_after_sales_upload(uuid,text,text,text,bigint) to anon,authenticated;
 grant execute on function public.validate_after_sales_upload_ticket(uuid,text,text,text,bigint) to anon,authenticated;
+
+create or replace function public.consume_after_sales_upload_tickets(p_order_id uuid,p_token_hash text,p_object_keys text[])
+returns integer language plpgsql security definer set search_path=''
+as $function$
+declare v_count integer;
+begin
+ update public.after_sales_upload_tickets
+ set consumed_at=now()
+ where order_id=p_order_id and token_hash=p_token_hash and object_key=any(coalesce(p_object_keys,'{}'::text[]))
+ and expires_at>now() and consumed_at is null;
+ get diagnostics v_count=row_count;
+ return v_count;
+end; $function$;
+grant execute on function public.consume_after_sales_upload_tickets(uuid,text,text[]) to anon,authenticated;
