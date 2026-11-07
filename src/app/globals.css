@@ -1089,3 +1089,30 @@ a { color: inherit; text-decoration: none; }
 .admin-image-management-row>div:nth-child(2){min-width:0}
 .admin-image-management-row label{max-width:560px}
 @media(max-width:700px){.admin-image-management-row{grid-template-columns:1fr;gap:10px}.admin-image-management-row .admin-form-actions{flex-wrap:wrap}}
+
+
+/* Product gallery navigation and image-less state */
+.product-gallery-stage{position:relative;min-width:0}
+.product-gallery-arrow,.product-lightbox-arrow{position:absolute;z-index:2;display:flex;align-items:center;justify-content:center;width:42px;height:42px;border:1px solid rgba(75,67,56,.22);border-radius:50%;background:rgba(248,247,243,.9);color:#51463a;font:28px/1 Georgia,serif;cursor:pointer;transition:background .18s ease,opacity .18s ease}
+.product-gallery-arrow:hover,.product-lightbox-arrow:hover{background:#fff}
+.product-gallery-arrow-prev{left:14px;top:50%;transform:translateY(-50%)}
+.product-gallery-arrow-next{right:14px;top:50%;transform:translateY(-50%)}
+.product-detail-placeholder{display:flex;min-height:320px;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:#eeeae3;color:#746b5e}
+.product-detail-placeholder span{font:italic 34px Georgia,serif;letter-spacing:2px}
+.product-detail-placeholder small{font-size:8px;letter-spacing:1.7px}
+.product-lightbox-arrow{position:fixed;top:50%;width:48px;height:48px;border-color:rgba(255,255,255,.35);background:rgba(255,255,255,.12);color:#fff;transform:translateY(-50%)}
+.product-lightbox-arrow:hover{background:rgba(255,255,255,.25)}
+.product-lightbox-arrow-prev{left:24px}
+.product-lightbox-arrow-next{right:24px}
+.product-lightbox-count{position:absolute;bottom:24px;left:50%;color:rgba(255,255,255,.8);font-size:10px;letter-spacing:1.5px;transform:translateX(-50%)}
+@media(max-width:760px){
+ .product-gallery-arrow{width:36px;height:36px;font-size:24px}
+ .product-gallery-arrow-prev{left:8px}
+ .product-gallery-arrow-next{right:8px}
+ .product-detail-placeholder{min-height:240px}
+ .product-lightbox-arrow{width:40px;height:40px}
+ .product-lightbox-arrow-prev{left:10px}
+ .product-lightbox-arrow-next{right:10px}
+}
+@media(hover:none){.product-image-expand-hint{opacity:1}}
+@media(prefers-reduced-motion:reduce){.product-gallery-arrow,.product-lightbox-arrow{transition:none}}
