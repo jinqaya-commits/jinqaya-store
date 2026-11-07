@@ -1,0 +1,4 @@
+import Link from "next/link";
+import { AfterSalesForm } from "./after-sales-form";
+export const metadata={title:"After-sales Request | JINQAYA",robots:{index:false,follow:false}};
+export default function AfterSalesPage(){return <main className="inner-page"><header className="inner-page-header"><Link className="wordmark" href="/">JINQAYA<span>®</span></Link><nav className="inner-nav"><Link href="/shop">SHOP ALL</Link><Link href="/policies/returns">RETURNS</Link></nav></header><section className="checkout-page"><p className="eyebrow">CUSTOMER CARE</p><h1>After-sales request</h1><p className="checkout-intro">For quality issues, submit a request within 7 days after delivery. We’ll review your description and supporting photos or videos. Non-quality returns are not accepted.</p><AfterSalesForm /></section><footer className="inner-footer"><Link href="/">JINQAYA</Link><span>BETTER LIVING, TOGETHER.</span></footer></main>}
