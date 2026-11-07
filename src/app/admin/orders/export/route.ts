@@ -5,18 +5,17 @@ export const dynamic = "force-dynamic";
 
 const validStatuses = new Set(["on_hold", "pending_payment", "paid", "processing", "partially_shipped", "shipped", "delivered", "cancelled", "partially_refunded", "refunded"]);
 function safeSearch(value: string) {
-  return value.replace(/[^\\w@+.\\-\\s]/g, "").trim().slice(0, 100);
+  return value.replace(/[^\w@+.\-\s]/g, "").trim().slice(0, 100);
 }
 function dateBoundary(value: string | null) {
-  if (!value || !/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) return null;
-  const parsed = new Date(`${value}T00:00:00.000Z`);
+  if (!value || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const parsed = new Date(value + "T00:00:00.000Z");
   return Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value ? null : parsed.toISOString();
 }
 function csvCell(value: unknown) {
   let text = value == null ? "" : String(value);
-  // Prevent spreadsheet formula execution when staff open the CSV.
-  if (/^[\\s\\u0000-\\u001f]*[=+@-]/.test(text)) text = `'${text}`;
-  return `"${text.replace(/"/g, '""')}"`;
+  if (/^[\s\u0000-\u001f]*[=+@-]/.test(text)) text = "'" + text;
+  return '"' + text.replace(/"/g, '""') + '"';
 }
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -39,7 +38,7 @@ export async function GET(request: NextRequest) {
     .order("created_at", { ascending: false })
     .limit(1000);
   if (status !== "all") query = query.eq("status", status);
-  if (search) query = query.or(`order_number.ilike.%${search}%,customer_email.ilike.%${search}%,customer_phone.ilike.%${search}%`);
+  if (search) query = query.or("order_number.ilike.%" + search + "%,customer_email.ilike.%" + search + "%,customer_phone.ilike.%" + search + "%");
   if (from) query = query.gte("created_at", from);
   if (to) {
     const end = new Date(to);
@@ -52,7 +51,7 @@ export async function GET(request: NextRequest) {
   const headers = ["Order number", "Status", "Customer email", "Phone", "Created at", "Currency", "Items", "Item subtotal", "Shipping", "Shipping method", "Order total", "City", "Country"];
   const rows = (orders || []).map(order => {
     const address = order.shipping_address_snapshot as { city?: string; country?: string; country_code?: string } | null;
-    const items = Array.isArray(order.order_items) ? order.order_items.map(item => `${item.product_name} x ${item.quantity}`).join("; ") : "";
+    const items = Array.isArray(order.order_items) ? order.order_items.map(item => item.product_name + " x " + item.quantity).join("; ") : "";
     return [
       order.order_number, order.status, order.customer_email, order.customer_phone,
       new Date(order.created_at).toISOString(), order.currency, items,
@@ -61,7 +60,7 @@ export async function GET(request: NextRequest) {
     ];
   });
   const csv = [headers, ...rows].map(row => row.map(csvCell).join(",")).join("\r\n");
-  return new NextResponse("\\uFEFF" + csv, {
+  return new NextResponse("\uFEFF" + csv, {
     status: 200,
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
