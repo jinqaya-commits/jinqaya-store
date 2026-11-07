@@ -34,7 +34,7 @@ export default function ReturnsRefundsPage() {
         <p>We do not offer returns or exchanges for non-quality-related reasons, such as a change of mind or personal preference, except where a return, cancellation, refund or other remedy is required by applicable consumer law.</p>
         <h2>Important information</h2>
         <p>This policy does not limit or exclude any consumer rights that cannot legally be limited or excluded in the country or region where you purchase our products.</p>
-        <div className="jq-policy-note"><strong>Before placing an order</strong><p>Please review product descriptions, dimensions, images and other details carefully. If you have a question about a product, check its product page before ordering.</p></div>
+        <div className="jq-policy-note"><strong>Before placing an order</strong><p>Please review product descriptions, dimensions, images and other details carefully. If you have a question about a product or need to report a quality issue, email <a href="mailto:info@jinqaya.com">info@jinqaya.com</a>.</p></div>
         <p className="jq-policy-back"><Link href="/shop">CONTINUE SHOPPING ↗</Link></p>
       </article>
       <footer className="jq-footer">
