@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 function csvCell(value: unknown) {
   let text = value === null || value === undefined ? "" : String(value);
-  if (/^[=+@-]/.test(text) || /^[\t\r]/.test(text)) text = "'" + text;
+  if (typeof value === "string" && (/^[=+@-]/.test(text) || /^[\t\r]/.test(text))) text = "'" + text;
   return '"' + text.replaceAll('"', '""') + '"';
 }
 
