@@ -18,9 +18,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!category) return { title: "Category Not Found", robots: { index: false, follow: false } };
   const title = category.name.toLowerCase().replace(/\b\w/g, (letter: string) => letter.toUpperCase());
   const description = category.description || `Explore ${category.name.toLowerCase()} for cats and dogs from JINQAYA.`;
+  const products = await getStoreProducts(slug);
   return {
     title,
     description,
+    robots: products.length ? { index: true, follow: true } : { index: false, follow: true },
     alternates: { canonical: `/collections/${slug}` },
     openGraph: { type: "website", url: `https://jinqaya.com/collections/${slug}`, title, description },
   };
