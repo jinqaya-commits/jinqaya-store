@@ -1116,3 +1116,14 @@ a { color: inherit; text-decoration: none; }
 }
 @media(hover:none){.product-image-expand-hint{opacity:1}}
 @media(prefers-reduced-motion:reduce){.product-gallery-arrow,.product-lightbox-arrow{transition:none}}
+
+
+/* Admin order search and export controls */
+.admin-order-search{display:flex;flex-wrap:wrap;align-items:end;gap:12px;padding:20px 0;border-bottom:1px solid var(--line)}
+.admin-order-search label{display:flex;min-width:150px;flex:1;flex-direction:column;gap:7px;color:#81786b;font-size:8px;letter-spacing:1.2px;text-transform:uppercase}
+.admin-order-search label:first-of-type{min-width:250px;flex:2}
+.admin-order-search input{width:100%;min-height:42px;padding:10px 12px;border:1px solid #d8d1c6;border-radius:0;background:#fbfaf7;color:#37362f;font:12px Arial,sans-serif;letter-spacing:0;text-transform:none}
+.admin-order-search button,.admin-order-search>a{display:inline-flex;min-height:42px;align-items:center;justify-content:center;padding:0 15px;border:1px solid #655747;background:#655747;color:#fff;font-size:9px;letter-spacing:1px;text-decoration:none;text-transform:uppercase;cursor:pointer}
+.admin-order-search>a[href*="orders?status"],.admin-order-search>a:not([href*="export"]){border-color:#d8d1c6;background:transparent;color:#655747}
+.admin-order-search>a[href*="/export"]{border-color:#a99a84;background:#eeeae3;color:#51463a}
+@media(max-width:700px){.admin-order-search{align-items:stretch}.admin-order-search label,.admin-order-search label:first-of-type{min-width:100%;flex:auto}.admin-order-search button,.admin-order-search>a{flex:1}}
