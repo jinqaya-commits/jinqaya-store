@@ -4,6 +4,8 @@ import { CartLink } from "@/components/storefront/cart-link";
 import { CategoryNavigation } from "@/components/storefront/category-navigation";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/policies/terms" },
+
   title: "Terms of Service",
   description: "Read the terms that apply when using the JINQAYA website and submitting an order request.",
 };
