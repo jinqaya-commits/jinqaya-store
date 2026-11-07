@@ -53,7 +53,7 @@ export default function CartPage() {
         <aside className="cart-summary">
           <h2>Order summary</h2>
           <div><span>Subtotal</span><strong>{mixedCurrencies ? "Multiple currencies" : formatCartMoney(subtotal, currency)}</strong></div>
-          <p>Shipping and any applicable taxes are calculated at checkout.</p>
+          <p>Shipping and any applicable taxes will be confirmed with you after you submit an order request, before payment.</p>
           <Link href="/checkout" className="button button-dark">CONTINUE TO CHECKOUT <span aria-hidden="true">↗</span></Link>
           <Link href="/shop" className="back-link">CONTINUE SHOPPING</Link>
         </aside>
