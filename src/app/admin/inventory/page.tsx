@@ -93,7 +93,7 @@ export default async function AdminInventoryPage() {
           <Link className="admin-back-link" href="/admin/orders">← ORDERS</Link>
         </header>
 
-        <div className="admin-summary">
+        <div className="admin-summary inventory-summary">
           <div><span>UNITS ON HAND</span><strong>{totalOnHand}</strong></div>
           <div><span>UNITS RESERVED</span><strong>{totalReserved}</strong></div>
           <div><span>INCOMING UNITS</span><strong>{totalIncoming}</strong></div>
