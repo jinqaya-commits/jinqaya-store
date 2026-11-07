@@ -1,0 +1,24 @@
+import Link from "next/link";
+import { notFound,redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { issuePurchaseOrderAction, receivePurchaseOrderItemAction } from "../../orders/actions";
+export const dynamic="force-dynamic";
+export default async function PurchaseOrderDetailPage({params}:{params:Promise<{id:string}>}){
+ const {id}=await params;const supabase=await createClient();const {data:claims}=await supabase.auth.getClaims();if(!claims?.claims?.sub)redirect("/login");
+ const {data:allowed,error:permissionError}=await supabase.rpc("can_manage_catalog");if(permissionError||allowed!==true)redirect("/");
+ const {data:order,error}=await supabase.from("purchase_orders").select("id,purchase_order_number,supplier_name,supplier_email,supplier_phone,status,notes,created_at,ordered_at,received_at,purchase_order_items(id,variant_id,sku_snapshot,product_name_snapshot,quantity_ordered,quantity_received,unit_cost,currency)").eq("id",id).maybeSingle();
+ if(error||!order)notFound();
+ const items=Array.isArray(order.purchase_order_items)?order.purchase_order_items:[];
+ return <main className="admin-shell"><aside className="admin-sidebar"><Link href="/" className="admin-brand">JINQAYA<span>ADMIN</span></Link><nav><Link href="/admin/products">Products</Link><Link href="/admin/orders">Orders</Link><Link className="active" href="/admin/purchase-orders">Purchase orders</Link><Link href="/admin/inventory">Inventory</Link></nav><p className="admin-sidebar-note">COMMERCE MANAGEMENT</p></aside><section className="admin-main">
+ <header className="admin-topbar"><div><p className="admin-kicker">JINQAYA / PROCUREMENT</p><h1>{order.purchase_order_number}</h1><p className="admin-help">Supplier: {order.supplier_name}</p></div><Link className="admin-back-link" href="/admin/purchase-orders">← ALL PURCHASE ORDERS</Link></header>
+ <div className="admin-summary"><div><span>STATUS</span><strong>{order.status.replaceAll("_"," ")}</strong></div><div><span>SKU LINES</span><strong>{items.length}</strong></div><div><span>UNITS RECEIVED</span><strong>{items.reduce((n,x)=>n+Number(x.quantity_received),0)} / {items.reduce((n,x)=>n+Number(x.quantity_ordered),0)}</strong></div></div>
+ <section className="admin-panel"><div className="admin-panel-heading"><div><p className="admin-kicker">SUPPLIER DETAILS</p><h2>{order.supplier_name}</h2></div><span>{new Date(order.created_at).toLocaleDateString("en-US",{dateStyle:"medium"})}</span></div>
+ <p className="admin-help">{order.supplier_email||"No email"} · {order.supplier_phone||"No phone"}</p>{order.notes&&<p>{order.notes}</p>}
+ {order.status==="draft"&&<form action={issuePurchaseOrderAction} className="purchase-form-actions"><input type="hidden" name="purchase_order_id" value={order.id}/><button className="admin-primary-button" type="submit">Issue purchase order</button><p className="admin-help">Issuing confirms the order was placed with the supplier. It does not add inventory.</p></form>}
+ </section>
+ <section className="admin-panel" style={{marginTop:24}}><div className="admin-panel-heading"><div><p className="admin-kicker">PURCHASE ORDER LINES</p><h2>Receiving</h2></div><span>RECEIVE ACTUAL QUANTITIES</span></div>
+ <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>PRODUCT / SKU</th><th>ORDERED</th><th>RECEIVED</th><th>REMAINING</th><th>UNIT COST</th><th>RECEIVE STOCK</th></tr></thead><tbody>{items.map(item=>{const remaining=Number(item.quantity_ordered)-Number(item.quantity_received);return <tr key={item.id}><td><strong>{item.product_name_snapshot}</strong><small>{item.sku_snapshot}</small></td><td>{item.quantity_ordered}</td><td>{item.quantity_received}</td><td>{remaining}</td><td>{item.unit_cost==null?"—":new Intl.NumberFormat("en-US",{style:"currency",currency:item.currency.trim()}).format(Number(item.unit_cost))}</td><td>{remaining>0&&["ordered","partially_received"].includes(order.status)?<form action={receivePurchaseOrderItemAction} className="purchase-receive-form"><input type="hidden" name="purchase_order_item_id" value={item.id}/><input aria-label={"Received quantity for "+item.sku_snapshot} type="number" name="quantity" min="1" max={remaining} step="1" defaultValue={remaining} required/><input aria-label={"Receiving note for "+item.sku_snapshot} type="text" name="notes" maxLength={500} placeholder="Delivery note (optional)"/><button className="admin-secondary-button" type="submit">Receive</button></form>:<span className="admin-help">{remaining===0?"Complete":"Issue order first"}</span>}</td></tr>})}</tbody></table></div>
+ <p className="admin-help" style={{marginTop:16}}>Only quantities actually received should be entered. Each receipt updates on-hand stock and creates a linked inventory movement. Excess quantities are rejected; partial receipts are supported.</p>
+ </section>
+ </section></main>;
+}
