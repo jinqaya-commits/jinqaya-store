@@ -61,7 +61,7 @@ begin
  order by created_at desc limit 1 for update;
  if not found or p_object_key not like 'after-sales/'||p_order_id::text||'/%'
  or p_content_type not in ('image/jpeg','image/png','image/webp','image/avif','video/mp4','video/quicktime')
- or p_expected_size<=0 or p_expected_size>case when p_content_type like 'video/%' then 52428800 else 10485760 end then return false; end if;
+ or p_expected_size<=0 or p_expected_size>(case when p_content_type like 'video/%' then 52428800 else 10485760 end) then return false; end if;
  if (select count(*) from public.after_sales_upload_tickets where order_id=p_order_id and token_hash=p_token_hash and created_at>now()-interval '1 hour')>=5 then return false; end if;
  insert into public.after_sales_upload_tickets(order_id,token_hash,object_key,content_type,expected_size,expires_at)
  values(p_order_id,p_token_hash,p_object_key,p_content_type,p_expected_size,now()+interval '10 minutes');
