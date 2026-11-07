@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { getR2Client, getR2Config } from "@/lib/r2";
+import { getProductReadiness } from "@/lib/product-readiness";
 
 async function requireCatalogManager() {
   const supabase = await createClient();
@@ -53,6 +54,7 @@ export async function createProduct(input: CreateProductInput) {
   const slug = slugify(name);
   if (!name || !slug) return { error: "Please enter a product name." };
   if (!input.categoryId) return { error: "Please choose a category." };
+  if (input.status === "active") return { error: "New products are created as drafts. Complete the product information, add images and a priced SKU, then publish from the product list." };
 
   const { data: existing } = await supabase
     .from("products").select("id").eq("slug", slug).maybeSingle();
@@ -126,6 +128,25 @@ export async function createProduct(input: CreateProductInput) {
 
 export async function setProductStatus(productId: string, status: "draft" | "active" | "archived") {
   const supabase = await requireCatalogManager();
+  if (status === "active") {
+    const [{ data: product }, { data: images }, { data: variants }, { data: categoryLinks }] = await Promise.all([
+      supabase.from("products").select("short_description,description,material,seo_title,seo_description").eq("id", productId).maybeSingle(),
+      supabase.from("product_images").select("alt_text,is_primary").eq("product_id", productId),
+      supabase.from("product_variants").select("sku,price,is_active").eq("product_id", productId),
+      supabase.from("product_categories").select("is_primary,categories(parent_id,is_active)").eq("product_id", productId),
+    ]);
+    if (!product) return { error: "Product not found." };
+    const readiness = getProductReadiness({
+      ...product,
+      images: images ?? [],
+      variants: variants ?? [],
+      categories: (categoryLinks ?? []).map((link) => {
+        const category = Array.isArray(link.categories) ? link.categories[0] : link.categories;
+        return { is_primary: link.is_primary, parent_id: category?.parent_id ?? null, is_active: category?.is_active ?? false };
+      }),
+    });
+    if (!readiness.ready) return { error: "Complete the product checklist before publishing: " + readiness.missing.join(", ") + "." };
+  }
   const { error } = await supabase.from("products").update({
     status,
     published_at: status === "active" ? new Date().toISOString() : null,
