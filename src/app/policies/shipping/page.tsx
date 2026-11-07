@@ -4,6 +4,8 @@ import { CartLink } from "@/components/storefront/cart-link";
 import { CategoryNavigation } from "@/components/storefront/category-navigation";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/policies/shipping" },
+
   title: "Shipping Policy",
   description: "Learn how JINQAYA orders are dispatched directly from our factory in China.",
 };
