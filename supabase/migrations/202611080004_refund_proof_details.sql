@@ -130,5 +130,7 @@ end $$;
 
 drop function if exists public.admin_confirm_after_sales_refund(uuid,numeric,text);
 drop function if exists public.admin_update_shipment_issue(uuid,text,text,text,numeric,text,boolean);
+revoke all on function public.admin_confirm_after_sales_refund(uuid,numeric,text,text,text) from public,anon;
+revoke all on function public.admin_update_shipment_issue(uuid,text,text,text,numeric,text,boolean,text,text) from public,anon;
 grant execute on function public.admin_confirm_after_sales_refund(uuid,numeric,text,text,text) to authenticated;
 grant execute on function public.admin_update_shipment_issue(uuid,text,text,text,numeric,text,boolean,text,text) to authenticated;
