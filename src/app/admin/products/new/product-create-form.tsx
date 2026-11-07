@@ -72,7 +72,7 @@ export function ProductCreateForm({ categories }: { categories: Category[] }) {
         });
         if (!uploaded.ok) throw new Error(`R2 upload failed for ${file.name} (${uploaded.status}).`);
 
-        const saved = await addProductImage(productId, uploadInfo.storagePath, `${values.name} – product image`);
+        const saved = await addProductImage(productId, uploadInfo.storagePath, "");
         if (saved.error) throw new Error(saved.error);
         const completedKey = file.name + "-" + file.size + "-" + file.lastModified;
         setFiles((current) => current.filter((item) => item.name + "-" + item.size + "-" + item.lastModified !== completedKey));
@@ -86,7 +86,7 @@ export function ProductCreateForm({ categories }: { categories: Category[] }) {
   }
 
   return <form className="admin-form" onSubmit={submit}>
-    <section className="admin-form-section"><div className="admin-form-heading"><span>01</span><div><h2>Product information</h2><p>Start with the details customers will see.</p></div></div>
+    <section className="admin-form-section"><div className="admin-form-heading"><span>01</span><div><h2>Product information</h2><p>Enter confirmed product facts only. Leave unknown details blank until they are verified; do not invent features, materials or performance claims.</p></div></div>
       <label>Product name<input required value={values.name} onChange={(e) => update("name", e.target.value)} placeholder="e.g. Everyday Travel Carrier" /></label>
       <div className="admin-form-grid"><label>Product category<select required value={values.categoryId} onChange={(e) => update("categoryId", e.target.value)}><option value="">Choose a product type</option>{categories.filter(category => category.parent_id !== null).map((category) => { const parent = categories.find(item => item.id === category.parent_id); const grand = parent?.parent_id ? categories.find(item => item.id === parent.parent_id) : null; return <option key={category.id} value={category.id}>{grand ? grand.name + " / " : ""}{parent?.name ?? ""} / {category.name}</option>; })}</select></label>
       <label>Made for<select value={values.petType} onChange={(e) => update("petType", e.target.value as CreateProductInput["petType"])}><option value="both">Cats & dogs</option><option value="cat">Cats</option><option value="dog">Dogs</option><option value="shared">Shared / general</option></select></label></div>
@@ -101,7 +101,7 @@ export function ProductCreateForm({ categories }: { categories: Category[] }) {
       <div className="admin-form-grid"><label>Price (USD)<input type="number" min="0" step="0.01" value={values.price} onChange={(e) => update("price", e.target.value)} placeholder="0.00" /></label><label>Compare-at price (USD)<input type="number" min="0" step="0.01" value={values.compareAtPrice} onChange={(e) => update("compareAtPrice", e.target.value)} placeholder="Optional" /></label></div>
       <p className="admin-help">Leave SKU blank to create the product first without a purchasable variant. Inventory and checkout are not connected yet.</p>
     </section>
-    <section className="admin-form-section"><div className="admin-form-heading"><span>03</span><div><h2>Product images</h2><p>Upload JPG, PNG, WebP or AVIF images, up to 20 MB each. First image becomes the main image.</p></div></div>
+    <section className="admin-form-section"><div className="admin-form-heading"><span>03</span><div><h2>Product images</h2><p>Upload real product photos. After saving, add a specific alt description for each image in the product editor; generic image labels are not accepted as complete.</p></div></div>
       <label className="admin-upload">Choose product images<input type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple onChange={(e) => {
         const selected = Array.from(e.target.files ?? []);
         setFiles((current) => {
