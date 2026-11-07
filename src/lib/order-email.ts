@@ -61,24 +61,40 @@ function money(amount: number | string | null | undefined, currency: string) {
   return new Intl.NumberFormat("en-US", { style: "currency", currency: currency.trim() || "USD" }).format(Number(amount));
 }
 
-export async function sendOrderRequestEmails(order: OrderEmailData) {
+export type OrderEmailOutboxPayload = {
+  orderNumber: string;
+  customerName: string;
+  customerEmail: string;
+  subtotal: number | string;
+  currency: string;
+};
+
+export async function sendOrderOutboxEmail(
+  recipientType: "customer" | "staff",
+  recipientEmail: string,
+  order: OrderEmailOutboxPayload
+): Promise<boolean> {
   const safeName = escapeHtml(order.customerName || "there");
-  const customer = await send({
-    to: order.customerEmail,
-    subject: `JINQAYA received your order request ${order.orderNumber}`,
-    html: shell("We’ve received your request.", `<p>Hello ${safeName},</p><p>Your order request <strong>${escapeHtml(order.orderNumber)}</strong> has been received.</p>
-      <p><strong>Estimated item subtotal:</strong> ${escapeHtml(money(order.subtotal, order.currency))}</p>
-      <p>We’ll review availability and confirm shipping options, delivery cost and the final total before requesting payment. This request is not paid and does not mean your order has been dispatched.</p>
-      <p>We’ll be in touch soon.</p>`),
-    text: `Hello ${order.customerName || "there"},\n\nWe received order request ${order.orderNumber}. Estimated item subtotal: ${money(order.subtotal, order.currency)}. We’ll confirm availability, shipping and the final total before requesting payment. This request is not paid or dispatched.\n\nJINQAYA`,
-  });
-  const staff = await send({
-    to: STAFF_EMAIL,
+  const subtotal = money(order.subtotal, order.currency);
+
+  if (recipientType === "customer") {
+    return send({
+      to: recipientEmail,
+      subject: `JINQAYA received your order request ${order.orderNumber}`,
+      html: shell("We’ve received your request.", `<p>Hello ${safeName},</p><p>Your order request <strong>${escapeHtml(order.orderNumber)}</strong> has been received.</p>
+        <p><strong>Estimated item subtotal:</strong> ${escapeHtml(subtotal)}</p>
+        <p>We’ll review availability and confirm shipping options, delivery cost and the final total before requesting payment. This request is not paid and does not mean your order has been dispatched.</p>
+        <p>We’ll be in touch soon.</p>`),
+      text: `Hello ${order.customerName || "there"},\\n\\nWe received order request ${order.orderNumber}. Estimated item subtotal: ${subtotal}. We’ll confirm availability, shipping and the final total before requesting payment. This request is not paid or dispatched.\\n\\nJINQAYA`,
+    });
+  }
+
+  return send({
+    to: recipientEmail,
     subject: `New order request: ${order.orderNumber}`,
-    html: shell("New order request.", `<p><strong>Order:</strong> ${escapeHtml(order.orderNumber)}</p><p><strong>Customer:</strong> ${safeName} (${escapeHtml(order.customerEmail)})</p><p><strong>Item subtotal:</strong> ${escapeHtml(money(order.subtotal, order.currency))}</p><p>Please review the order in the JINQAYA admin dashboard. Shipping is not yet quoted and payment has not been collected.</p>`),
-    text: `New order request ${order.orderNumber}. Customer: ${order.customerName} (${order.customerEmail}). Item subtotal: ${money(order.subtotal, order.currency)}. Review in admin; no payment collected.`,
+    html: shell("New order request.", `<p><strong>Order:</strong> ${escapeHtml(order.orderNumber)}</p><p><strong>Customer:</strong> ${safeName} (${escapeHtml(order.customerEmail)})</p><p><strong>Item subtotal:</strong> ${escapeHtml(subtotal)}</p><p>Please review the order in the JINQAYA admin dashboard. Shipping is not yet quoted and payment has not been collected.</p>`),
+    text: `New order request ${order.orderNumber}. Customer: ${order.customerName} (${order.customerEmail}). Item subtotal: ${subtotal}. Review in admin; no payment collected.`,
   });
-  return { customer, staff };
 }
 
 export async function sendOrderStatusEmail(order: OrderEmailData, event: "quote_confirmed" | "payment_received" | "shipped" | "delivered" | "cancelled") {
