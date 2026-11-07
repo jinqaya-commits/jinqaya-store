@@ -273,7 +273,7 @@ export async function createShipmentIssueAction(orderId: string, shipmentId: str
   return { success: true };
 }
 
-export async function updateShipmentIssueAction(orderId: string, issueId: string, status: string, action: string | null, notes: string, amount: string, reference: string, confirmRefund: boolean) {
+export async function updateShipmentIssueAction(orderId: string, issueId: string, status: string, action: string | null, notes: string, amount: string, reference: string, confirmRefund: boolean, method: string, transactionNumber: string) {
   const supabase = await requireOrderManager();
   if (!/^[0-9a-f-]{36}$/i.test(orderId) || !/^[0-9a-f-]{36}$/i.test(issueId) ||
       !["open", "in_progress", "resolved"].includes(status) ||
@@ -283,10 +283,12 @@ export async function updateShipmentIssueAction(orderId: string, issueId: string
   }
   const parsedAmount = confirmRefund ? Number(amount) : null;
   if (confirmRefund && (!Number.isFinite(parsedAmount) || parsedAmount! <= 0)) return { error: "Enter the actual refunded amount." };
+  if (confirmRefund && (!["bank_transfer","card","paypal","cash","other"].includes(method) || !transactionNumber.trim() || transactionNumber.length > 200)) return { error: "Select the actual refund method and enter the transaction number." };
   const { data, error } = await supabase.rpc("admin_update_shipment_issue", {
     p_issue_id: issueId, p_status: status, p_resolution_action: action,
     p_resolution_notes: notes.trim() || null, p_refund_amount: parsedAmount,
     p_refund_reference: reference.trim() || null, p_confirm_refund: confirmRefund,
+    p_refund_method: confirmRefund ? method : null, p_transaction_number: confirmRefund ? transactionNumber.trim() : null,
   });
   if (error) return { error: error.message };
   revalidatePath("/admin/orders/" + orderId);
@@ -359,16 +361,19 @@ export async function recordAfterSalesReturnAction(orderId: string, caseId: stri
   return { success: true };
 }
 
-export async function confirmAfterSalesRefundAction(orderId: string, caseId: string, amount: string, reference: string) {
+export async function confirmAfterSalesRefundAction(orderId: string, caseId: string, amount: string, reference: string, method: string, transactionNumber: string) {
   const supabase = await requireOrderManager();
   if (!/^[0-9a-f-]{36}$/i.test(orderId) || !/^[0-9a-f-]{36}$/i.test(caseId) ||
       typeof amount !== "string" || !/^\d+(?:\.\d{1,2})?$/.test(amount) ||
       !Number.isFinite(Number(amount)) || Number(amount) <= 0 ||
-      typeof reference !== "string" || reference.length > 200) {
-    return { error: "Enter a positive refund amount with up to two decimal places and a valid reference." };
+      typeof reference !== "string" || reference.length > 200 ||
+      !["bank_transfer","card","paypal","cash","other"].includes(method) ||
+      typeof transactionNumber !== "string" || transactionNumber.trim().length < 1 || transactionNumber.length > 200) {
+    return { error: "Enter the refund amount, method and transaction number." };
   }
   const { data, error } = await supabase.rpc("admin_confirm_after_sales_refund", {
     p_case_id: caseId, p_refund_amount: Number(amount), p_refund_reference: reference.trim() || null,
+    p_refund_method: method, p_transaction_number: transactionNumber.trim(),
   });
   if (error) return { error: error.message };
   revalidatePath("/admin/orders");
