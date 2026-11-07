@@ -14,7 +14,7 @@ export async function POST(req:NextRequest){
   if(valid!==true)return NextResponse.json({error:"Your verification has expired."},{status:401});
   const ext=contentType==="image/jpeg"?"jpg":contentType==="image/png"?"png":contentType==="image/webp"?"webp":contentType==="image/avif"?"avif":contentType==="video/mp4"?"mp4":"mov";
   const key=`after-sales/${orderId}/${randomUUID()}.${ext}`;
-  const url=await createEvidenceUploadUrl(key,contentType);
+  const url=await createEvidenceUploadUrl(key,contentType,size);
   return NextResponse.json({url,key});
  }catch{return NextResponse.json({error:"Unable to prepare evidence upload."},{status:500});}
 }
