@@ -30,7 +30,7 @@ export async function GET(_request:NextRequest,{params}:{params:Promise<{id:stri
  const db=createAdminClient(); if(!await refundExists(db,id,refundId))return NextResponse.json({error:"Refund not found"},{status:404});
  const {data:attachments,error}=await db.from("order_refund_attachments").select("id,file_name,content_type,file_size,uploaded_by,created_at,object_key").eq("refund_id",refundId).eq("order_id",id).order("created_at",{ascending:false});
  if(error)return NextResponse.json({error:"Unable to load refund proofs"},{status:500});
- const {data:events,eventError}=await (async()=>{const q=await db.from("order_refund_events").select("id,event_type,description,old_values,new_values,actor_user_id,created_at").eq("refund_id",refundId).eq("order_id",id).order("created_at",{ascending:false});return {data:q.data,eventError:q.error}})();
+ const {data:events,error:eventError}=await db.from("order_refund_events").select("id,event_type,description,old_values,new_values,actor_user_id,created_at").eq("refund_id",refundId).eq("order_id",id).order("created_at",{ascending:false});
  if(eventError)return NextResponse.json({error:"Unable to load refund history"},{status:500});
  const {bucket,client}=getEvidenceClient();
  const files=await Promise.all((attachments||[]).map(async file=>({id:file.id,file_name:file.file_name,content_type:file.content_type,file_size:file.file_size,uploaded_by:file.uploaded_by,created_at:file.created_at,url:await getSignedUrl(client,new GetObjectCommand({Bucket:bucket,Key:file.object_key}),{expiresIn:180})})));
