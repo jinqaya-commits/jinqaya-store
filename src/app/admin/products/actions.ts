@@ -197,32 +197,28 @@ export async function removeVariant(productId:string,variantId:string) {
 
 export async function reorderImages(productId:string, ids:string[]) {
  const supabase=await requireCatalogManager();
- const {data:owned,error:readError}=await supabase.from("product_images").select("id").eq("product_id",productId);
- if(readError)return {error:readError.message};
- const ownedIds=new Set((owned??[]).map(image=>image.id));
- if(ids.length!==ownedIds.size||ids.some(id=>!ownedIds.has(id))||new Set(ids).size!==ids.length){
-  return {error:"The image list changed. Refresh the page and try again."};
- }
- const {error:clearError}=await supabase.from("product_images").update({is_primary:false,image_type:"gallery"}).eq("product_id",productId);
- if(clearError)return {error:clearError.message};
- for(let i=0;i<ids.length;i++){
-  const {error}=await supabase.from("product_images").update({sort_order:i,is_primary:i===0,image_type:i===0?"main":"gallery"}).eq("id",ids[i]).eq("product_id",productId);
-  if(error)return {error:error.message};
- }
- revalidatePath("/admin/products"); revalidatePath("/shop"); revalidatePath("/products"); return {success:true};
+ const {error}=await supabase.rpc("admin_reorder_product_images",{
+  p_product_id:productId,
+  p_image_ids:ids,
+ });
+ if(error)return {error:error.message};
+ revalidatePath("/admin/products");
+ revalidatePath("/shop");
+ revalidatePath("/products");
+ return {success:true};
 }
 
 export async function removeImage(productId: string, imageId: string, _path: string) {
   const supabase = await requireCatalogManager();
-  const { data: image, error: readError } = await supabase
-    .from("product_images")
-    .select("storage_path")
-    .eq("id", imageId)
-    .eq("product_id", productId)
-    .maybeSingle();
-  if (readError || !image) return { error: readError?.message || "Image not found." };
+  const { data: storagePath, error } = await supabase.rpc("admin_delete_product_image", {
+    p_product_id: productId,
+    p_image_id: imageId,
+  });
+  if (error) return { error: error.message };
 
-  const path = image.storage_path as string;
+  // The database change is committed atomically before external object cleanup.
+  // A storage failure must not restore a catalog row pointing at a deleted image.
+  const path = typeof storagePath === "string" ? storagePath : "";
   try {
     if (path.startsWith("r2://")) {
       const config = getR2Config();
@@ -232,26 +228,12 @@ export async function removeImage(productId: string, imageId: string, _path: str
       }));
     } else if (path && !(path.startsWith("https://") || path.startsWith("http://"))) {
       const { error: storageError } = await supabase.storage.from("product-images").remove([path]);
-      if (storageError) return { error: storageError.message };
+      if (storageError) console.error("Product image row deleted but storage cleanup failed:", storageError.message);
     }
-  } catch (error) {
-    return { error: error instanceof Error ? error.message : "Unable to delete image from storage." };
+  } catch (cleanupError) {
+    console.error("Product image row deleted but storage cleanup failed:", cleanupError);
   }
 
-  const { error } = await supabase.from("product_images").delete().eq("id", imageId).eq("product_id", productId);
-  if (error) return { error: error.message };
-  const { data: remaining, error: remainingError } = await supabase
-    .from("product_images").select("id").eq("product_id", productId).order("sort_order", { ascending: true });
-  if (remainingError) return { error: remainingError.message };
-  const { error: clearError } = await supabase.from("product_images")
-    .update({ is_primary: false, image_type: "gallery" }).eq("product_id", productId);
-  if (clearError) return { error: clearError.message };
-  for (let index = 0; index < (remaining ?? []).length; index++) {
-    const { error: updateError } = await supabase.from("product_images")
-      .update({ sort_order: index, is_primary: index === 0, image_type: index === 0 ? "main" : "gallery" })
-      .eq("id", remaining![index].id).eq("product_id", productId);
-    if (updateError) return { error: updateError.message };
-  }
   revalidatePath("/admin/products");
   revalidatePath("/shop");
   revalidatePath("/products");
