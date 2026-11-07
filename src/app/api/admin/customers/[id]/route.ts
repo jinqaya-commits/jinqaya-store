@@ -29,5 +29,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const status = error.code === "42501" ? 403 : error.code === "P0002" ? 404 : 400;
     return NextResponse.json({ error: status === 403 ? "Forbidden" : status === 404 ? "Customer not found" : "Unable to save customer details." }, { status });
   }
-  return NextResponse.json({ ok: true, tags: data?.tags || tags });
+  const result = data && typeof data === "object" && !Array.isArray(data)
+    ? data as { tags?: unknown }
+    : null;
+  const savedTags = Array.isArray(result?.tags)
+    ? result.tags.filter((tag): tag is string => typeof tag === "string")
+    : tags;
+  return NextResponse.json({ ok: true, tags: savedTags });
 }
