@@ -292,7 +292,7 @@ export async function updateShipmentIssueAction(orderId: string, issueId: string
   });
   if (error) return { error: error.message };
   revalidatePath("/admin/orders/" + orderId);
-  return { success: true };
+  return { success: true, data };
 }
 
 export async function createReplacementShipmentAction(orderId: string, issueId: string, carrier: string, tracking: string, url: string, stockSource: string) {
