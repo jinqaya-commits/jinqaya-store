@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import CustomerCrmEditor from "../customer-crm-editor";
+import CustomerFollowUps from "../customer-follow-ups";
 
 export const dynamic = "force-dynamic";
 
@@ -32,13 +33,15 @@ export default async function AdminCustomerDetailPage({ params }: { params: Prom
   if (error) throw new Error("Unable to load customer.");
   if (!customer) notFound();
 
-  const [{ data: orders, error: ordersError }, { count: orderCount }] = await Promise.all([
+  const [{ data: orders, error: ordersError }, { count: orderCount }, { data: followUps, error: followUpsError }] = await Promise.all([
     supabase.from("orders")
       .select("id,order_number,status,currency,subtotal,shipping_amount,total_amount,placed_at,created_at,paid_at,shipping_method_name,order_items(product_name,variant_name,sku,quantity,unit_price,line_total)")
       .eq("customer_id", id).order("created_at", { ascending: false }).limit(100),
     supabase.from("orders").select("id", { count: "exact", head: true }).eq("customer_id", id),
+    supabase.from("customer_follow_ups").select("id,title,notes,due_at,status,completed_at,created_at").eq("customer_id", id).order("due_at", { ascending: true }).limit(100),
   ]);
   if (ordersError) throw new Error("Unable to load customer orders.");
+  if (followUpsError) throw new Error("Unable to load customer follow-ups.");
 
   const paidOrders = (orders || []).filter(order => ["paid", "processing", "partially_shipped", "shipped", "delivered"].includes(order.status));
   const currencies = [...new Set(paidOrders.map(order => order.currency.trim() || "USD"))];
@@ -65,6 +68,10 @@ export default async function AdminCustomerDetailPage({ params }: { params: Prom
       <section className="admin-panel">
         <div className="admin-panel-heading"><div><p className="admin-kicker">CUSTOMER RELATIONSHIP</p><h2>Notes & tags</h2></div><span>INTERNAL ONLY</span></div>
         <CustomerCrmEditor customerId={customer.id} initialNotes={customer.notes || ""} initialTags={customer.tags || []} />
+      </section>
+      <section className="admin-panel">
+        <div className="admin-panel-heading"><div><p className="admin-kicker">CUSTOMER RELATIONSHIP</p><h2>Follow-ups</h2></div><span>INTERNAL ONLY</span></div>
+        <CustomerFollowUps customerId={customer.id} initialFollowUps={followUps || []} />
       </section>
       <section className="admin-panel">
         <div className="admin-panel-heading"><div><p className="admin-kicker">PURCHASE HISTORY</p><h2>Orders</h2></div><span>{orderCount ?? 0} TOTAL</span></div>
