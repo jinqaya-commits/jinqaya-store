@@ -362,7 +362,7 @@ export async function recordAfterSalesReturnAction(orderId: string, caseId: stri
 export async function confirmAfterSalesRefundAction(orderId: string, caseId: string, amount: string, reference: string) {
   const supabase = await requireOrderManager();
   if (!/^[0-9a-f-]{36}$/i.test(orderId) || !/^[0-9a-f-]{36}$/i.test(caseId) ||
-      typeof amount !== "string" || !/^\\d+(?:\\.\\d{1,2})?$/.test(amount) ||
+      typeof amount !== "string" || !/^\d+(?:\.\d{1,2})?$/.test(amount) ||
       !Number.isFinite(Number(amount)) || Number(amount) <= 0 ||
       typeof reference !== "string" || reference.length > 200) {
     return { error: "Enter a positive refund amount with up to two decimal places and a valid reference." };
