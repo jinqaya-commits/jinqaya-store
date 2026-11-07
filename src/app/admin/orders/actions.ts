@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { sendOrderStatusEmail, type OrderEmailData } from "@/lib/order-email";
 
 async function requireOrderManager() {
   const supabase = await createClient();
@@ -35,6 +36,65 @@ export async function processOrderAction(
     p_note: String(formData.get("note") ?? ""),
   });
   if (error) return { error: error.message };
+
+  // Notify the customer only after the database confirms the corresponding state transition.
+  const result = data && typeof data === "object" ? data as { status?: string } : {};
+  const notificationEvents: Record<string, { event: "quote_confirmed" | "payment_received" | "shipped" | "delivered" | "cancelled"; expectedStatus: string }> = {
+    confirm_quote: { event: "quote_confirmed", expectedStatus: "pending_payment" },
+    confirm_payment: { event: "payment_received", expectedStatus: "paid" },
+    ship: { event: "shipped", expectedStatus: "shipped" },
+    delivered: { event: "delivered", expectedStatus: "delivered" },
+    cancel: { event: "cancelled", expectedStatus: "cancelled" },
+  };
+  const notification = notificationEvents[action];
+
+  if (notification && result.status === notification.expectedStatus) {
+    try {
+      const { data: order } = await supabase
+        .from("orders")
+        .select("order_number,customer_id,customer_email,currency,subtotal,shipping_amount,shipping_method_name")
+        .eq("id", orderId)
+        .maybeSingle();
+
+      if (order?.customer_email) {
+        const { data: customer } = await supabase
+          .from("customers")
+          .select("first_name,last_name")
+          .eq("id", order.customer_id)
+          .maybeSingle();
+
+        const emailData: OrderEmailData = {
+          orderNumber: order.order_number,
+          customerName: [customer?.first_name, customer?.last_name].filter(Boolean).join(" ") || "there",
+          customerEmail: order.customer_email,
+          currency: order.currency.trim() || "USD",
+          subtotal: order.subtotal,
+          shippingAmount: order.shipping_amount,
+          shippingMethod: order.shipping_method_name,
+        };
+
+        if (action === "ship") {
+          const { data: shipment } = await supabase
+            .from("shipments")
+            .select("carrier_name,tracking_number,tracking_url")
+            .eq("order_id", orderId)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          emailData.shippingMethod = shipment?.carrier_name || emailData.shippingMethod;
+          emailData.trackingNumber = shipment?.tracking_number || null;
+          emailData.trackingUrl = shipment?.tracking_url || null;
+        }
+
+        const sent = await sendOrderStatusEmail(emailData, notification.event);
+        if (!sent) console.error("Customer order status email was not sent:", notification.event, order.order_number);
+      }
+    } catch (emailError) {
+      // Email failure must never roll back or misreport a successfully saved order transition.
+      console.error("Customer order status notification failed:", emailError);
+    }
+  }
+
   revalidatePath("/admin/orders");
   revalidatePath(`/admin/orders/${orderId}`);
   revalidatePath("/admin/inventory");
