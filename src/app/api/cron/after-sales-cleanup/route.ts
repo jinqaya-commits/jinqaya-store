@@ -50,7 +50,8 @@ export async function GET(request:NextRequest){
   }
 
   return NextResponse.json({ok:true,deleted:deletedKeys.length,failed:keys.length-deletedKeys.length});
- }catch{
+ }catch(error){
+  console.error("[after-sales-cleanup] failed",error);
   return NextResponse.json({error:"Cleanup failed. Check server logs."},{status:500});
  }
 }
