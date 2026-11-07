@@ -1148,3 +1148,28 @@ a { color: inherit; text-decoration: none; }
 .admin-crm-footer button:disabled{opacity:.55;cursor:wait}
 .admin-crm-footer span{font-size:11px;color:#655747}
 @media(max-width:600px){.admin-crm-tag-entry{max-width:none}.admin-crm-tag-entry input{min-width:0}.admin-crm-tag-entry button{min-height:42px}}
+
+
+/* Customer follow-up management */
+.admin-followups{padding:22px 0}
+.admin-followup-form{display:grid;gap:16px;padding:20px;background:#f8f6f1;border:1px solid #e5ded3}
+.admin-followup-fields{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.admin-followup-fields label,.admin-followup-notes{display:grid;gap:8px;color:#6f6255;font-size:10px}
+.admin-followup-fields input,.admin-followup-notes textarea{width:100%;min-height:42px;padding:10px 12px;border:1px solid #d8d1c6;background:#fffdfa;color:#40372f;font:12px Arial,sans-serif}
+.admin-followup-notes textarea{resize:vertical;line-height:1.6}
+.admin-followup-summary{display:flex;flex-wrap:wrap;gap:18px;padding:18px 0;color:#81786b;font-size:10px;letter-spacing:.6px}
+.admin-followup-overdue{color:#9a4938}
+.admin-followup-list{display:grid}
+.admin-followup-item{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;padding:18px 0;border-top:1px solid #e9e2d8}
+.admin-followup-item-main{min-width:0}
+.admin-followup-title-row{display:flex;align-items:center;flex-wrap:wrap;gap:10px}
+.admin-followup-title-row strong{font:400 17px Georgia,serif}
+.admin-followup-due{margin:8px 0;color:#81786b;font-size:10px}
+.admin-followup-note-text{max-width:700px;margin:8px 0;color:#6f6255;font:13px/1.65 Georgia,serif;white-space:pre-wrap}
+.admin-followup-item small{color:#81786b;font-size:10px}
+.admin-followup-actions{display:flex;flex-wrap:wrap;gap:8px;flex-shrink:0}
+.admin-followup-actions button,.admin-followup-cancel{min-height:34px;padding:0 11px;border:1px solid #655747;background:#655747;color:white;font-size:9px;letter-spacing:.5px;cursor:pointer}
+.admin-followup-actions .admin-followup-cancel,.admin-followup-cancel{background:transparent;color:#655747}
+.admin-followup-actions button:disabled,.admin-followup-cancel:disabled{opacity:.5;cursor:wait}
+.status-warning{background:#f7e7e2;color:#934735}
+@media(max-width:650px){.admin-followup-fields{grid-template-columns:1fr}.admin-followup-item{flex-direction:column}.admin-followup-actions{width:100%}.admin-followup-actions button{flex:1}}
