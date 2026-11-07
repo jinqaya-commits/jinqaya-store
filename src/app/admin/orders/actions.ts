@@ -143,3 +143,56 @@ export async function adjustInventoryAction(formData: FormData) {
   revalidatePath("/admin/orders");
   return { success: true };
 }
+
+export async function createPurchaseOrderAction(formData: FormData) {
+  const supabase = await requireOrderManager();
+  const supplierName = String(formData.get("supplier_name") ?? "").trim();
+  const supplierEmail = String(formData.get("supplier_email") ?? "").trim();
+  const supplierPhone = String(formData.get("supplier_phone") ?? "").trim();
+  const notes = String(formData.get("notes") ?? "").trim();
+  let items: Array<{variant_id:string;quantity:number;unit_cost:string;currency:string}>;
+  try { items = JSON.parse(String(formData.get("items") ?? "[]")); } catch { return { error: "Invalid purchase order items." }; }
+  if (!supplierName || supplierName.length > 160 || supplierEmail.length > 254 || supplierPhone.length > 60 || notes.length > 3000 ||
+      !Array.isArray(items) || items.length < 1 || items.length > 100 ||
+      items.some((item) => !item.variant_id || !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 1000000 ||
+        (item.unit_cost !== "" && (!Number.isFinite(Number(item.unit_cost)) || Number(item.unit_cost) < 0)) ||
+        !/^[A-Z]{3}$/.test(item.currency))) {
+    return { error: "Check the supplier details and each SKU, quantity, cost and currency." };
+  }
+  const { data, error } = await supabase.rpc("admin_create_purchase_order", {
+    p_supplier_name: supplierName,
+    p_supplier_email: supplierEmail || null,
+    p_supplier_phone: supplierPhone || null,
+    p_notes: notes || null,
+    p_items: items,
+  });
+  if (error) return { error: error.message };
+  revalidatePath("/admin/purchase-orders");
+  revalidatePath("/admin/inventory");
+  return { success: true, id: data as string };
+}
+
+export async function issuePurchaseOrderAction(formData: FormData) {
+  const supabase = await requireOrderManager();
+  const id = String(formData.get("purchase_order_id") ?? "");
+  const { error } = await supabase.rpc("admin_issue_purchase_order", { p_purchase_order_id: id });
+  if (error) return { error: error.message };
+  revalidatePath("/admin/purchase-orders");
+  return { success: true };
+}
+
+export async function receivePurchaseOrderItemAction(formData: FormData) {
+  const supabase = await requireOrderManager();
+  const id = String(formData.get("purchase_order_item_id") ?? "");
+  const quantity = Number(formData.get("quantity"));
+  const notes = String(formData.get("notes") ?? "").trim();
+  if (!id || !Number.isInteger(quantity) || quantity < 1 || notes.length > 500) return { error: "Enter a valid received quantity." };
+  const { error } = await supabase.rpc("admin_receive_purchase_order_item", {
+    p_purchase_order_item_id: id, p_quantity: quantity, p_notes: notes || null,
+  });
+  if (error) return { error: error.message };
+  revalidatePath("/admin/purchase-orders");
+  revalidatePath("/admin/inventory");
+  revalidatePath("/admin");
+  return { success: true };
+}
