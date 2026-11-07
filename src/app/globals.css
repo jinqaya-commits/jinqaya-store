@@ -1173,3 +1173,28 @@ a { color: inherit; text-decoration: none; }
 .admin-followup-actions button:disabled,.admin-followup-cancel:disabled{opacity:.5;cursor:wait}
 .status-warning{background:#f7e7e2;color:#934735}
 @media(max-width:650px){.admin-followup-fields{grid-template-columns:1fr}.admin-followup-item{flex-direction:column}.admin-followup-actions{width:100%}.admin-followup-actions button{flex:1}}
+
+
+/* Admin overview dashboard */
+.admin-dashboard-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;margin-top:22px;align-items:start}
+.admin-dashboard-grid>.admin-panel{min-width:0;margin:0}
+.admin-panel-heading>a{font-size:9px;letter-spacing:.7px;color:#756858;text-decoration:none}
+.admin-dashboard-list{display:grid}
+.admin-dashboard-row{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:15px 0;border-top:1px solid #e9e2d8;color:inherit;text-decoration:none}
+.admin-dashboard-row:first-child{border-top:0}
+.admin-dashboard-row>span:first-child{min-width:0;display:grid;gap:5px}
+.admin-dashboard-row strong{font:400 14px Georgia,serif;overflow-wrap:anywhere}
+.admin-dashboard-row small{font-size:10px;color:#81786b;line-height:1.5}
+.admin-dashboard-row-end{display:grid;justify-items:end;gap:5px;flex-shrink:0}
+.admin-dashboard-row-end strong{font-family:Arial,sans-serif;font-size:12px}
+.admin-dashboard-row-end small{text-align:right}
+.admin-dashboard-mini-stats{display:flex;gap:28px;padding:12px 0 16px;border-bottom:1px solid #e9e2d8}
+.admin-dashboard-mini-stats>div{display:grid;gap:4px}
+.admin-dashboard-mini-stats strong{font:400 25px Georgia,serif}
+.admin-dashboard-mini-stats small{font-size:9px;color:#81786b;text-transform:uppercase;letter-spacing:.7px}
+.admin-dashboard-alert{color:#a34837!important}
+.admin-dashboard-due{font-size:10px;color:#81786b;flex-shrink:0;text-align:right}
+.admin-dashboard-shortcuts>a{display:flex;justify-content:space-between;padding:14px 0;border-top:1px solid #e9e2d8;color:#514638;text-decoration:none;font:14px Georgia,serif}
+.admin-dashboard-shortcuts>a span{color:#8b7c69}
+@media(max-width:850px){.admin-dashboard-grid{grid-template-columns:1fr}}
+@media(max-width:520px){.admin-dashboard-row{align-items:flex-start}.admin-dashboard-due{max-width:112px;line-height:1.5}.admin-dashboard-row-end{max-width:42%}}
