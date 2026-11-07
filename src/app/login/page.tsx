@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { LoginForm } from "./login-form";
 
-export const metadata = { title: "Admin sign in", robots: { index: false, follow: false, googleBot: { index: false, follow: false } } };
+export const metadata = {
+  title: "Admin sign in",
+  description: "Private administrator sign-in for the JINQAYA store.",
+  robots: { index: false, follow: false, googleBot: { index: false, follow: false } },
+  openGraph: { title: "Admin sign in", description: "Private administrator sign-in for the JINQAYA store.", url: "https://jinqaya.com/login", type: "website" },
+  twitter: { card: "summary", title: "Admin sign in", description: "Private administrator sign-in for the JINQAYA store." },
+};
 
 export default function LoginPage() {
   return <main className="admin-login-page">
