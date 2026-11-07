@@ -377,7 +377,7 @@ export async function recordAfterSalesReturnAction(orderId: string, caseId: stri
       typeof notes !== "string" || notes.length > 1000) return { error: "Enter a valid returned item, quantity and warehouse." };
   const { error } = await supabase.rpc("admin_record_after_sales_return", {
     p_case_id: caseId, p_order_item_id: orderItemId, p_quantity: quantity,
-    p_warehouse_id: warehouseId, p_notes: notes.trim() || null,
+    p_warehouse_id: warehouseId, p_notes: notes.trim() || undefined,
   });
   if (error) return { error: error.message };
   revalidatePath("/admin/orders/" + orderId);
