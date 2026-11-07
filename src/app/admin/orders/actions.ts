@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import type { Database } from "@/types/database";
 import { sendOrderStatusEmail, type OrderEmailData } from "@/lib/order-email";
 
 async function requireOrderManager() {
@@ -250,7 +251,7 @@ export async function updateShipmentStatusAction(shipmentId: string, orderId: st
   }
   const { error } = await supabase.rpc("admin_update_shipment_status", {
     p_shipment_id: shipmentId,
-    p_new_status: newStatus,
+    p_new_status: newStatus as Database["public"]["Enums"]["shipment_status"],
     p_note: note.trim() || null,
   });
   if (error) return { error: error.message };
