@@ -10,6 +10,19 @@ import { resolveProductImageUrls } from "@/lib/product-images";
 
 export const dynamic = "force-dynamic";
 
+export const metadata: Metadata = {
+  title: "Premium Pet Lifestyle for Cats & Dogs",
+  description: "Discover JINQAYA: considered pet lifestyle essentials for cats and dogs, created for the everyday life you share.",
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    url: "https://jinqaya.com/",
+    title: "JINQAYA | Premium Pet Lifestyle",
+    description: "Considered everyday essentials for the life you share with cats and dogs.",
+  },
+};
+
+
 const categoryVisuals = [
   { image: "https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=1400&q=88", alt: "A dog enjoying an outdoor moment" },
   { image: "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=1100&q=88", alt: "A cat resting in a quiet home" },
