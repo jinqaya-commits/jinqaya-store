@@ -14,6 +14,8 @@ export async function POST(req:NextRequest){
   if(valid!==true)return NextResponse.json({error:"Your verification has expired."},{status:401});
   const ext=contentType==="image/jpeg"?"jpg":contentType==="image/png"?"png":contentType==="image/webp"?"webp":contentType==="image/avif"?"avif":contentType==="video/mp4"?"mp4":"mov";
   const key=`after-sales/${orderId}/${randomUUID()}.${ext}`;
+  const {data:reserved,error:reserveError}=await supabase.rpc("reserve_after_sales_upload",{p_order_id:orderId,p_token_hash:sha256(token),p_object_key:key,p_content_type:contentType,p_expected_size:size});
+  if(reserveError||reserved!==true)return NextResponse.json({error:"Upload limit reached or session expired. Please remove a file or verify again."},{status:429});
   const url=await createEvidenceUploadUrl(key,contentType,size);
   return NextResponse.json({url,key});
  }catch{return NextResponse.json({error:"Unable to prepare evidence upload."},{status:500});}
