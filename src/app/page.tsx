@@ -177,8 +177,8 @@ export default async function HomePage() {
           <article>
             <span>03</span>
             <h3>HERE TO HELP</h3>
-            <p>For product-specific information, review the details and dimensions on each product page before ordering.</p>
-            <Link className="jq-policy-link" href="/shop">BROWSE THE SHOP ↗</Link>
+            <p>For product questions or order support, our team is available by email.</p>
+            <a className="jq-policy-link" href="mailto:info@jinqaya.com">EMAIL OUR TEAM ↗</a>
           </article>
         </div>
       </section>
@@ -186,7 +186,7 @@ export default async function HomePage() {
       <footer className="jq-footer">
         <div className="jq-footer-main">
           <div><Link className="jq-wordmark" href="/">JINQAYA<span>®</span></Link><p>Life is better in good company.</p></div>
-          <div className="jq-footer-links"><Link href="/shop">THE SHOP</Link><Link href="#collections">COLLECTIONS</Link><Link href="#point-of-view">OUR POINT OF VIEW</Link><Link href="/policies/shipping">SHIPPING POLICY</Link><Link href="/policies/returns-refunds">RETURNS &amp; REFUNDS</Link><Link href="/policies/privacy">PRIVACY POLICY</Link><Link href="/policies/terms">TERMS OF SERVICE</Link></div>
+          <div className="jq-footer-links"><Link href="/shop">THE SHOP</Link><Link href="#collections">COLLECTIONS</Link><Link href="#point-of-view">OUR POINT OF VIEW</Link><Link href="/policies/shipping">SHIPPING POLICY</Link><Link href="/policies/returns-refunds">RETURNS &amp; REFUNDS</Link><Link href="/policies/privacy">PRIVACY POLICY</Link><Link href="/policies/terms">TERMS OF SERVICE</Link><Link href="/contact">CONTACT</Link><a href="mailto:info@jinqaya.com">INFO@JINQAYA.COM</a></div>
           <span className="jq-footer-note">FOR CATS, DOGS<br />AND THE LIFE BETWEEN.</span>
         </div>
         <div className="jq-footer-bottom"><span>© {new Date().getFullYear()} JINQAYA. ALL RIGHTS RESERVED.</span><span>DESIGNED FOR LIFE, SHARED.</span></div>
