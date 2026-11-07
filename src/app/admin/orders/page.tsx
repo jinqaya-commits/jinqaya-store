@@ -66,7 +66,7 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
     supabase.from("orders").select("id", { count: "exact", head: true }).in("status", ["paid", "processing"]),
   ]);
   return <main className="admin-shell">
-    <aside className="admin-sidebar"><Link href="/" className="admin-brand">JINQAYA<span>ADMIN</span></Link><nav><Link href="/admin/products">Products</Link><Link className="active" href="/admin/orders">Orders</Link><Link href="/admin/customers">Customers</Link><Link href="/admin/inventory">Inventory</Link><Link href="/shop">View storefront ↗</Link></nav><p className="admin-sidebar-note">COMMERCE MANAGEMENT</p></aside>
+    <aside className="admin-sidebar"><Link href="/" className="admin-brand">JINQAYA<span>ADMIN</span></Link><nav><Link href="/admin/products">Products</Link><Link className="active" href="/admin/orders">Orders</Link><Link href="/admin/customers">Customers</Link><Link href="/admin/purchase-orders">Purchase orders</Link><Link href="/admin/inventory">Inventory</Link><Link href="/shop">View storefront ↗</Link></nav><p className="admin-sidebar-note">COMMERCE MANAGEMENT</p></aside>
     <section className="admin-main">
       <header className="admin-topbar"><div><p className="admin-kicker">JINQAYA / COMMERCE</p><h1>Orders</h1></div><Link className="admin-back-link" href="/admin/products">← CATALOG</Link></header>
       <div className="admin-summary"><div><span>ALL ORDERS</span><strong>{all ?? 0}</strong></div><div><span>NEEDS REVIEW</span><strong>{review ?? 0}</strong></div><div><span>AWAITING PAYMENT</span><strong>{payment ?? 0}</strong></div><div><span>TO FULFIL</span><strong>{fulfil ?? 0}</strong></div></div>
