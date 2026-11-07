@@ -50,12 +50,18 @@ export type StoreProduct = {
 
 type ProductRow = Omit<StoreProduct, "variants" | "images">;
 
+function isNextDynamicServerUsageError(error: unknown): error is Error & { digest: string } {
+  return typeof error === "object" && error !== null &&
+    "digest" in error && error.digest === "DYNAMIC_SERVER_USAGE";
+}
+
 
 async function attachProductData(rows: ProductRow[]): Promise<StoreProduct[]> {
   if (rows.length === 0) return [];
 
   let supabase;
   try { supabase = await createClient(); } catch (error) {
+    if (isNextDynamicServerUsageError(error)) throw error;
     console.error("Supabase is not configured for the storefront:", error);
     return rows.map((product) => ({ ...product, variants: [], images: [] }));
   }
@@ -128,6 +134,7 @@ const productColumns = "id, name, slug, short_description, description, pet_type
 export async function getStoreProducts(categorySlug?: string): Promise<StoreProduct[]> {
   let supabase;
   try { supabase = await createClient(); } catch (error) {
+    if (isNextDynamicServerUsageError(error)) throw error;
     console.error("Supabase is not configured for the storefront:", error);
     return [];
   }
@@ -180,6 +187,7 @@ export async function getStoreProducts(categorySlug?: string): Promise<StoreProd
 export async function getStoreProductBySlug(slug: string): Promise<StoreProduct | null> {
   let supabase;
   try { supabase = await createClient(); } catch (error) {
+    if (isNextDynamicServerUsageError(error)) throw error;
     console.error("Supabase is not configured for the storefront:", error);
     return null;
   }
