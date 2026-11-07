@@ -19,9 +19,9 @@ export function RefundProofManager({orderId,refundId}:{orderId:string;refundId:s
  },[endpoint]);
  useEffect(()=>{let alive=true;fetch(endpoint,{cache:"no-store"}).then(async r=>{const j=await r.json();if(!r.ok)throw new Error(j.error||"Unable to load refund documents.");if(alive){setAttachments(j.attachments||[]);setEvents(j.events||[]);}}).catch(e=>{if(alive)setError(e instanceof Error?e.message:"Unable to load refund documents.");});return()=>{alive=false};},[endpoint]);
  async function upload(file:File){
-  if(file.size>10*1024*1024)throw new Error("Each refund proof must be 10 MB or smaller.");
   setBusy(true);setError("");setMessage("");
   try{
+   if(file.size>10*1024*1024)throw new Error("Each refund proof must be 10 MB or smaller.");
    const start=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action:"create_upload",fileName:file.name,contentType:file.type,size:file.size})});
    const info=await start.json();if(!start.ok)throw new Error(info.error||"Unable to prepare upload.");
    const put=await fetch(info.uploadUrl,{method:"PUT",headers:{"Content-Type":file.type},body:file});
