@@ -43,13 +43,13 @@ export default function TermsOfServicePage() {
         <h2>9. Changes to these terms</h2>
         <p>We may revise these terms from time to time. Updated terms will be posted on this page. Changes will not remove rights that have already accrued or rights that cannot legally be changed.</p>
         <h2>10. Contact</h2>
-        <p>For questions about these terms or an order request, please use the customer contact channel provided on our website or in your order correspondence.</p>
+        <p>For questions about these terms or an order request, email <a href="mailto:info@jinqaya.com">info@jinqaya.com</a>.</p>
         <div className="jq-policy-note"><strong>Related information</strong><p>Read our <Link href="/policies/privacy">Privacy Policy</Link>, <Link href="/policies/shipping">Shipping Policy</Link> and <Link href="/policies/returns-refunds">Returns &amp; Refunds Policy</Link>.</p></div>
       </article>
       <footer className="jq-footer">
         <div className="jq-footer-main">
           <div><Link className="jq-wordmark" href="/">JINQAYA<span>®</span></Link><p>Life is better in good company.</p></div>
-          <div className="jq-footer-links"><Link href="/shop">THE SHOP</Link><Link href="/policies/shipping">SHIPPING POLICY</Link><Link href="/policies/returns-refunds">RETURNS &amp; REFUNDS</Link><Link href="/policies/privacy">PRIVACY POLICY</Link><Link href="/policies/terms">TERMS OF SERVICE</Link></div>
+          <div className="jq-footer-links"><Link href="/shop">THE SHOP</Link><Link href="/policies/shipping">SHIPPING POLICY</Link><Link href="/policies/returns-refunds">RETURNS &amp; REFUNDS</Link><Link href="/policies/privacy">PRIVACY POLICY</Link><Link href="/policies/terms">TERMS OF SERVICE</Link><Link href="/contact">CONTACT</Link><a href="mailto:info@jinqaya.com">INFO@JINQAYA.COM</a></div>
           <span className="jq-footer-note">FOR CATS, DOGS<br />AND THE LIFE BETWEEN.</span>
         </div>
         <div className="jq-footer-bottom"><span>© {new Date().getFullYear()} JINQAYA. ALL RIGHTS RESERVED.</span><span>DESIGNED FOR LIFE, SHARED.</span></div>
