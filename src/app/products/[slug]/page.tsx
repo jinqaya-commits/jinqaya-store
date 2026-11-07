@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const product = await getStoreProductBySlug(slug);
   if (!product) return { title: "Product Not Found" };
   return {
-    title: product.seo_title || product.name,
+    title: { absolute: product.seo_title || product.name },
     description: product.seo_description || product.short_description || product.description || undefined,
     alternates: { canonical: `/products/${product.slug}` },
     openGraph: {
