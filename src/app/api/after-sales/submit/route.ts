@@ -19,7 +19,12 @@ export async function POST(req:NextRequest){
   }
   const {data,error}=await supabase.rpc("submit_customer_after_sales_case",{p_order_id:orderId,p_token_hash:tokenHash,p_description:description,p_evidence_keys:evidence});
   if(error)throw error;
-  const response=NextResponse.json({ok:true,caseNumber:data.case_number});
+  if (!data || typeof data !== "object" || Array.isArray(data) ||
+      typeof (data as { case_number?: unknown }).case_number !== "string") {
+   throw new Error("The after-sales RPC returned an unexpected result.");
+  }
+  const result = data as { case_number: string };
+  const response=NextResponse.json({ok:true,caseNumber:result.case_number});
   response.cookies.set(sessionCookieName,"",{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"strict",path:"/api/after-sales",maxAge:0});
   return response;
  }catch{return NextResponse.json({error:"Unable to submit your request. Please try again later."},{status:500});}
