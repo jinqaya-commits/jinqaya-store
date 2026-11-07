@@ -247,21 +247,14 @@ export async function addProductImage(productId: string, storagePath: string, al
   if (!objectKey.startsWith(`${productId}/`) || objectKey.includes("..")) {
     return { error: "Invalid image storage path." };
   }
-  const { data: existing, error: readError } = await supabase
-    .from("product_images")
-    .select("id")
-    .eq("product_id", productId);
-  if (readError) return { error: readError.message };
-  const isPrimary = (existing?.length ?? 0) === 0;
-  const { data: insertedImage, error } = await supabase.from("product_images").insert({
-    product_id: productId,
-    storage_path: storagePath,
-    alt_text: altText.trim() || null,
-    image_type: isPrimary ? "main" : "gallery",
-    sort_order: existing?.length ?? 0,
-    is_primary: isPrimary,
-  }).select("id").single();
-  if (error) {
+
+  const { data: imageId, error } = await supabase.rpc("admin_add_product_image", {
+    p_product_id: productId,
+    p_storage_path: storagePath,
+    p_alt_text: altText,
+  });
+
+  if (error || !imageId) {
     try {
       if (isR2) {
         const config = getR2Config();
@@ -272,12 +265,13 @@ export async function addProductImage(productId: string, storagePath: string, al
     } catch (cleanupError) {
       console.error("Unable to clean up unlinked product image:", cleanupError);
     }
-    return { error: error.message };
+    return { error: error?.message || "Unable to save product image." };
   }
+
   revalidatePath("/admin/products");
   revalidatePath("/shop");
   revalidatePath("/products");
-  return { success: true, imageId: insertedImage.id };
+  return { success: true, imageId };
 }
 
 
