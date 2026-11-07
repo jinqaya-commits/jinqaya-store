@@ -3710,6 +3710,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_order_email_outbox: {
+        Args: { p_limit?: number; p_order_id?: string | null }
+        Returns: Database["public"]["Tables"]["order_email_outbox"]["Row"][]
+      }
+      complete_order_email_outbox: {
+        Args: {
+          p_error?: string | null
+          p_id: string
+          p_provider_message_id?: string | null
+          p_success: boolean
+        }
+        Returns: undefined
+      }
       admin_add_product_image: {
         Args: {
           p_alt_text: string
