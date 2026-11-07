@@ -101,8 +101,9 @@ export function CheckoutForm() {
         </section>
       ) : (
         <section className="checkout-page">
-          <p className="eyebrow">SECURE CHECKOUT</p>
+          <p className="eyebrow">ORDER REQUEST</p>
           <h1>Delivery details</h1>
+          <p className="checkout-intro">Send us your order details first. We’ll confirm availability, shipping and the final total with you before payment.</p>
           {items.length === 0 ? (
             <div className="cart-empty"><p>Your bag is empty.</p><Link className="button button-dark" href="/shop">EXPLORE THE COLLECTION <span>↗</span></Link></div>
           ) : (
