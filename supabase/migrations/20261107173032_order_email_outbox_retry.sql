@@ -80,6 +80,15 @@ SECURITY DEFINER
 SET search_path TO ''
 AS $function$
 BEGIN
+  UPDATE public.order_email_outbox q
+     SET status = 'dead',
+         locked_until = NULL,
+         last_error = COALESCE(q.last_error, 'worker_lease_expired_after_final_attempt'),
+         updated_at = pg_catalog.now()
+   WHERE q.status = 'processing'
+     AND q.locked_until < pg_catalog.now()
+     AND q.attempt_count >= q.max_attempts;
+
   RETURN QUERY
   WITH candidates AS (
     SELECT q.id
