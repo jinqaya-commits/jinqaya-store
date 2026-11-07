@@ -32,7 +32,7 @@ export default function ShippingPolicyPage() {
         <p>Applicable shipping charges and any available estimated delivery information will be displayed during checkout before you complete your purchase. Delivery estimates are provided for guidance and may vary due to the destination, carrier operations, customs processing or other circumstances outside our control.</p>
         <h2>Before placing your order</h2>
         <p>Please make sure your shipping address and contact details are complete and accurate. If you need clarification about delivery to your location, review the checkout information before placing your order.</p>
-        <div className="jq-policy-note"><strong>Need help?</strong><p>For product information, please visit the relevant product page. For return eligibility, read our <Link href="/policies/returns-refunds">Returns &amp; Refunds Policy</Link>.</p></div>
+        <div className="jq-policy-note"><strong>Need help?</strong><p>For delivery questions, email <a href="mailto:info@jinqaya.com">info@jinqaya.com</a>. For return eligibility, read our <Link href="/policies/returns-refunds">Returns &amp; Refunds Policy</Link>.</p></div>
         <p className="jq-policy-back"><Link href="/shop">CONTINUE SHOPPING ↗</Link></p>
       </article>
       <footer className="jq-footer">
