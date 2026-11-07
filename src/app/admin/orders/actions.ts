@@ -293,7 +293,7 @@ export async function updateShipmentIssueAction(orderId: string, issueId: string
   return { success: true };
 }
 
-export async function createReplacementShipmentAction(orderId: string, issueId: string, carrier: string, tracking: string, url: string) {
+export async function createReplacementShipmentAction(orderId: string, issueId: string, carrier: string, tracking: string, url: string, stockSource: string) {
   const supabase = await requireOrderManager();
   if (!/^[0-9a-f-]{36}$/i.test(orderId) || !/^[0-9a-f-]{36}$/i.test(issueId) ||
       typeof carrier !== "string" || carrier.trim().length < 2 || carrier.length > 100 ||
@@ -302,7 +302,7 @@ export async function createReplacementShipmentAction(orderId: string, issueId: 
     return { error: "Enter a valid carrier, tracking number and tracking URL." };
   }
   const { error } = await supabase.rpc("admin_create_replacement_shipment", {
-    p_issue_id: issueId, p_carrier_name: carrier.trim(), p_tracking_number: tracking.trim(), p_tracking_url: url.trim() || null,
+    p_issue_id: issueId, p_carrier_name: carrier.trim(), p_tracking_number: tracking.trim(), p_tracking_url: url.trim() || null, p_stock_source: stockSource,
   });
   if (error) return { error: error.message };
   revalidatePath("/admin/orders/" + orderId);
