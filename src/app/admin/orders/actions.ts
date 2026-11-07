@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
+import type { RpcArgsWithNullableFields } from "@/lib/supabase/rpc-types";
 import { sendOrderStatusEmail, type OrderEmailData } from "@/lib/order-email";
 
 async function requireOrderManager() {
@@ -29,7 +30,7 @@ export async function processOrderAction(
   const { data, error } = await supabase.rpc("admin_process_order", {
     p_order_id: orderId,
     p_action: action,
-    p_shipping_amount: amount,
+    p_shipping_amount: amount ?? undefined,
     p_shipping_method: String(formData.get("shipping_method") ?? ""),
     p_carrier_name: String(formData.get("carrier_name") ?? ""),
     p_tracking_number: String(formData.get("tracking_number") ?? ""),
@@ -166,12 +167,25 @@ export async function createPurchaseOrderAction(formData: FormData) {
         item.unit_cost === "" || !Number.isFinite(Number(item.unit_cost)) || Number(item.unit_cost) < 0)) {
     return { error: "Check supplier details, currency, expected date, and each SKU, quantity and unit cost." };
   }
-  const { data, error } = await supabase.rpc("admin_create_purchase_order_v3", {
-    p_supplier_id: supplierId, p_supplier_name: supplierName, p_supplier_email: supplierEmail || null,
-    p_supplier_phone: supplierPhone || null, p_save_supplier: saveSupplier, p_currency: currency,
-    p_supplier_reference: supplierReference || null, p_notes: notes || null,
-    p_expected_date: expectedDate || null, p_items: items,
-  });
+  const purchaseOrderArgs = {
+    p_supplier_id: supplierId,
+    p_supplier_name: supplierName,
+    p_supplier_email: supplierEmail || null,
+    p_supplier_phone: supplierPhone || null,
+    p_save_supplier: saveSupplier,
+    p_currency: currency,
+    p_supplier_reference: supplierReference || null,
+    p_notes: notes || null,
+    p_expected_date: expectedDate || null,
+    p_items: items,
+  } satisfies RpcArgsWithNullableFields<
+    "admin_create_purchase_order_v3",
+    "p_supplier_id" | "p_supplier_email" | "p_supplier_phone" | "p_supplier_reference" | "p_notes" | "p_expected_date"
+  >;
+  const { data, error } = await supabase.rpc(
+    "admin_create_purchase_order_v3",
+    purchaseOrderArgs as Database["public"]["Functions"]["admin_create_purchase_order_v3"]["Args"]
+  );
   if (error) return { error: error.message };
   const result = data as { id?: string };
   revalidatePath("/admin/purchase-orders"); revalidatePath("/admin/inventory"); revalidatePath("/admin/suppliers");
@@ -200,7 +214,7 @@ export async function receivePurchaseOrderItemAction(formData: FormData) {
       notes.length > 500 || deliveryReference.length > 160) return { error: "Enter valid received and damaged quantities." };
   const { error } = await supabase.rpc("admin_receive_purchase_order_line_v2", {
     p_purchase_order_item_id: id, p_quantity: quantity, p_damaged: damaged,
-    p_notes: notes || null, p_supplier_delivery_reference: deliveryReference || null,
+    p_notes: notes || undefined, p_supplier_delivery_reference: deliveryReference || undefined,
   });
   if (error) return { error: error.message };
   revalidatePath("/admin/purchase-orders");
@@ -231,8 +245,8 @@ export async function recordPurchaseOrderPaymentAction(purchaseOrderId: string, 
     p_amount: amount,
     p_payment_date: paymentDate,
     p_payment_method: paymentMethod,
-    p_reference_number: reference || null,
-    p_notes: notes || null,
+    p_reference_number: reference,
+    p_notes: notes,
   });
   if (error) return { error: error.message };
 
@@ -252,7 +266,7 @@ export async function updateShipmentStatusAction(shipmentId: string, orderId: st
   const { error } = await supabase.rpc("admin_update_shipment_status", {
     p_shipment_id: shipmentId,
     p_new_status: newStatus as Database["public"]["Enums"]["shipment_status"],
-    p_note: note.trim() || null,
+    p_note: note.trim() || undefined,
   });
   if (error) return { error: error.message };
   revalidatePath("/admin/orders");
@@ -285,12 +299,21 @@ export async function updateShipmentIssueAction(orderId: string, issueId: string
   const parsedAmount = confirmRefund ? Number(amount) : null;
   if (confirmRefund && (!Number.isFinite(parsedAmount) || parsedAmount! <= 0)) return { error: "Enter the actual refunded amount." };
   if (confirmRefund && (!["bank_transfer","card","paypal","cash","other"].includes(method) || !transactionNumber.trim() || transactionNumber.length > 200)) return { error: "Select the actual refund method and enter the transaction number." };
-  const { data, error } = await supabase.rpc("admin_update_shipment_issue", {
-    p_issue_id: issueId, p_status: status, p_resolution_action: action,
-    p_resolution_notes: notes.trim() || null, p_refund_amount: parsedAmount,
-    p_refund_reference: reference.trim() || null, p_confirm_refund: confirmRefund,
-    p_refund_method: confirmRefund ? method : null, p_transaction_number: confirmRefund ? transactionNumber.trim() : null,
-  });
+  const shipmentIssueArgs = {
+    p_issue_id: issueId,
+    p_status: status,
+    p_resolution_action: action,
+    p_resolution_notes: notes.trim(),
+    p_refund_amount: parsedAmount ?? undefined,
+    p_refund_reference: reference.trim() || undefined,
+    p_confirm_refund: confirmRefund,
+    p_refund_method: confirmRefund ? method : undefined,
+    p_transaction_number: confirmRefund ? transactionNumber.trim() : undefined,
+  } satisfies RpcArgsWithNullableFields<"admin_update_shipment_issue", "p_resolution_action">;
+  const { data, error } = await supabase.rpc(
+    "admin_update_shipment_issue",
+    shipmentIssueArgs as Database["public"]["Functions"]["admin_update_shipment_issue"]["Args"]
+  );
   if (error) return { error: error.message };
   revalidatePath("/admin/orders/" + orderId);
   return { success: true, data };
@@ -306,7 +329,7 @@ export async function createReplacementShipmentAction(orderId: string, issueId: 
     return { error: "Enter a valid carrier, tracking number and tracking URL." };
   }
   const { error } = await supabase.rpc("admin_create_replacement_shipment", {
-    p_issue_id: issueId, p_carrier_name: carrier.trim(), p_tracking_number: tracking.trim(), p_tracking_url: url.trim() || null, p_stock_source: stockSource,
+    p_issue_id: issueId, p_carrier_name: carrier.trim(), p_tracking_number: tracking.trim(), p_tracking_url: url.trim(), p_stock_source: stockSource,
   });
   if (error) return { error: error.message };
   revalidatePath("/admin/orders/" + orderId);
@@ -322,7 +345,7 @@ export async function recordShipmentReturnAction(orderId: string, issueId: strin
   }
   const { error } = await supabase.rpc("admin_record_shipment_return", {
     p_issue_id: issueId, p_order_item_id: orderItemId, p_quantity: quantity,
-    p_warehouse_id: warehouseId, p_condition: "pending_inspection", p_notes: notes.trim() || null,
+    p_warehouse_id: warehouseId, p_condition: "pending_inspection", p_notes: notes.trim() || undefined,
   });
   if (error) return { error: error.message };
   revalidatePath("/admin/orders/" + orderId);
@@ -373,7 +396,7 @@ export async function confirmAfterSalesRefundAction(orderId: string, caseId: str
     return { error: "Enter the refund amount, method and transaction number." };
   }
   const { data, error } = await supabase.rpc("admin_confirm_after_sales_refund", {
-    p_case_id: caseId, p_refund_amount: Number(amount), p_refund_reference: reference.trim() || null,
+    p_case_id: caseId, p_refund_amount: Number(amount), p_refund_reference: reference.trim() || undefined,
     p_refund_method: method, p_transaction_number: transactionNumber.trim(),
   });
   if (error) return { error: error.message };
