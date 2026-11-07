@@ -31,14 +31,14 @@ export async function GET(request:NextRequest){
   const {data:rows,error}=await supabase.rpc("list_expired_after_sales_orphan_keys",{p_limit:100});
   if(error)throw error;
 
-  const keys=(rows||[])
-   .map((row:{object_key:string})=>row.object_key)
-   .filter((key:string)=>typeof key==="string"&&key.startsWith("after-sales/"));
+  const keys: string[] = ((rows ?? []) as Array<{ object_key: string }>)
+   .map((row: { object_key: string }) => row.object_key)
+   .filter((key: string) => typeof key === "string" && key.startsWith("after-sales/"));
   if(!keys.length)return NextResponse.json({ok:true,deleted:0,failed:0});
 
   const result=await s3.send(new DeleteObjectsCommand({
    Bucket:bucket,
-   Delete:{Objects:keys.map(Key=>({Key})),Quiet:false}
+   Delete:{Objects:keys.map((Key: string)=>({Key})),Quiet:false}
   }));
   const deletedSet=new Set((result.Deleted||[]).map(item=>item.Key).filter((key):key is string=>!!key));
   const failedSet=new Set((result.Errors||[]).map(item=>item.Key).filter((key):key is string=>!!key));
