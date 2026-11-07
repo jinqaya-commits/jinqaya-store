@@ -74,7 +74,7 @@ export async function createProduct(input: CreateProductInput) {
       seo_description: input.seoDescription.trim() || null,
       status: input.status,
       brand_name: "JINQAYA",
-      published_at: input.status === "active" ? new Date().toISOString() : null,
+      published_at: null,
     })
     .select("id")
     .single();
