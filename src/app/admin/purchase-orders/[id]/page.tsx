@@ -7,18 +7,21 @@ export default async function PurchaseOrderDetailPage({params}:{params:Promise<{
  const {id}=await params;const supabase=await createClient();const {data:claims}=await supabase.auth.getClaims();if(!claims?.claims?.sub)redirect("/login");
  const {data:allowed,error:permissionError}=await supabase.rpc("can_manage_catalog");if(permissionError||allowed!==true)redirect("/");
  const [{data:order,error},{data:receipts}]=await Promise.all([
-  supabase.from("purchase_orders").select("id,po_number,status,currency,order_date,expected_date,subtotal,shipping_cost,tax_amount,total_amount,supplier_reference,notes,created_at,submitted_at,suppliers(company_name,contact_name,email,phone),purchase_order_items(id,variant_id,quantity_ordered,quantity_received,unit_cost,line_total,product_variants(sku,products(name)))").eq("id",id).maybeSingle(),
+  supabase.from("purchase_orders").select("id,po_number,status,currency,order_date,expected_date,subtotal,shipping_cost,tax_amount,total_amount,supplier_reference,notes,created_at,submitted_at,supplier_name_snapshot,supplier_email_snapshot,supplier_phone_snapshot,suppliers(company_name,contact_name,email,phone),purchase_order_items(id,variant_id,quantity_ordered,quantity_received,unit_cost,line_total,product_variants(sku,products(name)))").eq("id",id).maybeSingle(),
   supabase.from("goods_receipts").select("id,receipt_number,status,received_at,supplier_delivery_reference,notes,goods_receipt_items(quantity_received,quantity_damaged,purchase_order_item_id)").eq("purchase_order_id",id).order("created_at",{ascending:false})
  ]);
  if(error||!order)notFound();
  const items=Array.isArray(order.purchase_order_items)?order.purchase_order_items:[];
  const supplier=Array.isArray(order.suppliers)?order.suppliers[0]:order.suppliers;
+ const supplierName=order.supplier_name_snapshot||supplier?.company_name||"—";
+ const supplierEmail=order.supplier_email_snapshot??supplier?.email??"";
+ const supplierPhone=order.supplier_phone_snapshot??supplier?.phone??"";
  const amount=(value:number|string,currency:string)=>new Intl.NumberFormat("en-US",{style:"currency",currency:currency.trim()||"USD"}).format(Number(value||0));
  return <main className="admin-shell"><aside className="admin-sidebar"><Link href="/" className="admin-brand">JINQAYA<span>ADMIN</span></Link><nav><Link href="/admin">Dashboard</Link><Link href="/admin/products">Products</Link><Link href="/admin/orders">Orders</Link><Link className="active" href="/admin/purchase-orders">Purchase orders</Link><Link href="/admin/inventory">Inventory</Link></nav><p className="admin-sidebar-note">COMMERCE MANAGEMENT</p></aside><section className="admin-main">
- <header className="admin-topbar"><div><p className="admin-kicker">JINQAYA / PROCUREMENT</p><h1>{order.po_number}</h1><p className="admin-help">Supplier: {supplier?.company_name||"—"}</p></div><Link className="admin-back-link" href="/admin/purchase-orders">← ALL PURCHASE ORDERS</Link></header>
+ <header className="admin-topbar"><div><p className="admin-kicker">JINQAYA / PROCUREMENT</p><h1>{order.po_number}</h1><p className="admin-help">Supplier: {supplierName}</p></div><Link className="admin-back-link" href="/admin/purchase-orders">← ALL PURCHASE ORDERS</Link></header>
  <div className="admin-summary"><div><span>STATUS</span><strong>{order.status.replaceAll("_"," ")}</strong></div><div><span>SKU LINES</span><strong>{items.length}</strong></div><div><span>UNITS RECEIVED</span><strong>{items.reduce((n,x)=>n+Number(x.quantity_received),0)} / {items.reduce((n,x)=>n+Number(x.quantity_ordered),0)}</strong></div><div><span>ORDER TOTAL</span><strong>{amount(order.total_amount,order.currency)}</strong></div></div>
- <section className="admin-panel"><div className="admin-panel-heading"><div><p className="admin-kicker">SUPPLIER DETAILS</p><h2>{supplier?.company_name||"Supplier"}</h2></div><span>{new Date(order.order_date+"T00:00:00").toLocaleDateString("en-US",{dateStyle:"medium"})}</span></div>
- <p className="admin-help">{supplier?.contact_name||"No contact name"} · {supplier?.email||"No email"} · {supplier?.phone||"No phone"}</p>
+ <section className="admin-panel"><div className="admin-panel-heading"><div><p className="admin-kicker">SUPPLIER DETAILS</p><h2>{supplierName}</h2></div><span>{new Date(order.order_date+"T00:00:00").toLocaleDateString("en-US",{dateStyle:"medium"})}</span></div>
+ <p className="admin-help">{supplier?.contact_name||"No contact name"} · {supplierEmail||"No email"} · {supplierPhone||"No phone"}</p>
  <p className="admin-help">Supplier reference: {order.supplier_reference||"—"} · Expected delivery: {order.expected_date||"Not specified"}</p>
  {order.notes&&<p>{order.notes}</p>}
  {order.status==="draft"&&<form action={issuePurchaseOrderAction} className="purchase-form-actions"><input type="hidden" name="purchase_order_id" value={order.id}/><button className="admin-primary-button" type="submit">Submit purchase order</button><p className="admin-help">Submitting confirms the order was placed with the supplier. It does not add inventory.</p></form>}
