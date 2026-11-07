@@ -15,7 +15,8 @@ export async function PATCH(request:NextRequest,{params}:{params:Promise<{id:str
  if(body.refundStatus!==undefined){if(!["not_started","pending_manual"].includes(body.refundStatus))return NextResponse.json({error:"Refund confirmation must use the order refund ledger action."},{status:400});updates.refund_status=body.refundStatus;}
  if(!Object.keys(updates).length)return NextResponse.json({error:"No changes provided."},{status:400});
  const {data:previous}=await supabase.from("after_sales_cases").select("status,refund_status,resolution").eq("id",caseId).eq("order_id",id).maybeSingle();
- if(!previous)return NextResponse.json({error:"Case not found."},{status:404});\n if(previous.refund_status==="confirmed"&&updates.refund_status!==undefined)return NextResponse.json({error:"A confirmed refund cannot be changed."},{status:409});
+ if(!previous)return NextResponse.json({error:"Case not found."},{status:404});
+ if(previous.refund_status==="confirmed"&&updates.refund_status!==undefined)return NextResponse.json({error:"A confirmed refund cannot be changed."},{status:409});
  const {data:updated,error}=await supabase.from("after_sales_cases").update({...updates,updated_at:new Date().toISOString()}).eq("id",caseId).eq("order_id",id).select("*").single();
  if(error)return NextResponse.json({error:"Unable to update case. Check refund confirmation details."},{status:400});
  const eventType=updates.refund_status?"refund_status_changed":updates.status?"status_changed":"resolution_updated";
