@@ -97,3 +97,13 @@ export async function sendOrderStatusEmail(order: OrderEmailData, event: "quote_
     text: `Hello ${order.customerName || "there"},\n\n${selected.copy}\nOrder: ${order.orderNumber}\n\nJINQAYA`,
   });
 }
+
+
+export async function sendAfterSalesVerificationCode(email: string, code: string) {
+  return send({
+    to: email,
+    subject: "Your JINQAYA after-sales verification code",
+    html: shell("Verify your order.", `<p>Use this code to verify your order and submit an after-sales request:</p><p style="font-size:30px;letter-spacing:8px;font-weight:bold">${escapeHtml(code)}</p><p>This code expires in 10 minutes. If you did not request it, you can ignore this email.</p>`),
+    text: `Your JINQAYA verification code is ${code}. It expires in 10 minutes. If you did not request it, ignore this email.`,
+  });
+}
