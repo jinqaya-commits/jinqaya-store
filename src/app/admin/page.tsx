@@ -26,7 +26,7 @@ export default async function AdminDashboardPage() {
 
   const today = dayStart();
   const now = new Date().toISOString();
-  const [{ count: allOrders }, { count: reviewOrders }, { count: paymentOrders }, { count: fulfilOrders }, { count: todayOrders }, { data: recentOrders, error: ordersError }, { count: openFollowUps }, { count: overdueFollowUps }, { data: dueFollowUps, error: followUpsError }, { data: warehouse }, { data: variants, error: inventoryError }] = await Promise.all([
+  const [{ count: allOrders }, { count: reviewOrders }, { count: paymentOrders }, { count: fulfilOrders }, { count: todayOrders }, { data: recentOrders, error: ordersError }, { count: openFollowUps }, { count: overdueFollowUps }, { data: dueFollowUps, error: followUpsError }, { data: warehouse }, { data: variants, error: inventoryError }, { data: incomingItems, error: incomingError }] = await Promise.all([
     supabase.from("orders").select("id", { count: "exact", head: true }),
     supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "on_hold"),
     supabase.from("orders").select("id", { count: "exact", head: true }).eq("status", "pending_payment"),
@@ -38,18 +38,30 @@ export default async function AdminDashboardPage() {
     supabase.from("customer_follow_ups").select("id,customer_id,title,due_at,customers(first_name,last_name,email)").eq("status", "pending").order("due_at", { ascending: true }).limit(6),
     supabase.from("warehouses").select("id,code,name").eq("is_default", true).eq("is_active", true).maybeSingle(),
     supabase.from("product_variants").select("id,sku,variant_name,color,size,products(name),inventory(on_hand,reserved,damaged,reorder_point,warehouse_id)").eq("is_active", true).limit(500),
+    supabase.from("purchase_order_items").select("variant_id,quantity_ordered,quantity_received,purchase_orders!inner(status,warehouse_id)").in("purchase_orders.status", ["submitted", "partially_received"]),
   ]);
 
   if (ordersError) throw new Error("Unable to load recent orders.");
   if (followUpsError) throw new Error("Unable to load customer follow-ups.");
   if (inventoryError) throw new Error("Unable to load inventory alerts.");
+  if (incomingError) throw new Error("Unable to load incoming purchase quantities.");
+
+  const incomingByVariant = new Map<string, number>();
+  (incomingItems || []).forEach((item: any) => {
+    const purchaseOrder = Array.isArray(item.purchase_orders) ? item.purchase_orders[0] : item.purchase_orders;
+    if (!warehouse || purchaseOrder?.warehouse_id !== warehouse.id) return;
+    const remaining = Math.max(0, Number(item.quantity_ordered) - Number(item.quantity_received));
+    if (remaining > 0) incomingByVariant.set(item.variant_id, (incomingByVariant.get(item.variant_id) || 0) + remaining);
+  });
 
   const stockRows = (variants || []).map((variant: any) => {
     const stocks = Array.isArray(variant.inventory) ? variant.inventory : [];
     const stock = stocks.find((item: any) => item.warehouse_id === warehouse?.id);
     if (!stock) return null;
     const available = Number(stock.on_hand) - Number(stock.reserved) - Number(stock.damaged);
-    return { sku: variant.sku, name: variant.products?.name || "Product", available, reorderPoint: Number(stock.reorder_point) };
+    const reorderPoint = Number(stock.reorder_point);
+    const incoming = incomingByVariant.get(variant.id) || 0;
+    return { sku: variant.sku, name: variant.products?.name || "Product", available, reorderPoint, incoming, replenishmentGap: Math.max(0, reorderPoint - available - incoming) };
   }).filter((row: any) => row && row.available <= row.reorderPoint).sort((a: any, b: any) => a.available - b.available).slice(0, 6);
 
   const followUps = (dueFollowUps || []) as any[];
@@ -79,7 +91,7 @@ export default async function AdminDashboardPage() {
         </section>
         <section className="admin-panel">
           <div className="admin-panel-heading"><div><p className="admin-kicker">STOCK CONTROL</p><h2>Inventory alerts</h2></div><Link href="/admin/inventory">INVENTORY →</Link></div>
-          {!warehouse ? <div className="admin-empty"><p>No active default warehouse configured.</p></div> : !stockRows.length ? <div className="admin-empty"><p>No low-stock variants detected.</p></div> : <div className="admin-dashboard-list">{stockRows.map((row: any) => <Link className="admin-dashboard-row" href="/admin/inventory" key={row.sku}><span><strong>{row.name}</strong><small>{row.sku}</small></span><span className={row.available <= 0 ? "admin-dashboard-alert admin-dashboard-due" : "admin-dashboard-due"}>{row.available} available</span></Link>)}</div>}
+          {!warehouse ? <div className="admin-empty"><p>No active default warehouse configured.</p></div> : !stockRows.length ? <div className="admin-empty"><p>No low-stock variants detected.</p></div> : <div className="admin-dashboard-list">{stockRows.map((row: any) => <Link className="admin-dashboard-row" href="/admin/inventory" key={row.sku}><span><strong>{row.name}</strong><small>{row.sku} · {row.incoming} incoming · reorder at {row.reorderPoint}</small></span><span className={row.available <= 0 ? "admin-dashboard-alert admin-dashboard-due" : "admin-dashboard-due"}>{row.available} available{row.replenishmentGap > 0 ? " · +" + row.replenishmentGap + " needed" : ""}</span></Link>)}</div>}
           <p className="admin-help">Available = on hand − reserved − damaged. Alerts use each SKU's reorder point.</p>
         </section>
         <section className="admin-panel admin-dashboard-shortcuts">
