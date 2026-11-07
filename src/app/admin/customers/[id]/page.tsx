@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import CustomerCrmEditor from "../customer-crm-editor";
 
 export const dynamic = "force-dynamic";
 
@@ -26,7 +27,7 @@ export default async function AdminCustomerDetailPage({ params }: { params: Prom
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) notFound();
 
   const { data: customer, error } = await supabase.from("customers")
-    .select("id,email,first_name,last_name,phone,accepts_marketing,marketing_opt_in_at,notes,created_at,updated_at")
+    .select("id,email,first_name,last_name,phone,accepts_marketing,marketing_opt_in_at,notes,tags,created_at,updated_at")
     .eq("id", id).maybeSingle();
   if (error) throw new Error("Unable to load customer.");
   if (!customer) notFound();
@@ -60,6 +61,10 @@ export default async function AdminCustomerDetailPage({ params }: { params: Prom
           <div><span className="admin-kicker">MARKETING CONSENT</span><p>{customer.accepts_marketing ? "Opted in" : "Not opted in"}{customer.marketing_opt_in_at ? " · " + date(customer.marketing_opt_in_at) : ""}</p></div>
           <div><span className="admin-kicker">CUSTOMER NOTES</span><p>{customer.notes || "No customer notes recorded."}</p></div>
         </div>
+      </section>
+      <section className="admin-panel">
+        <div className="admin-panel-heading"><div><p className="admin-kicker">CUSTOMER RELATIONSHIP</p><h2>Notes & tags</h2></div><span>INTERNAL ONLY</span></div>
+        <CustomerCrmEditor customerId={customer.id} initialNotes={customer.notes || ""} initialTags={customer.tags || []} />
       </section>
       <section className="admin-panel">
         <div className="admin-panel-heading"><div><p className="admin-kicker">PURCHASE HISTORY</p><h2>Orders</h2></div><span>{orderCount ?? 0} TOTAL</span></div>
