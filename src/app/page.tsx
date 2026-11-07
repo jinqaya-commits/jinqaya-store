@@ -179,7 +179,7 @@ export default async function HomePage() {
           <article>
             <span>01</span>
             <h3>DELIVERY DETAILS</h3>
-            <p>JINQAYA orders are dispatched directly from our factory in China. Review available destinations, delivery methods and estimates before checkout.</p>
+            <p>JINQAYA orders are dispatched directly from our factory in China. We confirm delivery options and costs after receiving your order request, before payment.</p>
             <Link className="jq-policy-link" href="/policies/shipping">READ SHIPPING POLICY ↗</Link>
           </article>
           <article>
