@@ -20,7 +20,7 @@ function shell(title: string, body: string) {
   <p style="font-size:12px;color:#999">JINQAYA · Life is better in good company.</p></div></body></html>`;
 }
 
-async function send(message: MailMessage): Promise<boolean> {
+async function send(message: MailMessage, idempotencyKey?: string): Promise<boolean> {
   if (!RESEND_API_KEY || !FROM) {
     console.warn("Order email is not configured. Set RESEND_API_KEY and ORDER_EMAIL_FROM.");
     return false;
@@ -28,7 +28,7 @@ async function send(message: MailMessage): Promise<boolean> {
   try {
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
-      headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json" },
+      headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json", ...(idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {}) },
       body: JSON.stringify({ from: FROM, to: [message.to], subject: message.subject, html: message.html, text: message.text }),
       cache: "no-store",
     });
@@ -72,7 +72,8 @@ export type OrderEmailOutboxPayload = {
 export async function sendOrderOutboxEmail(
   recipientType: "customer" | "staff",
   recipientEmail: string,
-  order: OrderEmailOutboxPayload
+  order: OrderEmailOutboxPayload,
+  idempotencyKey: string
 ): Promise<boolean> {
   const safeName = escapeHtml(order.customerName || "there");
   const subtotal = money(order.subtotal, order.currency);
@@ -86,7 +87,7 @@ export async function sendOrderOutboxEmail(
         <p>We’ll review availability and confirm shipping options, delivery cost and the final total before requesting payment. This request is not paid and does not mean your order has been dispatched.</p>
         <p>We’ll be in touch soon.</p>`),
       text: `Hello ${order.customerName || "there"},\\n\\nWe received order request ${order.orderNumber}. Estimated item subtotal: ${subtotal}. We’ll confirm availability, shipping and the final total before requesting payment. This request is not paid or dispatched.\\n\\nJINQAYA`,
-    });
+    }, idempotencyKey);
   }
 
   return send({
@@ -94,7 +95,7 @@ export async function sendOrderOutboxEmail(
     subject: `New order request: ${order.orderNumber}`,
     html: shell("New order request.", `<p><strong>Order:</strong> ${escapeHtml(order.orderNumber)}</p><p><strong>Customer:</strong> ${safeName} (${escapeHtml(order.customerEmail)})</p><p><strong>Item subtotal:</strong> ${escapeHtml(subtotal)}</p><p>Please review the order in the JINQAYA admin dashboard. Shipping is not yet quoted and payment has not been collected.</p>`),
     text: `New order request ${order.orderNumber}. Customer: ${order.customerName} (${order.customerEmail}). Item subtotal: ${subtotal}. Review in admin; no payment collected.`,
-  });
+  }, idempotencyKey);
 }
 
 export async function sendOrderStatusEmail(order: OrderEmailData, event: "quote_confirmed" | "payment_received" | "shipped" | "delivered" | "cancelled") {
