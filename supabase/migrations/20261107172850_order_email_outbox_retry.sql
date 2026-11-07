@@ -45,8 +45,8 @@ BEGIN
   END IF;
 
   SELECT pg_catalog.concat_ws(' ',
-      NULLIF(pg_catalog.trim(c.first_name), ''),
-      NULLIF(pg_catalog.trim(c.last_name), '')
+      NULLIF(pg_catalog.btrim(c.first_name), ''),
+      NULLIF(pg_catalog.btrim(c.last_name), '')
     )
     INTO v_customer_name
     FROM public.customers c
