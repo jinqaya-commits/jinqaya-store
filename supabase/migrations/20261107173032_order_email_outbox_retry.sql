@@ -39,13 +39,7 @@ BEGIN
     RETURN NEW;
   END IF;
 
-  SELECT pg_catalog.concat_ws(' ',
-      NULLIF(pg_catalog.btrim(c.first_name), ''),
-      NULLIF(pg_catalog.btrim(c.last_name), '')
-    )
-    INTO v_customer_name
-    FROM public.customers c
-   WHERE c.id = NEW.customer_id;
+  v_customer_name := COALESCE(NEW.shipping_address_snapshot->>'recipient_name', '');
 
   v_payload := pg_catalog.jsonb_build_object(
     'orderNumber', NEW.order_number,
