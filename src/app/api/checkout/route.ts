@@ -37,6 +37,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Please complete your contact and shipping details." }, { status: 400 });
   }
 
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(body.idempotency_key)) {
+    return NextResponse.json({ error: "Your checkout session has expired. Please refresh and try again." }, { status: 400 });
+  }
+
   if (body.items.some((item) => !item || typeof item !== "object")) {
     return NextResponse.json({ error: "Your bag contains an invalid item." }, { status: 400 });
   }
@@ -84,6 +88,9 @@ export async function POST(request: Request) {
       }
       if (message.includes("no longer available") || message.includes("different currencies") || message.includes("quantities")) {
         return NextResponse.json({ error: error.message }, { status: 409 });
+      }
+      if (message.includes("already been used")) {
+        return NextResponse.json({ error: "This checkout request has already been used. Please refresh checkout and try again." }, { status: 409 });
       }
       if (message.includes("please") || message.includes("invalid") || message.includes("empty") || message.includes("complete")) {
         return NextResponse.json({ error: error.message }, { status: 400 });
