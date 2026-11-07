@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { setProductStatus } from "./actions";
+import { getProductReadiness } from "@/lib/product-readiness";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,7 @@ export default async function AdminProductsPage() {
 
   const { data: products, error } = await supabase
     .from("products")
-    .select("id, name, slug, status, pet_type, created_at, seo_title, seo_description, short_description, description, material, product_variants(price, currency, sku), product_images(alt_text)")
+    .select("id, name, slug, status, pet_type, created_at, short_description, description, material, seo_title, seo_description, product_variants(price, currency, sku, is_active), product_images(alt_text, is_primary), product_categories(is_primary, categories(parent_id, is_active))")
     .order("created_at", { ascending: false });
 
   return (
@@ -38,19 +39,25 @@ export default async function AdminProductsPage() {
           ) : (
             <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>PRODUCT</th><th>SKU</th><th>PET</th><th>PRICE</th><th>SEO CHECK</th><th>STATUS</th><th>ACTION</th></tr></thead><tbody>
               {products.map((product) => {
-                const variant = Array.isArray(product.product_variants) ? product.product_variants[0] : null;
+                const variant = Array.isArray(product.product_variants) ? product.product_variants.find((item) => item.is_active) ?? product.product_variants[0] : null;
                 const price = variant?.price == null ? "—" : new Intl.NumberFormat("en-US", { style: "currency", currency: variant.currency || "USD" }).format(Number(variant.price));
                 const imageRows = Array.isArray(product.product_images) ? product.product_images : [];
-                const missing: string[] = [];
-                if (!product.seo_title?.trim()) missing.push("SEO title");
-                if (!product.seo_description?.trim()) missing.push("SEO description");
-                if (!product.short_description?.trim()) missing.push("Short description");
-                if (!product.description?.trim()) missing.push("Full description");
-                if (!product.material?.trim()) missing.push("Material");
-                if (!imageRows.length) missing.push("Images");
-                if (imageRows.some((image: { alt_text: string | null }) => !image.alt_text?.trim())) missing.push("Image alt text");
-                const seoReady = missing.length === 0;
-                return <tr key={product.id}><td><strong>{product.name}</strong><small>/{product.slug}</small><small><Link href={`/admin/products/${product.id}/edit`}>Edit product →</Link></small></td><td>{variant?.sku ?? "—"}</td><td>{product.pet_type}</td><td>{price}</td><td><span className={`admin-status ${seoReady ? "status-active" : "status-draft"}`}>{seoReady ? "Complete" : `${missing.length} missing`}</span>{!seoReady && <small>{missing.join(" · ")}</small>}</td><td><span className={`admin-status status-${product.status}`}>{product.status}</span></td><td><form action={async () => { "use server"; await setProductStatus(product.id, product.status === "active" ? "draft" : "active"); }}><button className="admin-table-action" type="submit">{product.status === "active" ? "Unpublish" : "Publish"}</button></form></td></tr>;
+                const categoryRows = Array.isArray(product.product_categories) ? product.product_categories : [];
+                const readiness = getProductReadiness({
+                  shortDescription: product.short_description,
+                  description: product.description,
+                  material: product.material,
+                  seoTitle: product.seo_title,
+                  seoDescription: product.seo_description,
+                  images: imageRows,
+                  variants: Array.isArray(product.product_variants) ? product.product_variants : [],
+                  categories: categoryRows.map((row: { is_primary: boolean; categories: { parent_id: string | null; is_active: boolean } | { parent_id: string | null; is_active: boolean }[] | null }) => {
+                    const category = Array.isArray(row.categories) ? row.categories[0] : row.categories;
+                    return { is_primary: row.is_primary, parent_id: category?.parent_id ?? null, is_active: category?.is_active ?? false };
+                  }),
+                });
+                const seoReady = readiness.ready;
+                return <tr key={product.id}><td><strong>{product.name}</strong><small>/{product.slug}</small><small><Link href={`/admin/products/${product.id}/edit`}>Edit product →</Link></small></td><td>{variant?.sku ?? "—"}</td><td>{product.pet_type}</td><td>{price}</td><td><span className={`admin-status ${seoReady ? "status-active" : "status-draft"}`}>{seoReady ? "Complete" : `${missing.length} missing`}</span>{!seoReady && <small>{readiness.missing.join(" · ")}</small>}</td><td><span className={`admin-status status-${product.status}`}>{product.status}</span></td><td><form action={async () => { "use server"; await setProductStatus(product.id, product.status === "active" ? "draft" : "active"); }}><button className="admin-table-action" type="submit" disabled={product.status !== "active" && !seoReady}>{product.status === "active" ? "Unpublish" : "Publish"}</button></form></td></tr>;
               })}
             </tbody></table></div>
           )}
