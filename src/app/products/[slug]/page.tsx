@@ -6,6 +6,7 @@ import { ProductGallery } from "@/components/storefront/product-gallery";
 import { AddToCart } from "@/components/storefront/add-to-cart";
 import { CartLink } from "@/components/storefront/cart-link";
 import { CategoryNavigation } from "@/components/storefront/category-navigation";
+import { BreadcrumbJsonLd, ProductJsonLd } from "@/lib/seo-jsonld";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -16,6 +17,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: product.seo_title || product.name,
     description: product.seo_description || product.short_description || product.description || undefined,
+    alternates: { canonical: `/products/${product.slug}` },
+    openGraph: {
+      type: "website",
+      title: product.seo_title || product.name,
+      description: product.seo_description || product.short_description || product.description || undefined,
+      url: `https://jinqaya.com/products/${product.slug}`,
+      images: product.images.filter((image) => image.detail_url).slice(0, 4).map((image) => ({ url: image.detail_url as string, alt: image.alt_text || product.name })),
+    },
   };
 }
 
@@ -28,6 +37,8 @@ export default async function ProductPage({ params }: Props) {
 
   return (
     <main className="inner-page">
+      <ProductJsonLd product={product} />
+      <BreadcrumbJsonLd items={[{ name: "Home", path: "/" }, { name: "Shop", path: "/shop" }, { name: product.name, path: `/products/${product.slug}` }]} />
       <header className="inner-page-header">
         <Link className="wordmark" href="/">JINQAYA<span>®</span></Link>
         <CategoryNavigation /><CartLink />
