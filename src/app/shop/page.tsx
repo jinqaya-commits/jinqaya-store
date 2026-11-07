@@ -6,6 +6,9 @@ import { ProductCard } from "@/components/storefront/product-card";
 import { CategoryNavigation } from "@/components/storefront/category-navigation";
 
 export const metadata: Metadata = {
+  alternates: { canonical: "/shop" },
+  openGraph: { type: "website", url: "https://jinqaya.com/shop", title: "Shop Pet Lifestyle Essentials | JINQAYA", description: "Explore thoughtful lifestyle essentials for cats and dogs from JINQAYA." },
+
   title: "Shop Pet Lifestyle Essentials",
   description: "Explore thoughtful lifestyle essentials for cats and dogs from JINQAYA.",
 };
