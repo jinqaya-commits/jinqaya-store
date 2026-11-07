@@ -77,12 +77,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "We couldn't submit your order request. Please try again." }, { status: 500 });
     }
 
-    if (data && typeof data === "object") {
-      const order = data as { order_number?: string; customer_email?: string; customer_name?: string; subtotal?: number | string; currency?: string };
-      if (order.order_number && order.customer_email) {
+    if (data && typeof data === "object" && !Array.isArray(data)) {
+      const orderNumber = typeof data.order_number === "string" ? data.order_number : "";
+      const customerEmail = typeof data.customer_email === "string" ? data.customer_email : "";
+      const customerName = typeof data.customer_name === "string" ? data.customer_name : String(body.customer.first_name || "");
+      const subtotal = typeof data.subtotal === "number" || typeof data.subtotal === "string" ? data.subtotal : 0;
+      const currency = typeof data.currency === "string" ? data.currency : "USD";
+      if (orderNumber && customerEmail) {
         void sendOrderRequestEmails({
-          orderNumber: order.order_number, customerName: order.customer_name || String(body.customer.first_name || ""),
-          customerEmail: order.customer_email, subtotal: order.subtotal ?? 0, currency: order.currency || "USD",
+          orderNumber, customerName,
+          customerEmail, subtotal, currency,
         }).catch((error) => console.error("Order request notification failed:", error));
       }
     }
