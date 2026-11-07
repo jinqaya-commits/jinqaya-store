@@ -5,12 +5,12 @@ import { useRouter } from "next/navigation";
 import { updateProduct, updateVariant, removeVariant, reorderImages, removeImage, addProductImage } from "../../actions";
 
 type Category = {id:string;parent_id:string|null;name:string;slug:string;sort_order:number};
-type Product = { id:string; name:string; pet_type:"cat"|"dog"|"both"|"shared"; short_description:string|null; description:string|null; material:string|null; care_instructions:string|null; status:"draft"|"active"|"archived" };
+type Product = { id:string; name:string; pet_type:"cat"|"dog"|"both"|"shared"; short_description:string|null; description:string|null; material:string|null; care_instructions:string|null; seo_title:string|null; seo_description:string|null; status:"draft"|"active"|"archived" };
 type Variant = { id?:string; sku:string; variantName:string; color:string; size:string; price:string; compareAtPrice:string };
 type Image = { id:string; storage_path:string; alt_text:string|null; sort_order:number };
 
 export function ProductEditForm({product,categoryId,categories,variants: initialVariants,images: initialImages}:{product:Product;categoryId:string;categories:Category[];variants:Variant[];images:Image[]}) {
- const [fields,setFields]=useState({name:product.name,categoryId,petType:product.pet_type,shortDescription:product.short_description??"",description:product.description??"",material:product.material??"",careInstructions:product.care_instructions??"",status:product.status});
+ const [fields,setFields]=useState({name:product.name,categoryId,petType:product.pet_type,shortDescription:product.short_description??"",description:product.description??"",material:product.material??"",careInstructions:product.care_instructions??"",seoTitle:product.seo_title??"",seoDescription:product.seo_description??"",status:product.status});
  const [variants,setVariants]=useState(initialVariants);
  const [images,setImages]=useState([...initialImages].sort((a,b)=>a.sort_order-b.sort_order));
  const [error,setError]=useState(""); const [busy,setBusy]=useState(false); const [uploadBusy,setUploadBusy]=useState(false); const router=useRouter();
@@ -34,10 +34,10 @@ export function ProductEditForm({product,categoryId,categories,variants: initial
     if(!prepared.ok)throw new Error(uploadInfo.error||"Unable to prepare upload.");
     const uploaded=await fetch(uploadInfo.uploadUrl,{method:"PUT",headers:{"Content-Type":file.type},body:file});
     if(!uploaded.ok)throw new Error("Cloudflare R2 upload failed ("+uploaded.status+").");
-    const result=await addProductImage(product.id,uploadInfo.storagePath,product.name);
+    const result=await addProductImage(product.id,uploadInfo.storagePath,`${product.name} – product image`);
     if(result.error)throw new Error(result.error);
     const imageId=result.imageId;
-    if(imageId)setImages(current=>[...current,{id:imageId,storage_path:uploadInfo.storagePath,alt_text:product.name,sort_order:current.length}]);
+    if(imageId)setImages(current=>[...current,{id:imageId,storage_path:uploadInfo.storagePath,alt_text:`${product.name} – product image`,sort_order:current.length}]);
    }
    router.refresh();
   }catch(err){setError(err instanceof Error?err.message:"Image upload failed.");}
@@ -53,6 +53,7 @@ export function ProductEditForm({product,categoryId,categories,variants: initial
    <label>Short description<input value={fields.shortDescription} onChange={e=>setFields({...fields,shortDescription:e.target.value})}/></label>
    <label>Full description<textarea rows={5} value={fields.description} onChange={e=>setFields({...fields,description:e.target.value})}/></label>
    <div className="admin-form-grid"><label>Material<input value={fields.material} onChange={e=>setFields({...fields,material:e.target.value})}/></label><label>Care instructions<input value={fields.careInstructions} onChange={e=>setFields({...fields,careInstructions:e.target.value})}/></label></div>
+   <section className="admin-form-section"><div className="admin-form-heading"><span>SEO</span><div><h2>Search appearance</h2><p>Write a clear page title and summary for search results. Leave blank to use the product name and description.</p></div></div><label>SEO title<input maxLength={65} value={fields.seoTitle} onChange={e=>setFields({...fields,seoTitle:e.target.value})} placeholder="Product name | JINQAYA"/></label><p className="admin-help">{fields.seoTitle.length}/65 characters</p><label>SEO description<textarea rows={3} maxLength={160} value={fields.seoDescription} onChange={e=>setFields({...fields,seoDescription:e.target.value})} placeholder="Describe what the product is, who it is for and its useful detail."/></label><p className="admin-help">{fields.seoDescription.length}/160 characters</p></section>
    <label>Status<select value={fields.status} onChange={e=>setFields({...fields,status:e.target.value as Product["status"]})}><option value="draft">Draft</option><option value="active">Active</option><option value="archived">Archived</option></select></label>
    <button className="admin-primary-button" disabled={busy} type="submit">{busy?"Saving…":"Save product details"}</button>
   </form>
