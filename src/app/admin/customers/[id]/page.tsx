@@ -52,7 +52,7 @@ export default async function AdminCustomerDetailPage({ params }: { params: Prom
   const name = [customer.first_name, customer.last_name].filter(Boolean).join(" ") || "Customer";
 
   return <main className="admin-shell">
-    <aside className="admin-sidebar"><Link href="/" className="admin-brand">JINQAYA<span>ADMIN</span></Link><nav><Link href="/admin/products">Products</Link><Link href="/admin/orders">Orders</Link><Link className="active" href="/admin/customers">Customers</Link><Link href="/admin/inventory">Inventory</Link><Link href="/shop">View storefront ↗</Link></nav><p className="admin-sidebar-note">COMMERCE MANAGEMENT</p></aside>
+    <aside className="admin-sidebar"><Link href="/" className="admin-brand">JINQAYA<span>ADMIN</span></Link><nav><Link href="/admin/products">Products</Link><Link href="/admin/orders">Orders</Link><Link className="active" href="/admin/customers">Customers</Link><Link href="/admin/follow-ups">Follow-ups</Link><Link href="/admin/inventory">Inventory</Link><Link href="/shop">View storefront ↗</Link></nav><p className="admin-sidebar-note">COMMERCE MANAGEMENT</p></aside>
     <section className="admin-main">
       <header className="admin-topbar"><div><p className="admin-kicker">JINQAYA / CUSTOMER</p><h1>{name}</h1></div><Link className="admin-back-link" href="/admin/customers">← ALL CUSTOMERS</Link></header>
       <div className="admin-summary"><div><span>ORDERS</span><strong>{orderCount ?? 0}</strong></div><div><span>PAID ORDERS</span><strong>{paidOrders.length}</strong></div>{paidTotals.map(item=><div key={item.currency}><span>PAID TOTAL · {item.currency}</span><strong>{money(item.total,item.currency)}</strong></div>)}</div>
