@@ -101,6 +101,28 @@ export async function processOrderAction(
   return { success: true, data };
 }
 
+export async function recordInventoryMovementAction(formData: FormData) {
+  const supabase = await requireOrderManager();
+  const variantId = String(formData.get("variant_id") ?? "");
+  const movementType = String(formData.get("movement_type") ?? "");
+  const quantity = Number(formData.get("quantity"));
+  const notes = String(formData.get("notes") ?? "").trim();
+  if (!variantId || !["purchase_receipt", "supplier_return", "customer_return", "damage"].includes(movementType) ||
+      !Number.isInteger(quantity) || quantity < 1 || quantity > 1000000 || notes.length < 3 || notes.length > 500) {
+    return { error: "Enter a valid quantity and a reason of at least 3 characters." };
+  }
+  const { error } = await supabase.rpc("admin_record_inventory_movement", {
+    p_variant_id: variantId,
+    p_movement_type: movementType,
+    p_quantity: quantity,
+    p_notes: notes,
+  });
+  if (error) return { error: error.message };
+  revalidatePath("/admin/inventory");
+  revalidatePath("/admin");
+  return { success: true };
+}
+
 export async function adjustInventoryAction(formData: FormData) {
   const supabase = await requireOrderManager();
   const variantId = String(formData.get("variant_id") ?? "");
