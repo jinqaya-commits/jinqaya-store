@@ -1350,6 +1350,68 @@ export type Database = {
           },
         ]
       }
+      order_email_outbox: {
+        Row: {
+          attempt_count: number
+          created_at: string
+          id: string
+          last_error: string | null
+          locked_until: string | null
+          max_attempts: number
+          next_attempt_at: string
+          order_id: string
+          payload: Json
+          provider_message_id: string | null
+          recipient_email: string
+          recipient_type: string
+          sent_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          attempt_count?: number
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          locked_until?: string | null
+          max_attempts?: number
+          next_attempt_at?: string
+          order_id: string
+          payload: Json
+          provider_message_id?: string | null
+          recipient_email: string
+          recipient_type: string
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          attempt_count?: number
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          locked_until?: string | null
+          max_attempts?: number
+          next_attempt_at?: string
+          order_id?: string
+          payload?: Json
+          provider_message_id?: string | null
+          recipient_email?: string
+          recipient_type?: string
+          sent_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_email_outbox_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           billing_address_snapshot: Json | null
