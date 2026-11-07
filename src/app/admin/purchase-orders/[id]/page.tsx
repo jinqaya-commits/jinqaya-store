@@ -17,7 +17,12 @@ export default async function PurchaseOrderDetailPage({params}:{params:Promise<{
  const supplierName=order.supplier_name_snapshot||supplier?.company_name||"—";
  const supplierEmail=order.supplier_email_snapshot??supplier?.email??"";
  const supplierPhone=order.supplier_phone_snapshot??supplier?.phone??"";
- const amount=(value:number|string,currency:string)=>new Intl.NumberFormat("en-US",{style:"currency",currency:currency.trim()||"USD"}).format(Number(value||0));\n const paymentRows=payments||[];\n const paidTotal=paymentRows.reduce((sum,p)=>sum+Number(p.amount),0);\n const outstanding=Math.max(0,Number(order.total_amount)-paidTotal);\n const paymentAction=recordPurchaseOrderPaymentAction.bind(null,order.id);\n const today=new Date().toISOString().slice(0,10);
+ const amount=(value:number|string,currency:string)=>new Intl.NumberFormat("en-US",{style:"currency",currency:currency.trim()||"USD"}).format(Number(value||0));
+ const paymentRows=payments||[];
+ const paidTotal=paymentRows.reduce((sum,p)=>sum+Number(p.amount),0);
+ const outstanding=Math.max(0,Number(order.total_amount)-paidTotal);
+ const paymentAction=recordPurchaseOrderPaymentAction.bind(null,order.id);
+ const today=new Date().toISOString().slice(0,10);
  return <main className="admin-shell"><aside className="admin-sidebar"><Link href="/" className="admin-brand">JINQAYA<span>ADMIN</span></Link><nav><Link href="/admin">Dashboard</Link><Link href="/admin/products">Products</Link><Link href="/admin/orders">Orders</Link><Link className="active" href="/admin/purchase-orders">Purchase orders</Link><Link href="/admin/inventory">Inventory</Link><Link href="/admin/payables">Accounts payable</Link></nav><p className="admin-sidebar-note">COMMERCE MANAGEMENT</p></aside><section className="admin-main">
  <header className="admin-topbar"><div><p className="admin-kicker">JINQAYA / PROCUREMENT</p><h1>{order.po_number}</h1><p className="admin-help">Supplier: {supplierName}</p></div><Link className="admin-back-link" href="/admin/purchase-orders">← ALL PURCHASE ORDERS</Link></header>
  <div className="admin-summary"><div><span>STATUS</span><strong>{order.status.replaceAll("_"," ")}</strong></div><div><span>SKU LINES</span><strong>{items.length}</strong></div><div><span>UNITS RECEIVED</span><strong>{items.reduce((n,x)=>n+Number(x.quantity_received),0)} / {items.reduce((n,x)=>n+Number(x.quantity_ordered),0)}</strong></div><div><span>ORDER TOTAL</span><strong>{amount(order.total_amount,order.currency)}</strong></div></div>
@@ -54,7 +59,8 @@ export default async function PurchaseOrderDetailPage({params}:{params:Promise<{
    {!paymentRows.length?<tr><td colSpan={5}>No payments recorded.</td></tr>:paymentRows.map(p=><tr key={p.id}><td>{p.payment_date}</td><td><strong>{amount(p.amount,p.currency)}</strong></td><td>{p.payment_method.replaceAll("_"," ")}</td><td>{p.reference_number||"—"}</td><td>{p.notes||"—"}</td></tr>)}
   </tbody></table></div>
  </section>
-\n <section className="admin-panel" style={{marginTop:24}}><div className="admin-panel-heading"><div><p className="admin-kicker">GOODS RECEIPT REGISTER</p><h2>Receiving history</h2></div><span>{receipts?.length||0} RECEIPTS</span></div>
+
+ <section className="admin-panel" style={{marginTop:24}}><div className="admin-panel-heading"><div><p className="admin-kicker">GOODS RECEIPT REGISTER</p><h2>Receiving history</h2></div><span>{receipts?.length||0} RECEIPTS</span></div>
  {!receipts?.length?<p className="admin-help">No goods received against this purchase order yet.</p>:<div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>RECEIPT</th><th>DATE</th><th>DELIVERY REF</th><th>UNITS RECEIVED</th><th>DAMAGED</th><th>NOTES</th></tr></thead><tbody>{receipts.map(r=>{const receiptItems=Array.isArray(r.goods_receipt_items)?r.goods_receipt_items:[];return <tr key={r.id}><td><strong>{r.receipt_number}</strong></td><td>{r.received_at?new Date(r.received_at).toLocaleString("en-US",{dateStyle:"medium",timeStyle:"short"}):"—"}</td><td>{r.supplier_delivery_reference||"—"}</td><td>{receiptItems.reduce((n,x)=>n+Number(x.quantity_received),0)}</td><td>{receiptItems.reduce((n,x)=>n+Number(x.quantity_damaged),0)}</td><td>{r.notes||"—"}</td></tr>})}</tbody></table></div>}
  </section>
  </section></main>;
