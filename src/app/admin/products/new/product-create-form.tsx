@@ -8,7 +8,7 @@ type Category = { id: string; parent_id: string|null; name: string; slug:string;
 
 const initialValues: CreateProductInput = {
   name: "", categoryId: "", petType: "both", shortDescription: "", description: "",
-  material: "", careInstructions: "", sku: "", variantName: "", color: "", size: "",
+  material: "", careInstructions: "", seoTitle: "", seoDescription: "", sku: "", variantName: "", color: "", size: "",
   price: "", compareAtPrice: "", status: "draft",
 };
 
@@ -72,7 +72,7 @@ export function ProductCreateForm({ categories }: { categories: Category[] }) {
         });
         if (!uploaded.ok) throw new Error(`R2 upload failed for ${file.name} (${uploaded.status}).`);
 
-        const saved = await addProductImage(productId, uploadInfo.storagePath, values.name);
+        const saved = await addProductImage(productId, uploadInfo.storagePath, `${values.name} – product image`);
         if (saved.error) throw new Error(saved.error);
         const completedKey = file.name + "-" + file.size + "-" + file.lastModified;
         setFiles((current) => current.filter((item) => item.name + "-" + item.size + "-" + item.lastModified !== completedKey));
@@ -93,6 +93,7 @@ export function ProductCreateForm({ categories }: { categories: Category[] }) {
       <label>Short description<input value={values.shortDescription} onChange={(e) => update("shortDescription", e.target.value)} placeholder="A concise product introduction" /></label>
       <label>Full description<textarea rows={5} value={values.description} onChange={(e) => update("description", e.target.value)} placeholder="Describe the product, its features and intended use." /></label>
       <div className="admin-form-grid"><label>Material<input value={values.material} onChange={(e) => update("material", e.target.value)} placeholder="e.g. Cotton canvas" /></label><label>Care instructions<input value={values.careInstructions} onChange={(e) => update("careInstructions", e.target.value)} placeholder="e.g. Wipe clean with a damp cloth" /></label></div>
+      <div className="admin-form-section"><div className="admin-form-heading"><span>SEO</span><div><h2>Search appearance</h2><p>Optional. Leave blank to use the product name and description automatically.</p></div></div><label>SEO title<input maxLength={65} value={values.seoTitle} onChange={(e) => update("seoTitle", e.target.value)} placeholder="Product name | JINQAYA" /></label><p className="admin-help">{values.seoTitle.length}/65 characters</p><label>SEO description<textarea rows={3} maxLength={160} value={values.seoDescription} onChange={(e) => update("seoDescription", e.target.value)} placeholder="What it is, who it is for and its useful details." /></label><p className="admin-help">{values.seoDescription.length}/160 characters</p></div>
     </section>
     <section className="admin-form-section"><div className="admin-form-heading"><span>02</span><div><h2>Variant & pricing</h2><p>Add an initial SKU. More variants can be managed in the next catalog update.</p></div></div>
       <label>SKU<input value={values.sku} onChange={(e) => update("sku", e.target.value)} placeholder="e.g. JQ-WT-001-BE" /></label>
