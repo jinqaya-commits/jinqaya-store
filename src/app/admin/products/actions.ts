@@ -165,6 +165,33 @@ export async function updateProduct(productId: string, values: {
   const name = values.name.trim();
   const slug = slugify(name);
   if (!name || !slug) return { error: "Product name is required." };
+  if (values.status === "active") {
+    const [{ data: images }, { data: variants }, { data: categoryLinks }] = await Promise.all([
+      supabase.from("product_images").select("alt_text,is_primary").eq("product_id", productId),
+      supabase.from("product_variants").select("sku,price,is_active").eq("product_id", productId),
+      supabase.from("product_categories").select("is_primary,category_id,categories(parent_id,is_active)").eq("product_id", productId),
+    ]);
+    const nextCategory = values.categoryId
+      ? (await supabase.from("categories").select("id,parent_id,is_active").eq("id", values.categoryId).maybeSingle()).data
+      : null;
+    const categoryRows = values.categoryId
+      ? [{ is_primary: true, parent_id: nextCategory?.parent_id ?? null, is_active: nextCategory?.is_active ?? false }]
+      : (categoryLinks ?? []).map((link) => {
+          const category = Array.isArray(link.categories) ? link.categories[0] : link.categories;
+          return { is_primary: link.is_primary, parent_id: category?.parent_id ?? null, is_active: category?.is_active ?? false };
+        });
+    const readiness = getProductReadiness({
+      shortDescription: values.shortDescription,
+      description: values.description,
+      material: values.material,
+      seoTitle: values.seoTitle,
+      seoDescription: values.seoDescription,
+      images: images ?? [],
+      variants: variants ?? [],
+      categories: categoryRows,
+    });
+    if (!readiness.ready) return { error: "Complete the product checklist before publishing: " + readiness.missing.join(", ") + "." };
+  }
   const { data: conflict } = await supabase.from("products").select("id").eq("slug",slug).neq("id",productId).maybeSingle();
   const { error } = await supabase.from("products").update({
     name, slug: conflict ? slug + "-" + productId.slice(0,8) : slug,
