@@ -29,7 +29,10 @@ export async function createCategory(input:{name:string;parentId:string|null;des
   }
   const {data:existing}=await auth.supabase.from("categories").select("id").eq("slug",slug).maybeSingle();
   if(existing)return {error:"That category URL already exists. Choose a different name."};
-  const {data:siblings}=await auth.supabase.from("categories").select("sort_order").is("parent_id",input.parentId);
+  const siblingQuery = auth.supabase.from("categories").select("sort_order");
+  const {data:siblings}=input.parentId
+    ? await siblingQuery.eq("parent_id", input.parentId)
+    : await siblingQuery.is("parent_id", null);
   sortOrder=Math.max(0,...(siblings??[]).map(row=>row.sort_order))+1;
   const {error}=await auth.supabase.from("categories").insert({name,slug,parent_id:input.parentId,description:input.description.trim()||null,sort_order:sortOrder,is_active:true});
   if(error)return {error:error.message};
