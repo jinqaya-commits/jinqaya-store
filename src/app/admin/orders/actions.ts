@@ -207,3 +207,36 @@ export async function receivePurchaseOrderItemAction(formData: FormData) {
   revalidatePath("/admin");
   return { success: true };
 }
+
+
+export async function recordPurchaseOrderPaymentAction(purchaseOrderId: string, formData: FormData) {
+  const supabase = await requireOrderManager();
+  const amountRaw = String(formData.get("amount") ?? "").trim();
+  const amount = Number(amountRaw);
+  const paymentDate = String(formData.get("payment_date") ?? "").trim();
+  const paymentMethod = String(formData.get("payment_method") ?? "");
+  const reference = String(formData.get("reference_number") ?? "").trim();
+  const notes = String(formData.get("notes") ?? "").trim();
+
+  if (!/^\\d+(?:\\.\\d{1,2})?$/.test(amountRaw) || !Number.isFinite(amount) || amount <= 0 ||
+      !/^\\d{4}-\\d{2}-\\d{2}$/.test(paymentDate) ||
+      !["bank_transfer", "cash", "card", "other"].includes(paymentMethod) ||
+      reference.length > 160 || notes.length > 2000) {
+    return { error: "Check the payment amount, date, method and reference." };
+  }
+
+  const { error } = await supabase.rpc("admin_record_purchase_order_payment", {
+    p_purchase_order_id: purchaseOrderId,
+    p_amount: amount,
+    p_payment_date: paymentDate,
+    p_payment_method: paymentMethod,
+    p_reference_number: reference || null,
+    p_notes: notes || null,
+  });
+  if (error) return { error: error.message };
+
+  revalidatePath("/admin/purchase-orders");
+  revalidatePath("/admin/purchase-orders/" + purchaseOrderId);
+  revalidatePath("/admin");
+  return { success: true };
+}
