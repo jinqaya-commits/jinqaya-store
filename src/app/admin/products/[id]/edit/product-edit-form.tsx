@@ -35,10 +35,10 @@ export function ProductEditForm({product,categoryId,categories,variants: initial
     if(!prepared.ok)throw new Error(uploadInfo.error||"Unable to prepare upload.");
     const uploaded=await fetch(uploadInfo.uploadUrl,{method:"PUT",headers:{"Content-Type":file.type},body:file});
     if(!uploaded.ok)throw new Error("Cloudflare R2 upload failed ("+uploaded.status+").");
-    const result=await addProductImage(product.id,uploadInfo.storagePath,`${product.name} – product image`);
+    const result=await addProductImage(product.id,uploadInfo.storagePath,"");
     if(result.error)throw new Error(result.error);
     const imageId=result.imageId;
-    if(imageId)setImages(current=>[...current,{id:imageId,storage_path:uploadInfo.storagePath,alt_text:`${product.name} – product image`,sort_order:current.length}]);
+    if(imageId)setImages(current=>[...current,{id:imageId,storage_path:uploadInfo.storagePath,alt_text:"",sort_order:current.length}]);
    }
    router.refresh();
   }catch(err){setError(err instanceof Error?err.message:"Image upload failed.");}
@@ -47,7 +47,7 @@ export function ProductEditForm({product,categoryId,categories,variants: initial
  const blank:Variant={sku:"",variantName:"",color:"",size:"",price:"",compareAtPrice:""};
  return <div className="admin-form">
   <form onSubmit={submit} className="admin-form-section">
-   <div className="admin-form-heading"><span>01</span><div><h2>Product details</h2><p>Edit the product information shown in the shop.</p></div></div>
+   <div className="admin-form-heading"><span>01</span><div><h2>Product details</h2><p>Use confirmed product facts only. Leave unknown details blank until verified; do not add assumed features or performance claims.</p></div></div>
    <label>Product name<input required value={fields.name} onChange={e=>setFields({...fields,name:e.target.value})}/></label>
    <label>Product category<select required value={fields.categoryId} onChange={e=>setFields({...fields,categoryId:e.target.value})}><option value="">Choose a product type</option>{categories.filter(category=>category.parent_id!==null).map(category=>{const parent=categories.find(item=>item.id===category.parent_id);const grand=parent?.parent_id?categories.find(item=>item.id===parent.parent_id):null;return <option key={category.id} value={category.id}>{grand?grand.name+" / ":""}{parent?.name??""} / {category.name}</option>;})}</select></label>
    <label>Pet type<select value={fields.petType} onChange={e=>setFields({...fields,petType:e.target.value as Product["pet_type"]})}><option value="both">Cats & dogs</option><option value="cat">Cats</option><option value="dog">Dogs</option><option value="shared">Shared / general</option></select></label>
@@ -74,7 +74,7 @@ export function ProductEditForm({product,categoryId,categories,variants: initial
    <label>Upload product images<input type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple disabled={uploadBusy||busy} onChange={e=>{const selected=Array.from(e.currentTarget.files??[]);e.currentTarget.value="";void uploadImages(selected);}}/></label>
    <p className="admin-help">Select multiple images at once. Each image can be up to 20 MB.</p>
    {uploadBusy&&<p className="admin-help">Uploading image…</p>}
-   {images.length===0?<p className="admin-help">No images uploaded.</p>:images.map((img,i)=><div className="admin-form-grid" key={img.id}><div><strong>{i===0?"Main image":"Image "+(i+1)}</strong><label>Image description (Alt text)<input maxLength={180} value={img.alt_text??""} onChange={e=>setImages(current=>current.map(x=>x.id===img.id?{...x,alt_text:e.target.value}:x))} placeholder="Describe what is visible in this image"/></label><button type="button" className="admin-secondary-button" disabled={busy||uploadBusy} onClick={()=>void saveImageAlt(img)}>Save image description</button></div><div className="admin-form-actions"><button type="button" className="admin-secondary-button" disabled={busy||uploadBusy||i===0} onClick={()=>void moveImage(i,-1)}>Move up</button><button type="button" className="admin-secondary-button" disabled={busy||uploadBusy||i===images.length-1} onClick={()=>void moveImage(i,1)}>Move down</button><button type="button" className="admin-secondary-button" disabled={busy||uploadBusy} onClick={()=>void dropImage(img)}>Delete</button></div></div>)}
+   {images.length===0?<p className="admin-help">No images uploaded.</p>:images.map((img,i)=><div className="admin-form-grid" key={img.id}><div><strong>{i===0?"Main image":"Image "+(i+1)}</strong><label>Image description (Alt text)<input maxLength={180} value={img.alt_text??""} onChange={e=>setImages(current=>current.map(x=>x.id===img.id?{...x,alt_text:e.target.value}:x))} placeholder="Describe the actual subject, color, shape and view shown"/></label><button type="button" className="admin-secondary-button" disabled={busy||uploadBusy} onClick={()=>void saveImageAlt(img)}>Save image description</button></div><div className="admin-form-actions"><button type="button" className="admin-secondary-button" disabled={busy||uploadBusy||i===0} onClick={()=>void moveImage(i,-1)}>Move up</button><button type="button" className="admin-secondary-button" disabled={busy||uploadBusy||i===images.length-1} onClick={()=>void moveImage(i,1)}>Move down</button><button type="button" className="admin-secondary-button" disabled={busy||uploadBusy} onClick={()=>void dropImage(img)}>Delete</button></div></div>)}
   </section>
   {error&&<p className="admin-error" role="alert">{error}</p>}
   <div className="admin-form-actions"><button type="button" className="admin-secondary-button" onClick={()=>router.push("/admin/products")}>Back to products</button></div>
