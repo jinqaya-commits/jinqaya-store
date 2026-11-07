@@ -309,3 +309,36 @@ export async function createReplacementShipmentAction(orderId: string, issueId: 
   revalidatePath("/admin/orders/" + orderId);
   return { success: true };
 }
+
+export async function recordShipmentReturnAction(orderId: string, issueId: string, orderItemId: string, quantity: number, warehouseId: string, notes: string) {
+  const supabase = await requireOrderManager();
+  if (!/^[0-9a-f-]{36}$/i.test(orderId) || !/^[0-9a-f-]{36}$/i.test(issueId) ||
+      !/^[0-9a-f-]{36}$/i.test(orderItemId) || !/^[0-9a-f-]{36}$/i.test(warehouseId) ||
+      !Number.isInteger(quantity) || quantity < 1 || quantity > 100000 || typeof notes !== "string" || notes.length > 1000) {
+    return { error: "Enter a valid returned item, quantity and warehouse." };
+  }
+  const { error } = await supabase.rpc("admin_record_shipment_return", {
+    p_issue_id: issueId, p_order_item_id: orderItemId, p_quantity: quantity,
+    p_warehouse_id: warehouseId, p_condition: "pending_inspection", p_notes: notes.trim() || null,
+  });
+  if (error) return { error: error.message };
+  revalidatePath("/admin/orders/" + orderId);
+  revalidatePath("/admin/inventory");
+  return { success: true };
+}
+
+export async function inspectShipmentReturnAction(orderId: string, receiptId: string, condition: string, notes: string) {
+  const supabase = await requireOrderManager();
+  if (!/^[0-9a-f-]{36}$/i.test(orderId) || !/^[0-9a-f-]{36}$/i.test(receiptId) ||
+      !["restockable", "damaged", "not_restocked"].includes(condition) ||
+      typeof notes !== "string" || notes.length > 1000) {
+    return { error: "Choose a valid inspection result and note." };
+  }
+  const { error } = await supabase.rpc("admin_inspect_shipment_return", {
+    p_receipt_id: receiptId, p_condition: condition, p_notes: notes.trim() || null,
+  });
+  if (error) return { error: error.message };
+  revalidatePath("/admin/orders/" + orderId);
+  revalidatePath("/admin/inventory");
+  return { success: true };
+}
