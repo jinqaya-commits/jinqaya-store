@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const supabase = await createClient();
   const { data: category } = await supabase.from("categories").select("name,description").eq("slug", slug).eq("is_active", true).maybeSingle();
   if (!category) return { title: "Category Not Found", robots: { index: false, follow: false } };
-  const title = category.name.toLowerCase().replace(/\\b\\w/g, (letter: string) => letter.toUpperCase());
+  const title = category.name.toLowerCase().replace(/\b\w/g, (letter: string) => letter.toUpperCase());
   const description = category.description || `Explore ${category.name.toLowerCase()} for cats and dogs from JINQAYA.`;
   return {
     title,
