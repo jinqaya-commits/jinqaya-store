@@ -53,7 +53,7 @@ export async function processOrderEmailOutbox(options: { orderId?: string; limit
 
       if (payload && (row.recipient_type === "customer" || row.recipient_type === "staff")) {
         try {
-          success = await sendOrderOutboxEmail(row.recipient_type, row.recipient_email, payload);
+          success = await sendOrderOutboxEmail(row.recipient_type, row.recipient_email, payload, `jinqaya-order-email/${row.id}`);
           failure = success ? "" : "resend_send_failed_or_email_configuration_missing";
         } catch (error) {
           failure = error instanceof Error ? error.message : "unknown_email_delivery_error";
