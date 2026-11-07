@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { notFound,redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { issuePurchaseOrderAction, receivePurchaseOrderItemAction } from "../../orders/actions";
+import { issuePurchaseOrderAction, receivePurchaseOrderItemAction, recordPurchaseOrderPaymentAction } from "../../orders/actions";
 export const dynamic="force-dynamic";
 export default async function PurchaseOrderDetailPage({params}:{params:Promise<{id:string}>}){
  const {id}=await params;const supabase=await createClient();const {data:claims}=await supabase.auth.getClaims();if(!claims?.claims?.sub)redirect("/login");
  const {data:allowed,error:permissionError}=await supabase.rpc("can_manage_catalog");if(permissionError||allowed!==true)redirect("/");
- const [{data:order,error},{data:receipts}]=await Promise.all([
+ const [{data:order,error},{data:receipts},{data:payments}]=await Promise.all([
   supabase.from("purchase_orders").select("id,po_number,status,currency,order_date,expected_date,subtotal,shipping_cost,tax_amount,total_amount,supplier_reference,notes,created_at,submitted_at,supplier_name_snapshot,supplier_email_snapshot,supplier_phone_snapshot,suppliers(company_name,contact_name,email,phone),purchase_order_items(id,variant_id,quantity_ordered,quantity_received,unit_cost,line_total,product_variants(sku,products(name)))").eq("id",id).maybeSingle(),
   supabase.from("goods_receipts").select("id,receipt_number,status,received_at,supplier_delivery_reference,notes,goods_receipt_items(quantity_received,quantity_damaged,purchase_order_item_id)").eq("purchase_order_id",id).order("created_at",{ascending:false})
  ]);
@@ -16,7 +16,7 @@ export default async function PurchaseOrderDetailPage({params}:{params:Promise<{
  const supplierName=order.supplier_name_snapshot||supplier?.company_name||"—";
  const supplierEmail=order.supplier_email_snapshot??supplier?.email??"";
  const supplierPhone=order.supplier_phone_snapshot??supplier?.phone??"";
- const amount=(value:number|string,currency:string)=>new Intl.NumberFormat("en-US",{style:"currency",currency:currency.trim()||"USD"}).format(Number(value||0));
+ const amount=(value:number|string,currency:string)=>new Intl.NumberFormat("en-US",{style:"currency",currency:currency.trim()||"USD"}).format(Number(value||0));\n const paymentRows=payments||[];\n const paidTotal=paymentRows.reduce((sum,p)=>sum+Number(p.amount),0);\n const outstanding=Math.max(0,Number(order.total_amount)-paidTotal);\n const paymentAction=recordPurchaseOrderPaymentAction.bind(null,order.id);\n const today=new Date().toISOString().slice(0,10);
  return <main className="admin-shell"><aside className="admin-sidebar"><Link href="/" className="admin-brand">JINQAYA<span>ADMIN</span></Link><nav><Link href="/admin">Dashboard</Link><Link href="/admin/products">Products</Link><Link href="/admin/orders">Orders</Link><Link className="active" href="/admin/purchase-orders">Purchase orders</Link><Link href="/admin/inventory">Inventory</Link></nav><p className="admin-sidebar-note">COMMERCE MANAGEMENT</p></aside><section className="admin-main">
  <header className="admin-topbar"><div><p className="admin-kicker">JINQAYA / PROCUREMENT</p><h1>{order.po_number}</h1><p className="admin-help">Supplier: {supplierName}</p></div><Link className="admin-back-link" href="/admin/purchase-orders">← ALL PURCHASE ORDERS</Link></header>
  <div className="admin-summary"><div><span>STATUS</span><strong>{order.status.replaceAll("_"," ")}</strong></div><div><span>SKU LINES</span><strong>{items.length}</strong></div><div><span>UNITS RECEIVED</span><strong>{items.reduce((n,x)=>n+Number(x.quantity_received),0)} / {items.reduce((n,x)=>n+Number(x.quantity_ordered),0)}</strong></div><div><span>ORDER TOTAL</span><strong>{amount(order.total_amount,order.currency)}</strong></div></div>
@@ -30,7 +30,30 @@ export default async function PurchaseOrderDetailPage({params}:{params:Promise<{
  <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>PRODUCT / SKU</th><th>ORDERED</th><th>RECEIVED</th><th>REMAINING</th><th>UNIT COST</th><th>RECEIVE STOCK</th></tr></thead><tbody>{items.map(item=>{const remaining=Number(item.quantity_ordered)-Number(item.quantity_received);const variant=Array.isArray(item.product_variants)?item.product_variants[0]:item.product_variants;const product=variant?(Array.isArray(variant.products)?variant.products[0]:variant.products):null;return <tr key={item.id}><td><strong>{product?.name||"Product"}</strong><small>{variant?.sku||"SKU"}</small></td><td>{item.quantity_ordered}</td><td>{item.quantity_received}</td><td>{remaining}</td><td>{amount(item.unit_cost,order.currency)}</td><td>{remaining>0&&["submitted","partially_received"].includes(order.status)?<form action={receivePurchaseOrderItemAction} className="purchase-receive-form"><input type="hidden" name="purchase_order_item_id" value={item.id}/><label>Received<input aria-label={"Received quantity for "+(variant?.sku||"SKU")} type="number" name="quantity" min="1" max={remaining} step="1" defaultValue={remaining} required/></label><label>Damaged<input aria-label={"Damaged quantity for "+(variant?.sku||"SKU")} type="number" name="damaged" min="0" max={remaining} step="1" defaultValue="0"/></label><input aria-label="Supplier delivery reference" type="text" name="supplier_delivery_reference" maxLength={160} placeholder="Delivery ref"/><input aria-label="Receiving note" type="text" name="notes" maxLength={500} placeholder="Receiving note"/><button className="admin-secondary-button" type="submit">Receive</button></form>:<span className="admin-help">{remaining===0?"Complete":"Submit PO first"}</span>}</td></tr>})}</tbody></table></div>
  <p className="admin-help" style={{marginTop:16}}>Received units increase physical stock. Damaged units are recorded separately and excluded from available stock. Each receipt creates a goods receipt and linked inventory movement. Excess quantities are rejected.</p>
  </section>
- <section className="admin-panel" style={{marginTop:24}}><div className="admin-panel-heading"><div><p className="admin-kicker">GOODS RECEIPT REGISTER</p><h2>Receiving history</h2></div><span>{receipts?.length||0} RECEIPTS</span></div>
+
+ <section className="admin-panel" style={{marginTop:24}}>
+  <div className="admin-panel-heading"><div><p className="admin-kicker">ACCOUNTS PAYABLE</p><h2>Supplier payments</h2></div><span>{paymentRows.length} PAYMENT(S)</span></div>
+  <div className="admin-summary payment-summary">
+   <div><span>ORDER TOTAL</span><strong>{amount(order.total_amount,order.currency)}</strong></div>
+   <div><span>PAID</span><strong>{amount(paidTotal,order.currency)}</strong></div>
+   <div><span>OUTSTANDING</span><strong>{amount(outstanding,order.currency)}</strong></div>
+  </div>
+  {outstanding>0&&order.status!=="draft"&&order.status!=="cancelled"&&<form action={paymentAction} className="supplier-form payment-form">
+   <label>Payment amount ({order.currency.trim()})<input name="amount" type="number" min="0.01" max={outstanding.toFixed(2)} step="0.01" required placeholder="0.00"/></label>
+   <label>Payment date<input name="payment_date" type="date" max={today} defaultValue={today} required/></label>
+   <label>Payment method<select name="payment_method" defaultValue="bank_transfer"><option value="bank_transfer">Bank transfer</option><option value="cash">Cash</option><option value="card">Card</option><option value="other">Other</option></select></label>
+   <label>Reference number<input name="reference_number" maxLength={160} placeholder="Bank reference / transaction ID"/></label>
+   <label className="supplier-wide">Internal note<textarea name="notes" rows={2} maxLength={2000} placeholder="Optional payment note"/></label>
+   <div className="supplier-form-actions"><button className="admin-primary-button" type="submit">Record payment</button><span className="admin-help">Only record money actually paid. This does not send money or contact the supplier.</span></div>
+  </form>}
+  {order.status==="draft"&&<p className="admin-help">Submit this purchase order before recording a payment.</p>}
+  {order.status==="cancelled"&&<p className="admin-help">This purchase order is cancelled; no further payments can be recorded.</p>}
+  {outstanding<=0&&<p className="admin-help">The purchase order is fully paid.</p>}
+  <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>PAYMENT DATE</th><th>AMOUNT</th><th>METHOD</th><th>REFERENCE</th><th>NOTE</th></tr></thead><tbody>
+   {!paymentRows.length?<tr><td colSpan={5}>No payments recorded.</td></tr>:paymentRows.map(p=><tr key={p.id}><td>{p.payment_date}</td><td><strong>{amount(p.amount,p.currency)}</strong></td><td>{p.payment_method.replaceAll("_"," ")}</td><td>{p.reference_number||"—"}</td><td>{p.notes||"—"}</td></tr>)}
+  </tbody></table></div>
+ </section>
+\n <section className="admin-panel" style={{marginTop:24}}><div className="admin-panel-heading"><div><p className="admin-kicker">GOODS RECEIPT REGISTER</p><h2>Receiving history</h2></div><span>{receipts?.length||0} RECEIPTS</span></div>
  {!receipts?.length?<p className="admin-help">No goods received against this purchase order yet.</p>:<div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>RECEIPT</th><th>DATE</th><th>DELIVERY REF</th><th>UNITS RECEIVED</th><th>DAMAGED</th><th>NOTES</th></tr></thead><tbody>{receipts.map(r=>{const receiptItems=Array.isArray(r.goods_receipt_items)?r.goods_receipt_items:[];return <tr key={r.id}><td><strong>{r.receipt_number}</strong></td><td>{r.received_at?new Date(r.received_at).toLocaleString("en-US",{dateStyle:"medium",timeStyle:"short"}):"—"}</td><td>{r.supplier_delivery_reference||"—"}</td><td>{receiptItems.reduce((n,x)=>n+Number(x.quantity_received),0)}</td><td>{receiptItems.reduce((n,x)=>n+Number(x.quantity_damaged),0)}</td><td>{r.notes||"—"}</td></tr>})}</tbody></table></div>}
  </section>
  </section></main>;
