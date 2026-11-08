@@ -33,7 +33,7 @@ function safeTrackingUrl(value: string | null) {
   if (!value) return null;
   try {
     const url = new URL(value);
-    return url.protocol === "https:" || url.protocol === "http:" ? url.toString() : null;
+    return url.protocol === "https:" ? url.toString() : null;
   } catch {
     return null;
   }
@@ -112,7 +112,7 @@ export function OrderStatusLookup() {
 
   const status = order?.status || "";
   const currentIndex = status === "partially_shipped" ? 4 : status === "partially_refunded" ? 5 : steps.findIndex((step) => step.key === status);
-  const terminal = status === "cancelled" || status === "refunded";
+  const terminal = status === "cancelled" || status === "refunded" || status === "partially_refunded";
 
   return (
     <div className="order-status-lookup">
@@ -153,7 +153,7 @@ export function OrderStatusLookup() {
               })}
             </ol>
           )}
-          {terminal && <p className="order-status-terminal">This order is {labels[status]?.toLowerCase() || status}. Please contact us if you need help.</p>}
+          {terminal && <p className="order-status-terminal">This order is {labels[status]?.toLowerCase() || status}. Please contact info@jinqaya.com if you need help with this update.</p>}
           <div className="order-status-card">
             <h3>Order summary</h3>
             {order.items.map((item, index) => <div className="order-status-item" key={item.product_name + index}><span>{item.product_name}{item.variant_name ? " · " + item.variant_name : ""} × {item.quantity}</span></div>)}
