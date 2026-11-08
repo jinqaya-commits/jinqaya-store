@@ -287,6 +287,7 @@ export type Database = {
           id?: string
           object_key?: string
           promoted_object_key?: string | null
+          promotion_lease_until?: string | null
           order_id?: string
           token_hash?: string
         }
