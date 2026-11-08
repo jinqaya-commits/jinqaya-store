@@ -71,7 +71,25 @@ export async function GET(request:NextRequest){
    }
   }
 
-  return NextResponse.json({ok:true,afterSales:{deleted:afterSalesDeleted,failed:afterSalesFailed},refundProofs:{deleted:refundDeleted,failed:refundFailed}});
+  const {data:pendingDeletionRows,error:pendingDeletionError}=await supabase.rpc("list_pending_refund_proof_deletions",{p_limit:100});
+  if(pendingDeletionError)throw pendingDeletionError;
+  let refundProofDeletionsCompleted=0,refundProofDeletionsFailed=0;
+  for(const row of (pendingDeletionRows??[]) as Array<{attachment_id:string;object_key:string}>) {
+   if(!row.object_key.startsWith("refund-proofs/")||row.object_key.length>500) {refundProofDeletionsFailed++;continue;}
+   try {
+    await s3.send(new DeleteObjectCommand({Bucket:bucket,Key:row.object_key}),{abortSignal:AbortSignal.timeout(8000)});
+    const {error:completeError}=await supabase.rpc("complete_order_refund_attachment_deletion",{
+     p_attachment_id:row.attachment_id,p_object_key:row.object_key,p_actor_user_id:null
+    });
+    if(completeError)throw completeError;
+    refundProofDeletionsCompleted++;
+   } catch(error) {
+    refundProofDeletionsFailed++;
+    console.error("[after-sales-cleanup] refund proof deletion retry failed",row.attachment_id,error);
+   }
+  }
+
+  return NextResponse.json({ok:true,afterSales:{deleted:afterSalesDeleted,failed:afterSalesFailed},refundProofs:{orphansDeleted:refundDeleted,orphansFailed:refundFailed,deletionsCompleted:refundProofDeletionsCompleted,deletionsFailed:refundProofDeletionsFailed}});
  }catch(error){
   console.error("[after-sales-cleanup] failed",error);
   return NextResponse.json({error:"Cleanup failed. Check server logs."},{status:500});
