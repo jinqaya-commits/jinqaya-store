@@ -30,14 +30,15 @@ export async function POST(request: NextRequest) {
     if (data === true) {
       const sent = await sendOrderStatusVerificationCode(email, code);
       if (!sent) {
+        // Keep the response identical for matching and non-matching order details.
+        // The challenge expires automatically; do not reveal whether an order exists.
         console.error("[order-status] verification email delivery failed");
-        return NextResponse.json({ error: "Unable to send the verification email. Please try again shortly." }, { status: 503 });
       }
     }
     return NextResponse.json({
       ok: true,
       message: "If the order number and email match, a verification code will be sent.",
-    });
+    }, { headers: { "Cache-Control": "no-store, private" } });
   } catch (error) {
     if (error instanceof Error && error.message === "Request body is too large.") {
       return NextResponse.json({ error: "Request body is too large." }, { status: 413 });
