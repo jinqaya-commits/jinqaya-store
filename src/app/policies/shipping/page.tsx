@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { CartLink } from "@/components/storefront/cart-link";
 import { CategoryNavigation } from "@/components/storefront/category-navigation";
+import { StorefrontFooter } from "@/components/storefront/storefront-footer";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/policies/shipping" },
@@ -37,14 +38,6 @@ export default function ShippingPolicyPage() {
         <div className="jq-policy-note"><strong>Need help?</strong><p>For delivery questions, email <a href="mailto:info@jinqaya.com">info@jinqaya.com</a>. For return eligibility, read our <Link href="/policies/returns-refunds">Returns &amp; Refunds Policy</Link>.</p></div>
         <p className="jq-policy-back"><Link href="/shop">CONTINUE SHOPPING ↗</Link></p>
       </article>
-      <footer className="jq-footer">
-        <div className="jq-footer-main">
-          <div><Link className="jq-wordmark" href="/">JINQAYA<span>®</span></Link><p>Life is better in good company.</p></div>
-          <div className="jq-footer-links"><Link href="/shop">THE SHOP</Link><Link href="/policies/shipping">SHIPPING POLICY</Link><Link href="/policies/returns-refunds">RETURNS &amp; REFUNDS</Link></div>
-          <span className="jq-footer-note">FOR CATS, DOGS<br />AND THE LIFE BETWEEN.</span>
-        </div>
-        <div className="jq-footer-bottom"><span>© {new Date().getFullYear()} JINQAYA. ALL RIGHTS RESERVED.</span><span>DESIGNED FOR LIFE, SHARED.</span></div>
-      </footer>
-    </main>
+      <StorefrontFooter />    </main>
   );
 }
