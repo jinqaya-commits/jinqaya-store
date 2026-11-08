@@ -76,13 +76,17 @@ export async function POST(req: NextRequest) {
   if (error) {
    const { data: existingCase, error: lookupError } = await supabase
     .from("after_sales_cases")
-    .select("case_number")
+    .select("case_number,evidence_urls")
     .eq("order_id", orderId)
     .eq("customer_description", description)
-    .eq("evidence_urls", evidence)
+    .contains("evidence_urls", evidence)
     .maybeSingle();
 
-   if (lookupError || !existingCase) throw error;
+   const existingKeys = existingCase?.evidence_urls;
+   const exactEvidenceMatch = Array.isArray(existingKeys) &&
+    existingKeys.length === evidence.length &&
+    existingKeys.every((key: unknown, index: number) => key === evidence[index]);
+   if (lookupError || !existingCase || !exactEvidenceMatch) throw error;
    caseData = existingCase as { case_number?: unknown };
   }
 
