@@ -28,7 +28,7 @@ export default async function AdminInventoryPage() {
 
   const incomingByVariant = new Map<string, number>();
   const nextArrivalByVariant = new Map<string, string>();
-  (incomingItems || []).forEach((item: any) => {
+  (incomingItems || []).forEach((item) => {
     const purchaseOrder = Array.isArray(item.purchase_orders) ? item.purchase_orders[0] : item.purchase_orders;
     if (!warehouse || purchaseOrder?.warehouse_id !== warehouse.id) return;
     const remaining = Math.max(0, Number(item.quantity_ordered) - Number(item.quantity_received));
@@ -43,7 +43,7 @@ export default async function AdminInventoryPage() {
 
   const rows = (variants || []).map((variant) => {
     const inventoryRows = Array.isArray(variant.inventory) ? variant.inventory : [];
-    const stock = inventoryRows.find((item: any) => item.warehouse_id === warehouse?.id) || null;
+    const stock = inventoryRows.find((item) => item.warehouse_id === warehouse?.id) || null;
     const onHand = Number(stock?.on_hand || 0);
     const reserved = Number(stock?.reserved || 0);
     const damaged = Number(stock?.damaged || 0);
