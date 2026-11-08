@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
-import { HeadObjectCommand, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { HeadObjectCommand, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import sharp from "sharp";
 import { readBoundedJson } from "@/lib/after-sales-evidence";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
@@ -140,4 +140,36 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
   return NextResponse.json({ok:true,attachmentId});
  }
  return NextResponse.json({error:"Unsupported action."},{status:400});
+}
+
+export async function DELETE(request:NextRequest,{params}:{params:Promise<{id:string;refundId:string}>}) {
+ const auth=await authorize(); if("error" in auth)return auth.error;
+ const {id,refundId}=await params;
+ if(!/^[0-9a-f-]{36}$/i.test(id)||!/^[0-9a-f-]{36}$/i.test(refundId))return NextResponse.json({error:"Invalid ID"},{status:400});
+ let body:any;
+ try{body=await readBoundedJson<any>(request,4*1024)}catch{return NextResponse.json({error:"Invalid request"},{status:400})}
+ const attachmentId=typeof body?.attachmentId==="string"?body.attachmentId:"";
+ if(!/^[0-9a-f-]{36}$/i.test(attachmentId))return NextResponse.json({error:"Invalid attachment ID"},{status:400});
+ const db=createAdminClient();
+ if(!await refundExists(db,id,refundId))return NextResponse.json({error:"Refund not found"},{status:404});
+ const {data:objectKey,error}=await db.rpc("request_order_refund_attachment_deletion",{
+  p_order_id:id,p_refund_id:refundId,p_attachment_id:attachmentId,p_actor_user_id:auth.userId
+ });
+ if(error)return NextResponse.json({error:"Unable to request refund proof deletion."},{status:409});
+ if(!objectKey)return NextResponse.json({ok:true,alreadyDeleted:true});
+ const {bucket,client}=getEvidenceClient();
+ try {
+  await client.send(new DeleteObjectCommand({Bucket:bucket,Key:objectKey}),{abortSignal:AbortSignal.timeout(8000)});
+ } catch(error) {
+  console.error("[refund-proof-delete] R2 deletion pending",error);
+  return NextResponse.json({error:"Deletion has been queued and will be retried. The proof is hidden from the record."},{status:202});
+ }
+ const {error:finalizeError}=await db.rpc("complete_order_refund_attachment_deletion",{
+  p_attachment_id:attachmentId,p_object_key:objectKey,p_actor_user_id:auth.userId
+ });
+ if(finalizeError) {
+  console.error("[refund-proof-delete] database finalization pending",finalizeError);
+  return NextResponse.json({error:"The file was deleted; audit finalization is pending automatic retry."},{status:202});
+ }
+ return NextResponse.json({ok:true});
 }
