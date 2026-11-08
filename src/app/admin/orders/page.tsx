@@ -36,7 +36,6 @@ export default async function AdminOrdersPage({ searchParams }: { searchParams: 
   if (permError || allowed !== true) redirect("/");
 
   const params = await searchParams;
-  const validStatuses = new Set(filters.map(([value]) => value));
   const selected = filters.find(([value]) => value === params.status)?.[0] ?? "all";
   const search = cleanSearch(params.q || "");
   const from = dateBoundary(params.from);
