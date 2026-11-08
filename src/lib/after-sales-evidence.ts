@@ -239,22 +239,55 @@ async function validateIsoBmffContainer(
  return type === "video/quicktime" ? majorBrand === "qt  " : majorBrand !== "qt  ";
 }
 
-export async function verifyEvidenceObject(key: string, expectedOrderId: string) {
+export type EvidenceObjectMetadata = {
+ contentType: string;
+ size: number;
+};
+
+function assertEvidenceKey(key: string, expectedOrderId: string) {
  if (!key.startsWith(`after-sales/${expectedOrderId}/`) || key.length > 500) {
   throw new Error("Invalid evidence key.");
  }
+}
+
+function parseEvidenceMetadata(contentType: string, contentLength: number) {
+ const allowed = new Set(["image/jpeg", "image/png", "image/webp", "image/avif", "video/mp4", "video/quicktime"]);
+ if (!allowed.has(contentType) || !Number.isSafeInteger(contentLength) || contentLength <= 0 ||
+     contentLength > (contentType.startsWith("video/") ? 50 : 10) * 1024 * 1024) {
+  throw new Error("Evidence file metadata is invalid.");
+ }
+ return { contentType, size: contentLength };
+}
+
+// Cheap metadata-only pass: lets the caller verify the upload ticket before
+// spending resources on full image decoding or video container inspection.
+export async function getEvidenceObjectMetadata(key: string, expectedOrderId: string): Promise<EvidenceObjectMetadata> {
+ assertEvidenceKey(key, expectedOrderId);
  const { bucket, client } = getEvidenceClient();
  const result = await client.send(
   new HeadObjectCommand({ Bucket: bucket, Key: key }),
   { abortSignal: AbortSignal.timeout(8_000) },
  );
- const type = result.ContentType || "";
- const size = Number(result.ContentLength || 0);
- const allowed = new Set(["image/jpeg", "image/png", "image/webp", "image/avif", "video/mp4", "video/quicktime"]);
- if (!allowed.has(type) || !Number.isInteger(size) || size <= 0 ||
-     size > (type.startsWith("video/") ? 50 : 10) * 1024 * 1024) {
-  throw new Error("Evidence file metadata is invalid.");
+ return parseEvidenceMetadata(result.ContentType || "", Number(result.ContentLength ?? 0));
+}
+
+export async function verifyEvidenceObject(
+ key: string,
+ expectedOrderId: string,
+ expectedMetadata?: EvidenceObjectMetadata,
+) {
+ assertEvidenceKey(key, expectedOrderId);
+ const { bucket, client } = getEvidenceClient();
+ const result = await client.send(
+  new HeadObjectCommand({ Bucket: bucket, Key: key }),
+  { abortSignal: AbortSignal.timeout(8_000) },
+ );
+ const metadata = parseEvidenceMetadata(result.ContentType || "", Number(result.ContentLength ?? 0));
+ if (expectedMetadata &&
+     (metadata.contentType !== expectedMetadata.contentType || metadata.size !== expectedMetadata.size)) {
+  throw new Error("Evidence file metadata changed during verification.");
  }
+ const { contentType: type, size } = metadata;
 
  if (type.startsWith("image/")) {
   const object = await client.send(
@@ -297,7 +330,7 @@ export async function verifyEvidenceObject(key: string, expectedOrderId: string)
    throw new Error("Video container is incomplete or structurally invalid.");
   }
  }
- return { contentType: type, size };
+ return metadata;
 }
 
 export async function createEvidenceReadUrl(key: string) {
