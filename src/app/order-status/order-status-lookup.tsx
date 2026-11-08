@@ -161,7 +161,7 @@ export function OrderStatusLookup() {
             </div>
           )}
           <p className="order-status-private-note">For your privacy, this page does not display your delivery address or payment details. This secure session expires after 20 minutes.</p>
-          <div className="order-status-actions"><button className="order-lookup-text-button" type="button" onClick={endSession}>END SECURE SESSION</button><Link href="/contact">CONTACT JINQAYA</Link></div>
+          <div className="order-status-actions"><button className="order-lookup-text-button" type="button" onClick={endSession}>END SECURE SESSION</button><a href="mailto:info@jinqaya.com">CONTACT JINQAYA</a></div>
         </section>
       )}
       {error && <p className="checkout-error" role="alert">{error}</p>}
