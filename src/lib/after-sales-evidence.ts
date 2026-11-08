@@ -191,16 +191,36 @@ async function validateIsoBmffContainer(
 
   if (boxSize < headerSize || boxSize > fileSize - offset) return false;
 
+  // ISO BMFF box types are four printable ASCII bytes.
+  if ([...boxType].some((character) => {
+   const code = character.charCodeAt(0);
+   return code < 0x20 || code > 0x7e;
+  })) return false;
+
   if (boxType === "ftyp") {
-   if (hasFtyp || boxSize < headerSize + 8 || (boxSize - headerSize) % 4 !== 0) return false;
-   if (!await ensureWindow(offset + headerSize, 4)) return false;
-   const ftyp = bytesAt(offset + headerSize, 4);
+   // ftyp contains major_brand, minor_version and zero or more compatible brands.
+   // Keep it small enough to validate completely in one bounded range read.
+   if (hasFtyp || boxSize < headerSize + 8 || boxSize > 4096 ||
+       (boxSize - headerSize - 8) % 4 !== 0) return false;
+   if (!await ensureWindow(offset + headerSize, boxSize - headerSize)) return false;
+   const ftyp = bytesAt(offset + headerSize, boxSize - headerSize);
+   majorBrand = String.fromCharCode(...ftyp.slice(0, 4));
+   const compatibleBrands = [];
+   for (let index = 8; index + 4 <= ftyp.length; index += 4) {
+    compatibleBrands.push(String.fromCharCode(...ftyp.slice(index, index + 4)));
+   }
+   const allBrands = [majorBrand, ...compatibleBrands];
+   if (allBrands.some((brand) => [...brand].some((character) => {
+    const code = character.charCodeAt(0);
+    return code < 0x20 || code > 0x7e;
+   }))) return false;
+   if (type === "video/quicktime" ? !allBrands.includes("qt  ") : allBrands.includes("qt  ")) return false;
    hasFtyp = true;
-   majorBrand = String.fromCharCode(...ftyp);
   } else if (boxType === "moov") {
-   hasMoov = boxSize > headerSize;
+   if (hasMoov || boxSize <= headerSize) return false;
+   hasMoov = true;
   } else if (boxType === "mdat") {
-   hasMdat = boxSize > headerSize;
+   if (boxSize > headerSize) hasMdat = true;
   }
 
   offset += boxSize;
