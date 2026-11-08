@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sha256 } from "@/lib/after-sales-evidence";
@@ -30,7 +30,7 @@ export async function GET() {
   }
 }
 
-export async function DELETE(_request: NextRequest) {
+export async function DELETE() {
   const response = NextResponse.json({ ok: true });
   response.cookies.set(COOKIE, "", {
     httpOnly: true, secure: process.env.NODE_ENV === "production",
