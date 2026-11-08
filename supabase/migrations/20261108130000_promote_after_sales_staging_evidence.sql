@@ -77,10 +77,17 @@ begin
   raise exception 'Invalid evidence file reference.';
  end if;
 
+ -- Require every staging key to be paired with the exact final key
+ -- recorded on its own upload ticket. Do not trust caller-supplied final paths.
  select count(*) into v_ticket_count
- from public.after_sales_upload_tickets t
- where t.order_id=p_order_id and t.token_hash=p_token_hash
-   and t.object_key=any(v_upload_keys) and t.expires_at>now() and t.consumed_at is null;
+ from unnest(v_upload_keys, v_final_keys) as paired(upload_key, final_key)
+ where exists (
+  select 1 from public.after_sales_upload_tickets t
+  where t.order_id=p_order_id and t.token_hash=p_token_hash
+    and t.object_key=paired.upload_key
+    and t.promoted_object_key=paired.final_key
+    and t.expires_at>now() and t.consumed_at is null
+ );
  if v_ticket_count<>array_length(v_upload_keys,1) then
   raise exception 'Evidence upload authorization expired. Please upload again.';
  end if;
