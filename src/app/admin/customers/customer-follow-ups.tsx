@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type FollowUp = {
   id: string;
@@ -27,6 +27,11 @@ export default function CustomerFollowUps({ customerId, initialFollowUps }: {
   initialFollowUps: FollowUp[];
 }) {
   const [items, setItems] = useState(initialFollowUps);
+  const [currentTime, setCurrentTime] = useState<number | null>(null);
+
+  useEffect(() => {
+    setCurrentTime(Date.now());
+  }, []);
   const [title, setTitle] = useState("");
   const [dueAt, setDueAt] = useState(localDateTimeDefault);
   const [notes, setNotes] = useState("");
@@ -78,7 +83,7 @@ export default function CustomerFollowUps({ customerId, initialFollowUps }: {
   }
 
   const pending = items.filter(item => item.status === "pending");
-  const overdue = pending.filter(item => new Date(item.due_at).getTime() < Date.now());
+  const overdue = pending.filter(item => currentTime !== null && new Date(item.due_at).getTime() < currentTime);
 
   return <div className="admin-followups">
     <form className="admin-followup-form" onSubmit={addFollowUp}>
@@ -98,7 +103,7 @@ export default function CustomerFollowUps({ customerId, initialFollowUps }: {
 
     {!items.length ? <div className="admin-empty"><h3>No follow-ups scheduled.</h3><p>Create a reminder to keep the next customer contact on track.</p></div> : <div className="admin-followup-list">
       {items.map(item => {
-        const isOverdue = item.status === "pending" && new Date(item.due_at).getTime() < Date.now();
+        const isOverdue = item.status === "pending" && currentTime !== null && new Date(item.due_at).getTime() < currentTime;
         return <article className="admin-followup-item" key={item.id}>
           <div className="admin-followup-item-main">
             <div className="admin-followup-title-row">
