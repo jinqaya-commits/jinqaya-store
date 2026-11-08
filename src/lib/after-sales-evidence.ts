@@ -116,12 +116,13 @@ async function readObjectRange(
  key: string,
  start: number,
  end: number,
+ signal: AbortSignal = AbortSignal.timeout(8_000),
 ) {
  const result = await client.send(new GetObjectCommand({
   Bucket: bucket,
   Key: key,
   Range: `bytes=${start}-${end}`,
- }));
+ }), { abortSignal: signal });
  if (!result.Body) throw new Error("Evidence file range is unavailable.");
  const bytes = await result.Body.transformToByteArray();
  if (bytes.byteLength !== end - start + 1) {
@@ -142,6 +143,8 @@ async function validateIsoBmffContainer(
  const WINDOW_BYTES = 64 * 1024;
  const MAX_RANGE_REQUESTS = 64;
  const MAX_TOP_LEVEL_BOXES = 4096;
+ const MAX_PARSE_TIME_MS = 25_000;
+ const deadline = Date.now() + MAX_PARSE_TIME_MS;
  let rangeRequests = 0;
  let windowStart = -1;
  let window: Uint8Array<ArrayBufferLike> = new Uint8Array();
@@ -154,10 +157,15 @@ async function validateIsoBmffContainer(
 
  const ensureWindow = async (position: number, minimumBytes: number) => {
   if (position < windowStart || position + minimumBytes > windowStart + window.byteLength) {
-   if (++rangeRequests > MAX_RANGE_REQUESTS) return false;
+   const remainingMs = deadline - Date.now();
+   if (remainingMs <= 0 || ++rangeRequests > MAX_RANGE_REQUESTS) return false;
    windowStart = position;
    const end = Math.min(position + WINDOW_BYTES - 1, fileSize - 1);
-   window = await readObjectRange(client, bucket, key, position, end);
+   window = await readObjectRange(
+    client, bucket, key, position, end,
+    AbortSignal.timeout(Math.min(8_000, remainingMs)),
+   );
+   if (Date.now() > deadline) return false;
   }
   return position + minimumBytes <= windowStart + window.byteLength;
  };
