@@ -101,6 +101,7 @@ export type Database = {
           customer_description: string
           customer_id: string
           evidence_urls: string[]
+          submission_upload_keys: string[]
           id: string
           issue_type: string
           order_id: string
@@ -121,6 +122,7 @@ export type Database = {
           customer_description: string
           customer_id: string
           evidence_urls?: string[]
+          submission_upload_keys?: string[]
           id?: string
           issue_type?: string
           order_id: string
@@ -141,6 +143,7 @@ export type Database = {
           customer_description?: string
           customer_id?: string
           evidence_urls?: string[]
+          submission_upload_keys?: string[]
           id?: string
           issue_type?: string
           order_id?: string
@@ -257,6 +260,7 @@ export type Database = {
           expires_at: string
           id: string
           object_key: string
+          promoted_object_key: string | null
           order_id: string
           token_hash: string
         }
@@ -268,6 +272,7 @@ export type Database = {
           expires_at: string
           id?: string
           object_key: string
+          promoted_object_key?: string | null
           order_id: string
           token_hash: string
         }
@@ -279,6 +284,7 @@ export type Database = {
           expires_at?: string
           id?: string
           object_key?: string
+          promoted_object_key?: string | null
           order_id?: string
           token_hash?: string
         }
@@ -3982,9 +3988,10 @@ export type Database = {
       submit_customer_after_sales_case: {
         Args: {
           p_description: string
-          p_evidence_keys: string[]
+          p_final_evidence_keys: string[]
           p_order_id: string
           p_token_hash: string
+          p_upload_keys: string[]
         }
         Returns: Json
       }
