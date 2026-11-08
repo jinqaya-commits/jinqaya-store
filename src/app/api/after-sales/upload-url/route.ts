@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
   const contentType = String(body.contentType || "");
   const size = Number(body.size);
 
-  if (!/^[0-9a-f-]{36}$/i.test(orderId) || !types.has(contentType) ||
+  if (!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(orderId) || !types.has(contentType) ||
       !Number.isInteger(size) || size <= 0 ||
       size > (contentType.startsWith("video/") ? 50 : 10) * 1024 * 1024) {
    return NextResponse.json({ error: "Unsupported file or file size." }, { status: 400 });
