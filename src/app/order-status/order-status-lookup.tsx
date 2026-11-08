@@ -8,7 +8,7 @@ type Shipment = {
   tracking_url: string | null; shipped_at: string | null; delivered_at: string | null;
 };
 type CustomerOrder = {
-  order_number: string; status: string; created_at: string; currency: string;
+  order_number: string; status: string; created_at: string; updated_at: string; currency: string;
   subtotal: number | string; shipping_amount: number | string | null;
   total_amount: number | string | null; shipping_method: string | null;
   items: OrderItem[]; shipment: Shipment | null;
@@ -28,6 +28,16 @@ const steps = [
   { key: "shipped", title: "Shipped", detail: "Your parcel is on its way." },
   { key: "delivered", title: "Delivered", detail: "Your order has been marked as delivered." },
 ];
+
+function safeTrackingUrl(value: string | null) {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:" ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
 
 function money(value: number | string | null, currency: string) {
   if (value === null || value === "") return "To be confirmed";
@@ -130,7 +140,7 @@ export function OrderStatusLookup() {
             <div><p className="eyebrow">ORDER {order.order_number}</p><h2>{labels[status] || status.replaceAll("_", " ")}</h2></div>
             <button className="order-lookup-text-button" type="button" onClick={refresh} disabled={busy}>{busy ? "REFRESHING…" : "REFRESH STATUS ↻"}</button>
           </div>
-          <p className="order-status-created">Placed {new Date(order.created_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</p>
+          <p className="order-status-created">Placed {new Date(order.created_at).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })} · Last updated {new Date(order.updated_at).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}</p>
           {!terminal && (
             <ol className="order-status-timeline">
               {steps.map((step, index) => {
@@ -156,7 +166,7 @@ export function OrderStatusLookup() {
               <h3>Shipment details</h3>
               <p>{order.shipment.carrier || order.shipping_method || "Carrier details pending"} · {order.shipment.status.replaceAll("_", " ")}</p>
               {order.shipment.tracking_number && <p>Tracking number: <strong>{order.shipment.tracking_number}</strong></p>}
-              {order.shipment.tracking_url && <a href={order.shipment.tracking_url} target="_blank" rel="noreferrer">Track your parcel ↗</a>}
+              {safeTrackingUrl(order.shipment.tracking_url) && <a href={safeTrackingUrl(order.shipment.tracking_url)!} target="_blank" rel="noopener noreferrer">Track your parcel ↗</a>}
             </div>
           )}
           <p className="order-status-private-note">For your privacy, this page does not display your delivery address or payment details. This secure session expires after 20 minutes.</p>
