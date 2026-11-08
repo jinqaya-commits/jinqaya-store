@@ -1166,6 +1166,48 @@ export type Database = {
           },
         ]
       }
+      order_refund_upload_tickets: {
+        Row: {
+          cleanup_claimed_at: string | null
+          consumed_at: string | null
+          content_type: string
+          created_at: string
+          expires_at: string
+          file_name: string
+          file_size: number
+          object_key: string
+          order_id: string
+          refund_id: string
+          uploaded_by: string
+        }
+        Insert: {
+          cleanup_claimed_at?: string | null
+          consumed_at?: string | null
+          content_type: string
+          created_at?: string
+          expires_at: string
+          file_name: string
+          file_size: number
+          object_key: string
+          order_id: string
+          refund_id: string
+          uploaded_by: string
+        }
+        Update: {
+          cleanup_claimed_at?: string | null
+          consumed_at?: string | null
+          content_type?: string
+          created_at?: string
+          expires_at?: string
+          file_name?: string
+          file_size?: number
+          object_key?: string
+          order_id?: string
+          refund_id?: string
+          uploaded_by?: string
+        }
+        Relationships: []
+      }
       order_refund_attachments: {
         Row: {
           content_type: string
@@ -3722,6 +3764,26 @@ export type Database = {
       claim_order_email_outbox: {
         Args: { p_limit?: number; p_order_id?: string | null }
         Returns: Database["public"]["Tables"]["order_email_outbox"]["Row"][]
+      }
+      complete_order_refund_proof_upload: {
+        Args: {
+          p_content_type: string
+          p_file_name: string
+          p_file_size: number
+          p_order_id: string
+          p_object_key: string
+          p_refund_id: string
+          p_uploaded_by: string
+        }
+        Returns: string
+      }
+      list_expired_refund_proof_upload_keys: {
+        Args: { p_limit?: number }
+        Returns: { object_key: string }[]
+      }
+      delete_expired_refund_proof_upload_tickets: {
+        Args: { p_object_keys: string[] }
+        Returns: number
       }
       complete_order_email_outbox: {
         Args: {
