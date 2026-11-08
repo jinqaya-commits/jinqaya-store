@@ -139,7 +139,7 @@ export default async function AdminInventoryPage() {
           <p className="admin-help" style={{ marginTop: 16 }}>
             Available stock = on hand − reserved − damaged. Incoming units are unreceived quantities on submitted or partially received purchase orders for this warehouse.
             Replenishment gap is the minimum quantity needed to reach the SKU reorder point after current incoming stock. It is a planning figure only; no purchase order is created automatically.
-            Set each SKU's reorder point using your own sales pace and supplier lead time.
+            Set each SKU&apos;s reorder point using your own sales pace and supplier lead time.
           </p>
         </section>
 
