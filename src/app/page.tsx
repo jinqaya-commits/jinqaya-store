@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { CartLink } from "@/components/storefront/cart-link";
 import { CategoryNavigation } from "@/components/storefront/category-navigation";
 import { ProductCard } from "@/components/storefront/product-card";
@@ -81,7 +82,7 @@ export default async function HomePage() {
       <div className="jq-topline"><span>JINQAYA / A PET LIFESTYLE HOUSE</span><span>MADE FOR LIFE, SHARED</span></div>
 
       <header className="jq-header">
-        <Link className="jq-wordmark" href="/" aria-label="JINQAYA home">JINQAYA<span>®</span></Link>
+        <Link className="jq-wordmark jq-logo-link" href="/" aria-label="JINQAYA home"><Image src="/brand/jinqaya-logo.svg" alt="JINQAYA Premium Pet Lifestyle" width={240} height={78} priority className="jq-logo-image" /></Link>
         <CategoryNavigation />
         <div className="jq-header-actions"><CartLink /></div>
       </header>
@@ -199,7 +200,7 @@ export default async function HomePage() {
 
       <footer className="jq-footer">
         <div className="jq-footer-main">
-          <div><Link className="jq-wordmark" href="/">JINQAYA<span>®</span></Link><p>Life is better in good company.</p></div>
+          <div><Link className="jq-wordmark jq-logo-link jq-footer-logo-link" href="/" aria-label="JINQAYA home"><Image src="/brand/jinqaya-logo.svg" alt="JINQAYA Premium Pet Lifestyle" width={210} height={68} className="jq-logo-image" /></Link><p>Life is better in good company.</p></div>
           <div className="jq-footer-links"><Link href="/shop">THE SHOP</Link><Link href="#collections">COLLECTIONS</Link><Link href="#point-of-view">OUR POINT OF VIEW</Link><Link href="/policies/shipping">SHIPPING POLICY</Link><Link href="/policies/returns-refunds">RETURNS &amp; REFUNDS</Link><Link href="/policies/privacy">PRIVACY POLICY</Link><Link href="/policies/terms">TERMS OF SERVICE</Link><Link href="/contact">CONTACT</Link><a href="mailto:info@jinqaya.com">INFO@JINQAYA.COM</a></div>
           <span className="jq-footer-note">FOR CATS, DOGS<br />AND THE LIFE BETWEEN.</span>
         </div>
