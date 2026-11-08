@@ -21,20 +21,20 @@ declare
  v_actor uuid:=auth.uid();
  v_event_description text;
 begin
- if v_actor is null or not public.can_manage_catalog() then
+ if v_actor is null or coalesce(public.can_manage_catalog(),false) is not true then
   raise exception 'You do not have permission to manage after-sales cases.';
  end if;
  if p_order_id is null or p_case_id is null
     or not (p_update_status or p_update_resolution or p_update_refund_status) then
   raise exception 'No valid case updates were provided.';
  end if;
- if p_update_status and p_status not in ('under_review','approved','rejected','resolved') then
+ if p_update_status and (p_status is null or p_status not in ('under_review','approved','rejected','resolved')) then
   raise exception 'Invalid after-sales case status.';
  end if;
  if p_update_resolution and (p_resolution is null or length(p_resolution)>3000) then
   raise exception 'Resolution must be 3000 characters or fewer.';
  end if;
- if p_update_refund_status and p_refund_status not in ('not_started','pending_manual') then
+ if p_update_refund_status and (p_refund_status is null or p_refund_status not in ('not_started','pending_manual')) then
   raise exception 'Refund confirmation must use the order refund ledger action.';
  end if;
 
