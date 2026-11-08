@@ -119,16 +119,15 @@ export async function POST(req: NextRequest) {
    }
   }
 
-  const promotedKeys: string[] = [];
   try {
    for (let index = 0; index < evidence.length; index++) {
     await promoteEvidenceObject(evidence[index], finalEvidenceKeys[index], orderId);
-    promotedKeys.push(finalEvidenceKeys[index]);
     await verifyEvidenceObject(finalEvidenceKeys[index], orderId, metadata[index]);
    }
   } catch (promotionError) {
-   try { await deleteEvidenceObjects(promotedKeys); }
-   catch (cleanupError) { console.error("[after-sales-submit] failed to clean promoted evidence", cleanupError); }
+   // Do not delete a reserved final key here: a concurrent retry may be
+   // promoting or submitting the same ticket. The scheduled cleanup can
+   // safely remove it after expiry if no case references it.
    throw promotionError;
   }
 
@@ -164,8 +163,8 @@ export async function POST(req: NextRequest) {
    if (existingCase && exactEvidenceMatch && typeof existingCase.case_number === "string") {
     caseData = existingCase as { case_number?: unknown };
    } else {
-    try { await deleteEvidenceObjects(promotedKeys); }
-    catch (cleanupError) { console.error("[after-sales-submit] failed to clean unreferenced final evidence", cleanupError); }
+    // Another request may still be submitting this ticket concurrently.
+    // Retain the final objects and let the expiry-based cleanup decide later.
     throw error;
    }
   } else {
