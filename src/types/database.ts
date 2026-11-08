@@ -3968,6 +3968,15 @@ export type Database = {
         Args: { allowed_roles: Database["public"]["Enums"]["app_role"][] }
         Returns: boolean
       }
+      claim_after_sales_evidence_promotions: {
+        Args: {
+          p_candidate_final_keys: string[]
+          p_order_id: string
+          p_token_hash: string
+          p_upload_keys: string[]
+        }
+        Returns: Json
+      }
       is_staff: { Args: never; Returns: boolean }
       list_expired_after_sales_orphan_keys: {
         Args: { p_limit?: number }
