@@ -10,6 +10,7 @@ create table if not exists public.order_refund_upload_tickets (
  created_at timestamptz not null default now(),
  expires_at timestamptz not null,
  consumed_at timestamptz,
+ cleanup_claimed_at timestamptz,
  constraint order_refund_upload_ticket_order_refund_fk
   foreign key(refund_id,order_id)
   references public.order_refunds(id,order_id) on delete restrict,
@@ -47,6 +48,7 @@ begin
   return v_attachment_id;
  end if;
 
+ if v_ticket.cleanup_claimed_at>now()-interval '15 minutes' then raise exception 'Refund proof upload is being cleaned up.'; end if;
  if v_ticket.consumed_at is not null or v_ticket.expires_at<=now()
     or v_ticket.file_name<>p_file_name or v_ticket.content_type<>p_content_type
     or v_ticket.file_size<>p_file_size or v_ticket.uploaded_by<>p_uploaded_by then
@@ -69,15 +71,29 @@ grant execute on function public.complete_order_refund_proof_upload(uuid,uuid,te
 
 create or replace function public.list_expired_refund_proof_upload_keys(p_limit integer default 100)
 returns table(object_key text)
-language sql stable security definer set search_path=''
+language plpgsql security definer set search_path=''
 as $function$
- select t.object_key
- from public.order_refund_upload_tickets t
- where t.consumed_at is null
-  and t.expires_at<now()-interval '1 hour'
-  and not exists(select 1 from public.order_refund_attachments a where a.object_key=t.object_key)
- order by t.expires_at
- limit greatest(1,least(coalesce(p_limit,100),500));
+begin
+ return query
+ with candidates as (
+  select t.object_key
+  from public.order_refund_upload_tickets t
+  where t.consumed_at is null
+   and t.expires_at<now()-interval '1 hour'
+   and (t.cleanup_claimed_at is null or t.cleanup_claimed_at<now()-interval '15 minutes')
+   and not exists(select 1 from public.order_refund_attachments a where a.object_key=t.object_key)
+  order by t.expires_at
+  limit greatest(1,least(coalesce(p_limit,100),500))
+  for update skip locked
+ ), claimed as (
+  update public.order_refund_upload_tickets t
+  set cleanup_claimed_at=now()
+  from candidates c
+  where t.object_key=c.object_key
+  returning t.object_key
+ )
+ select claimed.object_key from claimed;
+end;
 $function$;
 revoke all on function public.list_expired_refund_proof_upload_keys(integer) from public,anon,authenticated;
 grant execute on function public.list_expired_refund_proof_upload_keys(integer) to service_role;
