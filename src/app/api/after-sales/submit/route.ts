@@ -94,6 +94,7 @@ export async function POST(req: NextRequest) {
     .eq("order_id", orderId)
     .eq("token_hash", tokenHash)
     .eq("object_key", evidence[index])
+    .gt("expires_at", new Date().toISOString())
     .is("consumed_at", null)
     .select("id")
     .maybeSingle();
