@@ -168,11 +168,16 @@ export async function verifyEvidenceObject(key: string, expectedOrderId: string)
 
  if (type.startsWith("image/")) {
   try {
-   await sharp(Buffer.from(bytes), {
+   const image = sharp(Buffer.from(bytes), {
     failOn: "error",
-    limitInputPixels: 40_000_000,
+    limitInputPixels: 20_000_000,
     animated: false,
-  }).rotate().toBuffer();
+  });
+   const metadata = await image.metadata();
+   if (!metadata.width || !metadata.height || metadata.width * metadata.height > 20_000_000) {
+    throw new Error("Image dimensions exceed the allowed limit.");
+   }
+   await image.stats();
   } catch {
    throw new Error("Image file is incomplete, corrupt, or cannot be decoded.");
   }
