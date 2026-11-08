@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
    },
   );
   if (promotionError) throw promotionError;
-  if (!promotion || typeof promotion !== "object" ||
+  if (!promotion || typeof promotion !== "object" || Array.isArray(promotion) ||
       promotion.acquired !== true ||
       !Array.isArray(promotion.final_keys) ||
       promotion.final_keys.length !== evidence.length ||
