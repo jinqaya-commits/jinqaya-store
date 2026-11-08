@@ -1,10 +1,12 @@
 "use client";
 
 import { useState, useTransition, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import { createPurchaseOrderAction } from "../orders/actions";
 type Variant={id:string;sku:string;name:string;currency:string};
 type Supplier={id:string;name:string;email:string|null;phone:string|null;currency:string};
 export function PurchaseOrderCreateForm({variants,suppliers}:{variants:Variant[];suppliers:Supplier[]}){
+ const router=useRouter();
  const [supplierId,setSupplierId]=useState("");const [supplier,setSupplier]=useState("");const [email,setEmail]=useState("");const [phone,setPhone]=useState("");const [saveSupplier,setSaveSupplier]=useState(true);const [currency,setCurrency]=useState("USD");const [reference,setReference]=useState("");const [expected,setExpected]=useState("");const [notes,setNotes]=useState("");
  const [lines,setLines]=useState([{variant_id:"",quantity:"1",unit_cost:""}]);const [error,setError]=useState("");const [busy,start]=useTransition();
  function updateLine(i:number,key:string,value:string){setLines(old=>old.map((line,index)=>index===i?{...line,[key]:value}:line));}
@@ -14,7 +16,7 @@ export function PurchaseOrderCreateForm({variants,suppliers}:{variants:Variant[]
   if(selected.some(x=>!x.unit_cost.trim())){setError("Enter the actual unit cost for every SKU. Do not leave unknown costs as zero.");return;}
   const fd=new FormData();fd.set("supplier_id",supplierId);fd.set("supplier_name",supplier);fd.set("supplier_email",email);fd.set("supplier_phone",phone);fd.set("save_supplier",saveSupplier?"on":"");fd.set("currency",currency);fd.set("supplier_reference",reference);fd.set("expected_date",expected);fd.set("notes",notes);
   fd.set("items",JSON.stringify(selected.map(x=>({variant_id:x.variant_id,quantity:Number(x.quantity),unit_cost:x.unit_cost}))));
-  start(async()=>{const result=await createPurchaseOrderAction(fd);if(result.error){setError(result.error);return;}if(result.id)window.location.href="/admin/purchase-orders/"+result.id;});
+  start(async()=>{const result=await createPurchaseOrderAction(fd);if(result.error){setError(result.error);return;}if(result.id)router.push("/admin/purchase-orders/"+result.id);});
  }
  return <form className="admin-panel purchase-order-form" onSubmit={submit}>
   <div className="admin-panel-heading"><div><p className="admin-kicker">NEW PROCUREMENT</p><h2>Create purchase order</h2></div><span>DRAFT</span></div>
