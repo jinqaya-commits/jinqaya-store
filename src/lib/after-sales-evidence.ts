@@ -259,9 +259,15 @@ export async function verifyEvidenceObject(key: string, expectedOrderId: string)
     animated: false,
    });
    const metadata = await image.metadata();
-   if (!metadata.width || !metadata.height || metadata.width * metadata.height > 20_000_000) {
-    throw new Error("Image dimensions exceed the allowed limit.");
+   const width = metadata.width ?? 0;
+   const height = metadata.height ?? 0;
+   const pages = metadata.pages ?? 1;
+   if (!Number.isSafeInteger(width) || !Number.isSafeInteger(height) ||
+       width <= 0 || height <= 0 || width * height > 20_000_000 ||
+       !Number.isSafeInteger(pages) || pages !== 1) {
+    throw new Error("Image dimensions or frame count exceed the allowed limit.");
    }
+   // Force a decode of the accepted single-frame image before storing the evidence reference.
    await image.stats();
   } catch {
    throw new Error("Image file is incomplete, corrupt, or cannot be decoded.");
