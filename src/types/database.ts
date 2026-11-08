@@ -4064,6 +4064,14 @@ export type Database = {
             Args: { p_code: string; p_email: string; p_order_number: string }
             Returns: boolean
           }
+      create_order_status_email_challenge: {
+        Args: { p_code: string; p_email: string; p_order_number: string }
+        Returns: boolean
+      }
+      get_customer_order_status: {
+        Args: { p_token_hash: string }
+        Returns: Json
+      }
       create_guest_order_request: {
         Args: {
           p_address: Json
@@ -4141,6 +4149,10 @@ export type Database = {
           p_order_id: string
           p_token_hash: string
         }
+        Returns: boolean
+      }
+      verify_order_status_email_code: {
+        Args: { p_code: string; p_email: string; p_order_number: string; p_token_hash: string }
         Returns: boolean
       }
       verify_after_sales_email_code:
