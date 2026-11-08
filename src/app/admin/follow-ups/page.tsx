@@ -79,7 +79,7 @@ export default async function AdminFollowUpsPage() {
       <FollowUpGroup title="Coming up · Next 7 days" items={upcoming} empty="No upcoming follow-ups in the next seven days." />
       {unscheduledLater.length > 0 && <FollowUpGroup title="Later" items={unscheduledLater} empty="" />}
       <FollowUpGroup title="Recently completed" items={completedItems} empty="Completed follow-ups will appear here." />
-      <p className="admin-help" style={{marginTop:16}}>Dates are grouped using the server's local calendar day. Up to 500 open and 50 recently completed follow-ups are shown.</p>
+      <p className="admin-help" style={{marginTop:16}}>Dates are grouped using the server&apos;s local calendar day. Up to 500 open and 50 recently completed follow-ups are shown.</p>
     </section>
   </main>;
 }
