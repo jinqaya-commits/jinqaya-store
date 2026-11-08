@@ -5,6 +5,9 @@
 alter table public.after_sales_cases
  add column if not exists submission_upload_keys text[] not null default '{}'::text[];
 
+alter table public.after_sales_upload_tickets
+ add column if not exists promoted_object_key text;
+
 create or replace function public.reserve_after_sales_upload(
  p_order_id uuid,p_token_hash text,p_object_key text,p_content_type text,p_expected_size bigint
 )
@@ -111,10 +114,14 @@ create or replace function public.list_expired_after_sales_orphan_keys(p_limit i
 returns table(object_key text)
 language sql security definer set search_path=''
 as $function$
- select t.object_key
+ select candidates.object_key
  from public.after_sales_upload_tickets t
+ cross join lateral (
+  values (t.object_key), (t.promoted_object_key)
+ ) as candidates(object_key)
  where t.expires_at < now() - interval '1 hour'
- and not exists(select 1 from public.after_sales_cases c where t.object_key=any(c.evidence_urls))
+ and candidates.object_key is not null
+ and not exists(select 1 from public.after_sales_cases c where candidates.object_key=any(c.evidence_urls))
  order by t.expires_at asc
  limit greatest(1,least(coalesce(p_limit,100),500));
 $function$;
@@ -127,7 +134,12 @@ begin
  delete from public.after_sales_upload_tickets t
  where t.object_key=any(coalesce(p_object_keys,'{}'::text[]))
  and t.expires_at<now()-interval '1 hour'
- and not exists(select 1 from public.after_sales_cases c where t.object_key=any(c.evidence_urls));
+ and not exists(select 1 from public.after_sales_cases c where t.object_key=any(c.evidence_urls))
+ and (
+  t.promoted_object_key is null
+  or t.promoted_object_key=any(coalesce(p_object_keys,'{}'::text[]))
+  or exists(select 1 from public.after_sales_cases c where t.promoted_object_key=any(c.evidence_urls))
+ );
  get diagnostics v_count=row_count;
  return v_count;
 end; $function$;
