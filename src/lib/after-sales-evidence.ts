@@ -137,6 +137,14 @@ async function validateIsoBmffContainer(
  type: string,
  fileSize: number,
 ) {
+ // Read bounded 64 KiB windows and parse many adjacent box headers from each
+ // response. Large mdat/moov payloads are skipped by their declared box size.
+ const WINDOW_BYTES = 64 * 1024;
+ const MAX_RANGE_REQUESTS = 64;
+ const MAX_TOP_LEVEL_BOXES = 4096;
+ let rangeRequests = 0;
+ let windowStart = -1;
+ let window = new Uint8Array();
  let offset = 0;
  let boxCount = 0;
  let hasFtyp = false;
@@ -144,22 +152,35 @@ async function validateIsoBmffContainer(
  let hasMdat = false;
  let majorBrand = "";
 
+ const ensureWindow = async (position: number, minimumBytes: number) => {
+  if (position < windowStart || position + minimumBytes > windowStart + window.byteLength) {
+   if (++rangeRequests > MAX_RANGE_REQUESTS) return false;
+   windowStart = position;
+   const end = Math.min(position + WINDOW_BYTES - 1, fileSize - 1);
+   window = await readObjectRange(client, bucket, key, position, end);
+  }
+  return position + minimumBytes <= windowStart + window.byteLength;
+ };
+
+ const bytesAt = (position: number, length: number) => {
+  const relative = position - windowStart;
+  return window.slice(relative, relative + length);
+ };
+
  while (offset < fileSize) {
-  if (++boxCount > 64 || fileSize - offset < 8) return false;
+  if (++boxCount > MAX_TOP_LEVEL_BOXES || fileSize - offset < 8) return false;
+  if (!await ensureWindow(offset, 8)) return false;
 
-  const header = await readObjectRange(client, bucket, key, offset, Math.min(offset + 15, fileSize - 1));
-  if (header.byteLength < 8) return false;
-
-  const view = new DataView(header.buffer, header.byteOffset, header.byteLength);
+  let header = bytesAt(offset, 8);
+  let view = new DataView(header.buffer, header.byteOffset, header.byteLength);
   let boxSize = view.getUint32(0);
   const boxType = String.fromCharCode(header[4], header[5], header[6], header[7]);
   let headerSize = 8;
 
-  // ISO BMFF permits size=0 to mean this box extends to end-of-file.
-  if (boxSize === 0) boxSize = fileSize - offset;
-
   if (boxSize === 1) {
-   if (header.byteLength < 16) return false;
+   if (!await ensureWindow(offset, 16)) return false;
+   header = bytesAt(offset, 16);
+   view = new DataView(header.buffer, header.byteOffset, header.byteLength);
    const largeSize = view.getBigUint64(8);
    if (largeSize > BigInt(Number.MAX_SAFE_INTEGER)) return false;
    boxSize = Number(largeSize);
@@ -172,8 +193,8 @@ async function validateIsoBmffContainer(
 
   if (boxType === "ftyp") {
    if (hasFtyp || boxSize < headerSize + 8 || (boxSize - headerSize) % 4 !== 0) return false;
-   const ftyp = await readObjectRange(client, bucket, key, offset + headerSize, offset + headerSize + 3);
-   if (ftyp.byteLength !== 4) return false;
+   if (!await ensureWindow(offset + headerSize, 4)) return false;
+   const ftyp = bytesAt(offset + headerSize, 4);
    hasFtyp = true;
    majorBrand = String.fromCharCode(...ftyp);
   } else if (boxType === "moov") {
@@ -184,6 +205,7 @@ async function validateIsoBmffContainer(
 
   offset += boxSize;
  }
+
  if (offset !== fileSize || !hasFtyp || !hasMoov || !hasMdat) return false;
  return type === "video/quicktime" ? majorBrand === "qt  " : majorBrand !== "qt  ";
 }
