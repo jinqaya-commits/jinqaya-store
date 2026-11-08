@@ -1,6 +1,20 @@
 import type { Metadata } from "next";
+import { Cormorant_Garamond, Inter } from "next/font/google";
 import { OrganizationJsonLd, WebsiteJsonLd } from "@/lib/seo-jsonld";
 import "./globals.css";
+
+const displayFont = Cormorant_Garamond({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-display",
+  display: "swap",
+});
+
+const bodyFont = Inter({
+  subsets: ["latin"],
+  variable: "--font-body",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://jinqaya.com"),
@@ -11,6 +25,11 @@ export const metadata: Metadata = {
   description:
     "Discover JINQAYA, a considered pet lifestyle collection for cats and dogs. Explore everyday essentials designed to belong in the life you share.",
   applicationName: "JINQAYA",
+  icons: {
+    icon: [{ url: "/brand/jinqaya-icon.svg", type: "image/svg+xml" }],
+    shortcut: "/brand/jinqaya-icon.svg",
+    apple: "/brand/jinqaya-icon.svg",
+  },
   openGraph: {
     type: "website",
     siteName: "JINQAYA",
@@ -37,7 +56,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${displayFont.variable} ${bodyFont.variable}`}>
       <body>
         <OrganizationJsonLd />
         <WebsiteJsonLd />
