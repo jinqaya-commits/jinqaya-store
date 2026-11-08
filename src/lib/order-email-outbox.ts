@@ -27,6 +27,45 @@ function parsePayload(value: unknown): OrderEmailOutboxPayload | null {
   };
 }
 
+async function processRow(supabase: ReturnType<typeof createAdminClient>, row: OutboxRow) {
+  const payload = parsePayload(row.payload);
+  let success = false;
+  let failure = "invalid_outbox_payload";
+  let retryable = false;
+  let providerMessageId: string | null = null;
+
+  if (payload && (row.recipient_type === "customer" || row.recipient_type === "staff")) {
+    const result = await sendOrderOutboxEmail(
+      row.recipient_type,
+      row.recipient_email,
+      payload,
+      `jinqaya-order-email/${row.id}`
+    );
+    success = result.ok;
+    failure = result.error ?? "";
+    retryable = result.retryable;
+    providerMessageId = result.providerMessageId;
+  }
+
+  const { error: completeError } = await supabase.rpc("complete_order_email_outbox", {
+    p_id: row.id,
+    p_success: success,
+    p_error: success ? null : failure,
+    p_provider_message_id: providerMessageId,
+    p_retryable: retryable,
+  });
+
+  if (completeError) {
+    // Keep the lease until expiry. A retry uses the same stable provider idempotency key.
+    console.error("[order-email-outbox] unable to persist delivery result", row.id, completeError);
+    return { sent: 0, retried: 1, dead: 0 };
+  }
+  if (success) return { sent: 1, retried: 0, dead: 0 };
+  return retryable
+    ? { sent: 0, retried: 1, dead: 0 }
+    : { sent: 0, retried: 0, dead: 1 };
+}
+
 export async function processOrderEmailOutbox(options: { orderId?: string; limit?: number } = {}) {
   const supabase = createAdminClient();
   const limit = Math.min(Math.max(options.limit ?? 20, 1), 100);
@@ -35,7 +74,7 @@ export async function processOrderEmailOutbox(options: { orderId?: string; limit
   let retried = 0;
   let dead = 0;
 
-  // Reclaim newly enqueued rows in a later pass (e.g. the staff copy created by the DB trigger).
+  // Claim small batches, then send concurrently so a batch finishes well inside its lease.
   for (let pass = 0; pass < 5 && processed < limit; pass += 1) {
     const { data, error } = await supabase.rpc("claim_order_email_outbox", {
       p_order_id: options.orderId ?? null,
@@ -45,36 +84,12 @@ export async function processOrderEmailOutbox(options: { orderId?: string; limit
     const rows = (data ?? []) as OutboxRow[];
     if (rows.length === 0) break;
 
-    for (const row of rows) {
-      processed += 1;
-      const payload = parsePayload(row.payload);
-      let success = false;
-      let failure = "invalid_outbox_payload";
-
-      if (payload && (row.recipient_type === "customer" || row.recipient_type === "staff")) {
-        try {
-          success = await sendOrderOutboxEmail(row.recipient_type, row.recipient_email, payload, `jinqaya-order-email/${row.id}`);
-          failure = success ? "" : "resend_send_failed_or_email_configuration_missing";
-        } catch (error) {
-          failure = error instanceof Error ? error.message : "unknown_email_delivery_error";
-        }
-      }
-
-      const { error: completeError } = await supabase.rpc("complete_order_email_outbox", {
-        p_id: row.id,
-        p_success: success,
-        p_error: success ? null : failure,
-        p_provider_message_id: null,
-      });
-      if (completeError) {
-        // Leave the lease to expire; the next worker can safely reclaim the row.
-        console.error("[order-email-outbox] unable to persist delivery result", row.id, completeError);
-        retried += 1;
-        continue;
-      }
-      if (success) sent += 1;
-      else if (failure === "resend_send_failed_or_email_configuration_missing") retried += 1;
-      else dead += 1;
+    processed += rows.length;
+    const results = await Promise.all(rows.map((row) => processRow(supabase, row)));
+    for (const result of results) {
+      sent += result.sent;
+      retried += result.retried;
+      dead += result.dead;
     }
   }
 
