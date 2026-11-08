@@ -1211,9 +1211,6 @@ export type Database = {
       order_refund_attachments: {
         Row: {
           content_type: string
-          deletion_requested_at?: string | null
-          deleted_at?: string | null
-          deleted_by?: string | null
           deletion_requested_at: string | null
           deleted_at: string | null
           deleted_by: string | null
@@ -1228,6 +1225,9 @@ export type Database = {
         }
         Insert: {
           content_type: string
+          deletion_requested_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           created_at?: string
           file_name: string
           file_size: number
