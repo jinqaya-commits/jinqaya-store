@@ -10,6 +10,7 @@ export function StorefrontFooter() {
         </div>
         <nav className="jq-footer-links" aria-label="Footer navigation">
           <Link href="/shop">THE SHOP</Link>
+          <Link href="/order-status">TRACK YOUR ORDER</Link>
           <Link href="/policies/shipping">SHIPPING POLICY</Link>
           <Link href="/policies/returns-refunds">RETURNS &amp; REFUNDS</Link>
           <Link href="/policies/privacy">PRIVACY POLICY</Link>
