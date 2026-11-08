@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { newSessionToken, readBoundedJson, sessionCookieName, sha256 } from "@/lib/after-sales-evidence";
+import { newSessionToken, readBoundedJson, sha256 } from "@/lib/after-sales-evidence";
 
 export const dynamic = "force-dynamic";
 const COOKIE = "jq_order_status_session";
