@@ -256,9 +256,7 @@ export async function reorderImages(productId:string, ids:string[]) {
  return {success:true};
 }
 
-export async function removeImage(productId: string, imageId: string, _path: string) {
-  // The supplied path is intentionally ignored; the database RPC returns the trusted storage key.
-  void _path;
+export async function removeImage(productId: string, imageId: string) {
   const supabase = await requireCatalogManager();
   const { data: storagePath, error } = await supabase.rpc("admin_delete_product_image", {
     p_product_id: productId,
