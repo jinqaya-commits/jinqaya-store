@@ -91,7 +91,14 @@ function hasExpectedFileSignature(type: string, bytes: Uint8Array) {
  }
  if (type === "image/webp") return bytes.length >= 12 && ascii(0, 4) === "RIFF" && ascii(8, 4) === "WEBP";
  if (type === "image/avif") {
-  return bytes.length >= 12 && ascii(4, 4) === "ftyp" && ["avif", "avis"].includes(ascii(8, 4));
+  if (bytes.length < 16 || ascii(4, 4) !== "ftyp") return false;
+  const boxSize = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(0);
+  if (boxSize < 16) return false;
+  const brands = [ascii(8, 4)];
+  for (let offset = 16; offset + 4 <= Math.min(bytes.length, boxSize); offset += 4) {
+   brands.push(ascii(offset, 4));
+  }
+  return brands.includes("avif") || brands.includes("avis");
  }
  if (type === "video/mp4" || type === "video/quicktime") {
   if (bytes.length < 12 || ascii(4, 4) !== "ftyp") return false;
