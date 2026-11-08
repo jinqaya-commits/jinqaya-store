@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
   const { data: valid, error: sessionError } = await supabase.rpc("check_after_sales_customer_session", { p_order_id: orderId, p_token_hash: tokenHash });
   if (sessionError || valid !== true) return NextResponse.json({ error: "Your verification has expired." }, { status: 401 });
 
-  const metadata = [];
+  const metadata: Array<Awaited<ReturnType<typeof verifyEvidenceObject>>> = [];
   for (const key of evidence) {
    metadata.push(await verifyEvidenceObject(key, orderId));
   }
