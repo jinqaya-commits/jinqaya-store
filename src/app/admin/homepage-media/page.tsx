@@ -19,10 +19,10 @@ export default async function AdminHomepageMediaPage() {
   const { data: allowed, error: permissionError } = await supabase.rpc("can_manage_catalog");
   if (permissionError || allowed !== true) redirect("/");
 
-  const { data, error } = await (supabase as any)
+  const { data, error } = await supabase
     .from("homepage_media")
     .select("media_key,image_path");
-  const rows = (data ?? []) as HomepageMediaRow[];
+  const rows: HomepageMediaRow[] = data ?? [];
   const imageByKey = new Map<string, string | null>(
     rows.map((row): [string, string | null] => [row.media_key, row.image_path]),
   );
