@@ -106,6 +106,7 @@ export function CheckoutForm() {
             <p>If you don’t hear from us, check your spam folder or email <a href="mailto:info@jinqaya.com">info@jinqaya.com</a> with your order reference.</p>
           </div>
           <Link className="button button-dark" href="/shop">CONTINUE EXPLORING <span>↗</span></Link>
+          <Link className="back-link" href="/order-status">TRACK YOUR ORDER STATUS →</Link>
         </section>
       ) : (
         <section className="checkout-page">
