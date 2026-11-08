@@ -244,7 +244,10 @@ export async function verifyEvidenceObject(key: string, expectedOrderId: string)
   throw new Error("Invalid evidence key.");
  }
  const { bucket, client } = getEvidenceClient();
- const result = await client.send(new HeadObjectCommand({ Bucket: bucket, Key: key }));
+ const result = await client.send(
+  new HeadObjectCommand({ Bucket: bucket, Key: key }),
+  { abortSignal: AbortSignal.timeout(8_000) },
+ );
  const type = result.ContentType || "";
  const size = Number(result.ContentLength || 0);
  const allowed = new Set(["image/jpeg", "image/png", "image/webp", "image/avif", "video/mp4", "video/quicktime"]);
@@ -254,7 +257,10 @@ export async function verifyEvidenceObject(key: string, expectedOrderId: string)
  }
 
  if (type.startsWith("image/")) {
-  const object = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
+  const object = await client.send(
+   new GetObjectCommand({ Bucket: bucket, Key: key }),
+   { abortSignal: AbortSignal.timeout(12_000) },
+  );
   if (!object.Body) throw new Error("Evidence file content is unavailable.");
   const bytes = await object.Body.transformToByteArray();
   if (bytes.byteLength !== size || !hasExpectedFileSignature(type, bytes)) {
@@ -282,7 +288,10 @@ export async function verifyEvidenceObject(key: string, expectedOrderId: string)
    throw new Error("Image file is incomplete, corrupt, or cannot be decoded.");
   }
  } else {
-  const prefix = await readObjectRange(client, bucket, key, 0, Math.min(31, size - 1));
+  const prefix = await readObjectRange(
+   client, bucket, key, 0, Math.min(31, size - 1),
+   AbortSignal.timeout(8_000),
+  );
   if (!hasExpectedFileSignature(type, prefix) ||
       !await validateIsoBmffContainer(client, bucket, key, type, size)) {
    throw new Error("Video container is incomplete or structurally invalid.");
