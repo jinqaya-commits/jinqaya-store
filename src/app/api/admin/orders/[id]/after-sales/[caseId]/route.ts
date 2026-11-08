@@ -38,7 +38,7 @@ export async function PATCH(request:NextRequest,{params}:{params:Promise<{id:str
  });
  if(error){
   const message=error.message||"Unable to update case.";
-  const status=message.includes("not found")?404:message.includes("confirmed refund")?409:400;
+  const status=message.includes("not found")?404:(message.includes("confirmed refund")||message.includes("pending manual refund")||message.includes("rejected case"))?409:400;
   return NextResponse.json({error:message},{status});
  }
  const result=data&&typeof data==="object"&&!Array.isArray(data)?data as {case?:unknown}:null;
