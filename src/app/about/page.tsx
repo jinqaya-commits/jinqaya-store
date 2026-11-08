@@ -3,6 +3,8 @@ import Link from "next/link";
 import { CartLink } from "@/components/storefront/cart-link";
 import { CategoryNavigation } from "@/components/storefront/category-navigation";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   alternates: { canonical: "/about" },
   openGraph: { type: "website", url: "https://jinqaya.com/about", title: "About JINQAYA", description: "Discover the JINQAYA point of view on life shared with cats and dogs." },
