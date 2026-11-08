@@ -66,12 +66,31 @@ export async function POST(req: NextRequest) {
   const { data, error } = await supabase.rpc("submit_customer_after_sales_case", {
    p_order_id: orderId, p_token_hash: tokenHash, p_description: description, p_evidence_keys: evidence,
   });
-  if (error) throw error;
-  if (!data || typeof data !== "object" || Array.isArray(data) || typeof (data as { case_number?: unknown }).case_number !== "string") {
+
+  // A client may retry after the database committed but the HTTP response was
+  // lost. The RPC consumes the upload tickets atomically, so a replay can fail
+  // ticket validation even though the original case already exists. Recover
+  // only an exact match on order, description, and the complete evidence-key
+  // array; those unguessable keys identify the original submission.
+  let caseData = data as { case_number?: unknown } | null;
+  if (error) {
+   const { data: existingCase, error: lookupError } = await supabase
+    .from("after_sales_cases")
+    .select("case_number")
+    .eq("order_id", orderId)
+    .eq("customer_description", description)
+    .eq("evidence_urls", evidence)
+    .maybeSingle();
+
+   if (lookupError || !existingCase) throw error;
+   caseData = existingCase as { case_number?: unknown };
+  }
+
+  if (!caseData || typeof caseData !== "object" || typeof caseData.case_number !== "string") {
    throw new Error("The after-sales RPC returned an unexpected result.");
   }
 
-  const result = data as { case_number: string };
+  const result = caseData as { case_number: string };
   const response = NextResponse.json({ ok: true, caseNumber: result.case_number });
   response.cookies.set(sessionCookieName, "", {
    httpOnly: true, secure: process.env.NODE_ENV === "production",
