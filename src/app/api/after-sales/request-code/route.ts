@@ -12,5 +12,5 @@ export async function POST(req:NextRequest){
   if(error)throw error;
   if(data===true)await sendAfterSalesVerificationCode(email,code);
   return NextResponse.json({ok:true,message:"If the order details match an eligible delivered order, a verification code will be sent."});
- }catch{return NextResponse.json({error:"Unable to process this request. Please try again later."},{status:500});}
+ }catch(error){if(error instanceof Error&&error.message==="Request body is too large.")return NextResponse.json({error:"Request body is too large."},{status:413});if(error instanceof SyntaxError||error instanceof TypeError)return NextResponse.json({error:"Invalid request."},{status:400});return NextResponse.json({error:"Unable to process this request. Please try again later."},{status:500});}
 }
