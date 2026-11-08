@@ -33,7 +33,8 @@ export async function GET(request:NextRequest){
 
   const keys: string[] = ((rows ?? []) as Array<{ object_key: string }>)
    .map((row: { object_key: string }) => row.object_key)
-   .filter((key: string) => typeof key === "string" && key.startsWith("after-sales/"));
+   .filter((key: string) => typeof key === "string" &&
+    (key.startsWith("after-sales/") || key.startsWith("after-sales-staging/")));
   if(!keys.length)return NextResponse.json({ok:true,deleted:0,failed:0});
 
   const result=await s3.send(new DeleteObjectsCommand({
