@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sha256, sessionCookieName, verifyEvidenceObject, readBoundedJson } from "@/lib/after-sales-evidence";
+import { sha256, sessionCookieName, getEvidenceObjectMetadata, verifyEvidenceObject, readBoundedJson } from "@/lib/after-sales-evidence";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -9,12 +9,24 @@ const MAX_REQUEST_BYTES = 16 * 1024;
 
 export async function POST(req: NextRequest) {
  try {
-  const body = await readBoundedJson<{ orderId?: unknown; description?: unknown; evidenceKeys?: unknown }>(req, MAX_REQUEST_BYTES);
-  const orderId = String(body.orderId || "");
-  const description = String(body.description || "").trim();
-  const evidence = Array.isArray(body.evidenceKeys) ? body.evidenceKeys.map((value: unknown) => String(value)) : [];
+  const body: unknown = await readBoundedJson<unknown>(req, MAX_REQUEST_BYTES);
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+   return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
+  }
+  const payload = body as Record<string, unknown>;
+  if (typeof payload.orderId !== "string" ||
+      typeof payload.description !== "string" ||
+      !Array.isArray(payload.evidenceKeys) ||
+      !payload.evidenceKeys.every((key: unknown) => typeof key === "string")) {
+   return NextResponse.json({ error: "Please provide valid order, description, and evidence fields." }, { status: 400 });
+  }
+  const orderId = payload.orderId;
+  const description = payload.description.trim();
+  const evidence = payload.evidenceKeys as string[];
 
-  if (!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(orderId) || description.length < 10 || description.length > 5000 || evidence.length < 1 || evidence.length > 5) {
+  if (!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(orderId) ||
+      description.length < 10 || description.length > 5000 ||
+      evidence.length < 1 || evidence.length > 5) {
    return NextResponse.json({ error: "Please check your description and evidence files." }, { status: 400 });
   }
 
@@ -31,9 +43,11 @@ export async function POST(req: NextRequest) {
   const { data: valid, error: sessionError } = await supabase.rpc("check_after_sales_customer_session", { p_order_id: orderId, p_token_hash: tokenHash });
   if (sessionError || valid !== true) return NextResponse.json({ error: "Your verification has expired." }, { status: 401 });
 
-  const metadata: Array<Awaited<ReturnType<typeof verifyEvidenceObject>>> = [];
+  // First inspect only object metadata, then validate every ticket. Do not
+  // decode images or parse video containers until all files are authorized.
+  const metadata = [];
   for (const key of evidence) {
-   metadata.push(await verifyEvidenceObject(key, orderId));
+   metadata.push(await getEvidenceObjectMetadata(key, orderId));
   }
   for (let index = 0; index < evidence.length; index++) {
    const { data: ticket, error: ticketError } = await supabase.rpc("validate_after_sales_upload_ticket", {
@@ -41,6 +55,12 @@ export async function POST(req: NextRequest) {
     p_content_type: metadata[index].contentType, p_actual_size: metadata[index].size,
    });
    if (ticketError || ticket !== true) return NextResponse.json({ error: "One or more files were not authorized for this session. Please upload them again." }, { status: 400 });
+  }
+
+  // Only authorized files proceed to full signature, image-decode, and video
+  // container checks. Re-read metadata and reject changes since the ticket pass.
+  for (let index = 0; index < evidence.length; index++) {
+   await verifyEvidenceObject(evidence[index], orderId, metadata[index]);
   }
 
   const { data, error } = await supabase.rpc("submit_customer_after_sales_case", {
