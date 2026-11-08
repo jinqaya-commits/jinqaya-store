@@ -47,7 +47,7 @@ export function RefundProofManager({orderId,refundId}:{orderId:string;refundId:s
  }
  function dt(value:string){return new Intl.DateTimeFormat("en-US",{dateStyle:"medium",timeStyle:"short"}).format(new Date(value));}
  return <div className="admin-refund-proof">
-  <div className="admin-panel-heading"><div><strong>Refund proof & audit trail</strong><p>Private documents · PDF or images · 10 MB maximum per file</p></div><span>{attachments.length} FILES</span></div>
+  <div className="admin-panel-heading"><div><strong>Refund proof & audit trail</strong><p>Private documents · PDF or images · 10 MB maximum per file. To replace a proof, upload the new file first, then delete the old one.</p></div><span>{attachments.length} FILES</span></div>
   <input ref={input} type="file" accept="application/pdf,image/jpeg,image/png,image/webp,image/avif" disabled={busy} onChange={e=>{const f=e.target.files?.[0];if(f)void upload(f);}}/>
   {busy&&<small>Uploading securely…</small>}{error&&<p className="admin-error" role="alert">{error}</p>}{message&&<p className="admin-success" role="status">{message}</p>}
   {attachments.length===0?<p className="admin-help">No refund proof uploaded yet.</p>:<ul>{attachments.map(file=><li key={file.id}><a href={file.url} target="_blank" rel="noreferrer">{file.file_name}</a><small>{(file.file_size/1024/1024).toFixed(2)} MB · {dt(file.created_at)} · {file.uploaded_by||"Operator not available"}</small><button type="button" disabled={busy||deleting!==null} onClick={()=>void removeAttachment(file.id)}>{deleting===file.id?"Deleting…":"Delete proof"}</button></li>)}</ul>}
