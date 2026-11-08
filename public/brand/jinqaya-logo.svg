@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 390" role="img" aria-labelledby="title desc">
+<title id="title">JINQAYA Premium Pet Lifestyle</title>
+<desc id="desc">JINQAYA forest-green serif wordmark with champagne-gold arc and paw detail.</desc>
+<path d="M155 83 Q600 -45 1045 83" fill="none" stroke="#C99A45" stroke-width="5" stroke-linecap="round"/>
+<text x="600" y="235" text-anchor="middle" fill="#073B2B" font-family="Cormorant Garamond, Georgia, Times New Roman, serif" font-size="190" font-weight="600" letter-spacing="9">JINQAYA</text>
+<g fill="#C99A45" transform="translate(606 174)">
+<ellipse cx="-22" cy="-23" rx="10" ry="14"/><ellipse cx="0" cy="-31" rx="10" ry="14"/><ellipse cx="22" cy="-23" rx="10" ry="14"/>
+<path d="M-34 7 C-34 -10 -19 -21 0 -21 C19 -21 34 -10 34 7 C34 23 19 31 0 31 C-19 31 -34 23 -34 7Z"/>
+</g>
+<path d="M390 277 Q600 330 810 277" fill="none" stroke="#C99A45" stroke-width="3" stroke-linecap="round"/>
+<text x="600" y="350" text-anchor="middle" fill="#073B2B" font-family="Inter, Arial, sans-serif" font-size="29" letter-spacing="12">PREMIUM PET LIFESTYLE</text>
+</svg>
