@@ -116,7 +116,11 @@ async function readObjectRange(
   Range: `bytes=${start}-${end}`,
  }));
  if (!result.Body) throw new Error("Evidence file range is unavailable.");
- return result.Body.transformToByteArray();
+ const bytes = await result.Body.transformToByteArray();
+ if (bytes.byteLength !== end - start + 1) {
+  throw new Error("Evidence storage did not return the requested byte range.");
+ }
+ return bytes;
 }
 
 async function validateIsoBmffContainer(
@@ -134,7 +138,7 @@ async function validateIsoBmffContainer(
  let majorBrand = "";
 
  while (offset < fileSize) {
-  if (++boxCount > 256 || fileSize - offset < 8) return false;
+  if (++boxCount > 64 || fileSize - offset < 8) return false;
 
   const header = await readObjectRange(client, bucket, key, offset, Math.min(offset + 15, fileSize - 1));
   if (header.byteLength < 8) return false;
