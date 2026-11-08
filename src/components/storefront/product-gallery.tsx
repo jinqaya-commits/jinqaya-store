@@ -37,7 +37,10 @@ export function ProductGallery({ images, productName }: { images: StoreProductIm
   function handleTouchEnd(event: React.TouchEvent<HTMLDivElement>) {
     if (touchStartX.current === null) return;
     const delta = event.changedTouches[0].clientX - touchStartX.current;
-    if (Math.abs(delta) > 45) {\n      if (delta < 0) showNext();\n      else showPrevious();\n    }
+    if (Math.abs(delta) > 45) {
+      if (delta < 0) showNext();
+      else showPrevious();
+    }
     touchStartX.current = null;
   }
 
