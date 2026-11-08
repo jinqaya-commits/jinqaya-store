@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
    contentType === "image/webp" ? "webp" :
    contentType === "image/avif" ? "avif" :
    contentType === "video/mp4" ? "mp4" : "mov";
-  const key = `after-sales/${orderId}/${randomUUID()}.${ext}`;
+  const key = `after-sales-staging/${orderId}/${randomUUID()}.${ext}`;
 
   const { data: reserved, error: reserveError } = await supabase.rpc("reserve_after_sales_upload", {
    p_order_id: orderId, p_token_hash: tokenHash, p_object_key: key,
