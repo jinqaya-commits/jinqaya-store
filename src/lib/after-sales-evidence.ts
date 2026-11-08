@@ -256,7 +256,8 @@ export async function verifyEvidenceObject(key: string, expectedOrderId: string)
    const image = sharp(Buffer.from(bytes), {
     failOn: "error",
     limitInputPixels: 20_000_000,
-    animated: false,
+    // Read all frame metadata so animated WebP/AVIF inputs cannot hide extra frames.
+    animated: true,
    });
    const metadata = await image.metadata();
    const width = metadata.width ?? 0;
