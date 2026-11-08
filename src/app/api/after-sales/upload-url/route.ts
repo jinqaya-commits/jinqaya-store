@@ -62,7 +62,25 @@ export async function POST(req: NextRequest) {
    return NextResponse.json({ error: "Upload limit reached or session expired. Please remove a file or verify again." }, { status: 429 });
   }
 
-  const url = await createEvidenceUploadUrl(key, contentType, size);
+  let url: string;
+  try {
+   url = await createEvidenceUploadUrl(key, contentType, size);
+  } catch (signingError) {
+   // No upload URL was returned to the customer, so this reservation cannot
+   // represent a customer-uploaded object. Release only this exact,
+   // unconsumed ticket to avoid charging the session's hourly upload quota.
+   const { error: releaseError } = await supabase
+    .from("after_sales_upload_tickets")
+    .delete()
+    .eq("order_id", orderId)
+    .eq("token_hash", tokenHash)
+    .eq("object_key", key)
+    .is("consumed_at", null);
+   if (releaseError) {
+    console.error("[after-sales-upload-url] reservation release failed", releaseError);
+   }
+   throw signingError;
+  }
   return NextResponse.json({ url, key });
  } catch (error) {
   if (error instanceof Error && error.message === "Request body is too large.") {
