@@ -80,12 +80,9 @@ export async function POST(req: NextRequest) {
    if (ticketError || ticket !== true) return NextResponse.json({ error: "One or more files were not authorized for this session. Please upload them again." }, { status: 400 });
   }
 
-  // Only authorized files proceed to full signature, image-decode, and video
-  // container checks. Re-read metadata and reject changes since the ticket pass.
-  for (let index = 0; index < evidence.length; index++) {
-   await verifyEvidenceObject(evidence[index], orderId, metadata[index]);
-  }
-
+  // Promote the client-writable staging objects first, then validate the
+  // server-owned final copies. A still-valid staging URL cannot alter a final
+  // object after this copy has completed.
   const finalEvidenceKeys = evidence.map((key) => createFinalEvidenceKey(key, orderId));
   const promotedKeys: string[] = [];
   try {
