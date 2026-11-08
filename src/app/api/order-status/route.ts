@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sha256 } from "@/lib/after-sales-evidence";
+import { sha256 } from "@/lib/order-status-security";
 
 export const dynamic = "force-dynamic";
 const COOKIE = "jq_order_status_session";
