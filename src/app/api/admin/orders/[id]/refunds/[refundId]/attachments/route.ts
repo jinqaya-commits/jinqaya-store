@@ -3,7 +3,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { HeadObjectCommand, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import sharp from "sharp";
 import { readBoundedJson } from "@/lib/after-sales-evidence";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getEvidenceClient } from "@/lib/after-sales-evidence";
@@ -77,8 +76,8 @@ export async function GET(_request:NextRequest,{params}:{params:Promise<{id:stri
  const {data:events,error:eventError}=await db.from("order_refund_events").select("id,event_type,description,old_values,new_values,actor_user_id,created_at").eq("refund_id",refundId).eq("order_id",id).order("created_at",{ascending:false});
  if(eventError)return NextResponse.json({error:"Unable to load refund history"},{status:500});
  const {bucket,client}=getEvidenceClient();
- const files=await Promise.all((attachments||[]).map(async file=>({id:file.id,file_name:file.file_name,content_type:file.content_type,file_size:file.file_size,uploaded_by:file.uploaded_by,created_at:file.created_at,url:await getSignedUrl(client,new GetObjectCommand({Bucket:bucket,Key:file.object_key}),{expiresIn:180})})));
- return NextResponse.json({attachments:files,events:events||[]});
+ const files=(attachments||[]).map(file=>({id:file.id,file_name:file.file_name,content_type:file.content_type,file_size:file.file_size,uploaded_by:file.uploaded_by,created_at:file.created_at,url:"/api/admin/orders/"+id+"/refunds/"+refundId+"/attachments/"+file.id+"/file"}));
+ return NextResponse.json({attachments:files,events:events||[]},{headers:{"Cache-Control":"private, no-store, max-age=0"}});
 }
 export async function POST(request:NextRequest,{params}:{params:Promise<{id:string;refundId:string}>}) {
  const auth=await authorize(); if("error" in auth)return auth.error;
