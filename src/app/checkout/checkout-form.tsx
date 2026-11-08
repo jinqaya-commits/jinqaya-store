@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useState, useSyncExternalStore, type FormEvent } from "react";
 import { formatCartMoney, getCartSnapshot, parseCartSnapshot, subscribeCart, writeCart } from "@/lib/cart";
-import { CartLink } from "@/components/storefront/cart-link";
+import { StorefrontHeader } from "@/components/storefront/storefront-header";
 
 type OrderResult = {
   order_id: string;
@@ -85,12 +85,7 @@ export function CheckoutForm() {
 
   return (
     <main className="inner-page">
-      <header className="inner-page-header">
-        <Link className="wordmark" href="/">JINQAYA<span>®</span></Link>
-        <nav className="inner-nav" aria-label="Main navigation">
-          <Link href="/shop">SHOP ALL</Link><Link href="/cart">YOUR BAG</Link><CartLink />
-        </nav>
-      </header>
+      <StorefrontHeader />
 
       {order ? (
         <section className="checkout-success">
