@@ -1,7 +1,14 @@
 type MailMessage = { to: string; subject: string; html: string; text: string };
+type SendResult = {
+  ok: boolean;
+  retryable: boolean;
+  providerMessageId: string | null;
+  error: string | null;
+};
 
 const FROM = process.env.ORDER_EMAIL_FROM;
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const RESEND_TIMEOUT_MS = 15_000;
 
 function escapeHtml(value: unknown): string {
   return String(value ?? "").replace(/[&<>"']/g, (char) => ({
@@ -19,26 +26,64 @@ function shell(title: string, body: string) {
   <p style="font-size:12px;color:#999">JINQAYA · Life is better in good company.</p></div></body></html>`;
 }
 
-async function send(message: MailMessage, idempotencyKey?: string): Promise<boolean> {
+async function send(message: MailMessage, idempotencyKey?: string): Promise<SendResult> {
   if (!RESEND_API_KEY || !FROM) {
-    console.warn("Order email is not configured. Set RESEND_API_KEY and ORDER_EMAIL_FROM.");
-    return false;
+    return {
+      ok: false,
+      retryable: false,
+      providerMessageId: null,
+      error: "email_provider_configuration_missing",
+    };
   }
+
   try {
     const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
-      headers: { Authorization: `Bearer ${RESEND_API_KEY}`, "Content-Type": "application/json", ...(idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {}) },
+      headers: {
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+        ...(idempotencyKey ? { "Idempotency-Key": idempotencyKey } : {}),
+      },
       body: JSON.stringify({ from: FROM, to: [message.to], subject: message.subject, html: message.html, text: message.text }),
       cache: "no-store",
+      signal: AbortSignal.timeout(RESEND_TIMEOUT_MS),
     });
+
+    const responseBody = await response.json().catch(() => null) as
+      | { id?: unknown; message?: unknown; name?: unknown }
+      | null;
+
     if (!response.ok) {
-      console.error("Order email provider returned an error:", response.status, await response.text());
-      return false;
+      const retryable = response.status === 408 || response.status === 425 ||
+        response.status === 429 || response.status >= 500;
+      const providerError = typeof responseBody?.message === "string"
+        ? responseBody.message
+        : `resend_http_${response.status}`;
+      return {
+        ok: false,
+        retryable,
+        providerMessageId: null,
+        error: providerError.slice(0, 1000),
+      };
     }
-    return true;
+
+    return {
+      ok: true,
+      retryable: false,
+      providerMessageId: typeof responseBody?.id === "string" ? responseBody.id : null,
+      error: null,
+    };
   } catch (error) {
-    console.error("Unable to send order email:", error);
-    return false;
+    const timedOut = error instanceof Error &&
+      (error.name === "TimeoutError" || error.name === "AbortError");
+    return {
+      ok: false,
+      // A timeout/network error is ambiguous: Resend may have accepted the request.
+      // Retrying must reuse the exact same idempotency key.
+      retryable: true,
+      providerMessageId: null,
+      error: (timedOut ? "resend_request_timeout" : "resend_network_error"),
+    };
   }
 }
 
@@ -73,7 +118,7 @@ export async function sendOrderOutboxEmail(
   recipientEmail: string,
   order: OrderEmailOutboxPayload,
   idempotencyKey: string
-): Promise<boolean> {
+): Promise<SendResult> {
   const safeName = escapeHtml(order.customerName || "there");
   const subtotal = money(order.subtotal, order.currency);
 
@@ -85,7 +130,7 @@ export async function sendOrderOutboxEmail(
         <p><strong>Estimated item subtotal:</strong> ${escapeHtml(subtotal)}</p>
         <p>We’ll review availability and confirm shipping options, delivery cost and the final total before requesting payment. This request is not paid and does not mean your order has been dispatched.</p>
         <p>We’ll be in touch soon.</p>`),
-      text: `Hello ${order.customerName || "there"},\\n\\nWe received order request ${order.orderNumber}. Estimated item subtotal: ${subtotal}. We’ll confirm availability, shipping and the final total before requesting payment. This request is not paid or dispatched.\\n\\nJINQAYA`,
+      text: `Hello ${order.customerName || "there"},\n\nWe received order request ${order.orderNumber}. Estimated item subtotal: ${subtotal}. We’ll confirm availability, shipping and the final total before requesting payment. This request is not paid or dispatched.\n\nJINQAYA`,
     }, idempotencyKey);
   }
 
@@ -106,20 +151,21 @@ export async function sendOrderStatusEmail(order: OrderEmailData, event: "quote_
     cancelled: { subject: `JINQAYA order ${order.orderNumber} cancelled`, title: "Your order request was cancelled.", copy: "Your order has been cancelled. If you believe this was a mistake, please contact us." },
   };
   const selected = details[event];
-  return send({
+  const result = await send({
     to: order.customerEmail,
     subject: selected.subject,
     html: shell(selected.title, `<p>Hello ${escapeHtml(order.customerName || "there")},</p><p>${escapeHtml(selected.copy)}</p><p><strong>Order:</strong> ${escapeHtml(order.orderNumber)}</p>`),
     text: `Hello ${order.customerName || "there"},\n\n${selected.copy}\nOrder: ${order.orderNumber}\n\nJINQAYA`,
   });
+  return result.ok;
 }
 
-
 export async function sendAfterSalesVerificationCode(email: string, code: string) {
-  return send({
+  const result = await send({
     to: email,
     subject: "Your JINQAYA after-sales verification code",
     html: shell("Verify your order.", `<p>Use this code to verify your order and submit an after-sales request:</p><p style="font-size:30px;letter-spacing:8px;font-weight:bold">${escapeHtml(code)}</p><p>This code expires in 10 minutes. If you did not request it, you can ignore this email.</p>`),
     text: `Your JINQAYA verification code is ${code}. It expires in 10 minutes. If you did not request it, ignore this email.`,
   });
+  return result.ok;
 }
