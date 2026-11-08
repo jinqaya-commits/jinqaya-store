@@ -1,6 +1,5 @@
 "use client";
 import {useState,type ChangeEvent} from "react";
-type Evidence={key:string;name:string;type:string};
 export function AfterSalesForm(){
  const [orderNumber,setOrderNumber]=useState("");const [email,setEmail]=useState("");const [code,setCode]=useState("");const [step,setStep]=useState<"details"|"code"|"verified"|"done">("details");const [orderId,setOrderId]=useState("");const [description,setDescription]=useState("");const [files,setFiles]=useState<File[]>([]);const [uploadedKeys,setUploadedKeys]=useState<string[]>([]);const [busy,setBusy]=useState(false);const [uploadingFile,setUploadingFile]=useState("");const [error,setError]=useState("");const [notice,setNotice]=useState("");
  async function post(url:string,body:unknown){const r=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const j=await r.json();if(!r.ok)throw new Error(j.error||"Something went wrong.");return j;}
