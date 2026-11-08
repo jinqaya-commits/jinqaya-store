@@ -155,6 +155,9 @@ async function validateIsoBmffContainer(
   const boxType = String.fromCharCode(header[4], header[5], header[6], header[7]);
   let headerSize = 8;
 
+  // ISO BMFF permits size=0 to mean this box extends to end-of-file.
+  if (boxSize === 0) boxSize = fileSize - offset;
+
   if (boxSize === 1) {
    if (header.byteLength < 16) return false;
    const largeSize = view.getBigUint64(8);
