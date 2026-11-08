@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Cormorant_Garamond, Inter } from "next/font/google";
 import { OrganizationJsonLd, WebsiteJsonLd } from "@/lib/seo-jsonld";
 import "./globals.css";
+import "./brand-overrides.css";
 
 const displayFont = Cormorant_Garamond({
   subsets: ["latin"],
