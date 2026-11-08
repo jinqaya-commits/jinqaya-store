@@ -12,6 +12,10 @@ export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 const allowedTypes = new Set(["application/pdf","image/jpeg","image/png","image/webp","image/avif"]);
 const maxSize = 10 * 1024 * 1024;
+type JsonRecord = Record<string, unknown>;
+function isJsonRecord(value: unknown): value is JsonRecord {
+ return typeof value === "object" && value !== null && !Array.isArray(value);
+}
 const cleanName = (value:string) => value.normalize("NFKC").replace(/[^a-zA-Z0-9._ -]/g,"_").replace(/\s+/g," ").trim().slice(0,180) || "refund-proof";
 
 async function authorize() {
@@ -145,9 +149,10 @@ export async function DELETE(request:NextRequest,{params}:{params:Promise<{id:st
  const auth=await authorize(); if("error" in auth)return auth.error;
  const {id,refundId}=await params;
  if(!/^[0-9a-f-]{36}$/i.test(id)||!/^[0-9a-f-]{36}$/i.test(refundId))return NextResponse.json({error:"Invalid ID"},{status:400});
- let body:any;
- try{body=await readBoundedJson<any>(request,4*1024)}catch{return NextResponse.json({error:"Invalid request"},{status:400})}
- const attachmentId=typeof body?.attachmentId==="string"?body.attachmentId:"";
+ let body: unknown;
+ try{body=await readBoundedJson<unknown>(request,4*1024)}catch{return NextResponse.json({error:"Invalid request"},{status:400})}
+ if(!isJsonRecord(body))return NextResponse.json({error:"Invalid request"},{status:400});
+ const attachmentId=typeof body.attachmentId==="string"?body.attachmentId:"";
  if(!/^[0-9a-f-]{36}$/i.test(attachmentId))return NextResponse.json({error:"Invalid attachment ID"},{status:400});
  const db=createAdminClient();
  if(!await refundExists(db,id,refundId))return NextResponse.json({error:"Refund not found"},{status:404});
