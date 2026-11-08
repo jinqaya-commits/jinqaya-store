@@ -87,8 +87,8 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
  const auth=await authorize(); if("error" in auth)return auth.error;
  const {id,refundId}=await params;
  if(!/^[0-9a-f-]{36}$/i.test(id)||!/^[0-9a-f-]{36}$/i.test(refundId))return NextResponse.json({error:"Invalid ID"},{status:400});
- let body:any;try{body=await readBoundedJson<any>(request,8*1024)}catch(error){return NextResponse.json({error:error instanceof Error&&error.message==="Request body is too large."?"Request body is too large.":"Invalid request"},{status:error instanceof Error&&error.message==="Request body is too large."?413:400})}
- if(!body||typeof body!=="object"||Array.isArray(body))return NextResponse.json({error:"Invalid request"},{status:400})
+ let body: unknown;try{body=await readBoundedJson<unknown>(request,8*1024)}catch(error){return NextResponse.json({error:error instanceof Error&&error.message==="Request body is too large."?"Request body is too large.":"Invalid request"},{status:error instanceof Error&&error.message==="Request body is too large."?413:400})}
+ if(!isJsonRecord(body))return NextResponse.json({error:"Invalid request"},{status:400})
  const db=createAdminClient(); if(!await refundExists(db,id,refundId))return NextResponse.json({error:"Refund not found"},{status:404});
  const {bucket,client}=getEvidenceClient();
  if(body.action==="create_upload") {
