@@ -30,7 +30,8 @@ export default function CustomerFollowUps({ customerId, initialFollowUps }: {
   const [currentTime, setCurrentTime] = useState<number | null>(null);
 
   useEffect(() => {
-    setCurrentTime(Date.now());
+    const timeoutId = window.setTimeout(() => setCurrentTime(Date.now()), 0);
+    return () => window.clearTimeout(timeoutId);
   }, []);
   const [title, setTitle] = useState("");
   const [dueAt, setDueAt] = useState(localDateTimeDefault);
