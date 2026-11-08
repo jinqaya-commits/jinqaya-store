@@ -117,7 +117,7 @@ export default async function AdminInventoryPage() {
                   <th>INCOMING</th><th>REPLENISHMENT GAP</th><th>STOCKTAKE / REORDER</th><th>STOCK MOVEMENT</th>
                 </tr></thead>
                 <tbody>
-                  {rows.map(({ variant, stock, onHand, reserved, damaged, available, reorderPoint, incoming, replenishmentGap, nextArrival }) => (
+                  {rows.map(({ variant, onHand, reserved, damaged, available, reorderPoint, incoming, replenishmentGap, nextArrival }) => (
                     <tr key={variant.id}>
                       <td>
                         <strong>{(variant.products as { name?: string } | null)?.name || "Product"}</strong>
