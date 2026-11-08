@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sha256, sessionCookieName, verifyEvidenceObject, readBoundedJson } from "@/lib/after-sales-evidence";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 const MAX_REQUEST_BYTES = 16 * 1024;
 
 export async function POST(req: NextRequest) {
