@@ -43,6 +43,29 @@ export async function POST(req: NextRequest) {
   const { data: valid, error: sessionError } = await supabase.rpc("check_after_sales_customer_session", { p_order_id: orderId, p_token_hash: tokenHash });
   if (sessionError || valid !== true) return NextResponse.json({ error: "Your verification has expired." }, { status: 401 });
 
+  // Check for a previously committed identical request before validating
+  // upload tickets: the original transaction consumes those tickets.
+  const { data: replayCase, error: replayLookupError } = await supabase
+   .from("after_sales_cases")
+   .select("case_number,evidence_urls")
+   .eq("order_id", orderId)
+   .eq("customer_description", description)
+   .contains("evidence_urls", evidence)
+   .maybeSingle();
+  const replayKeys = replayCase?.evidence_urls;
+  const exactReplay = Array.isArray(replayKeys) &&
+   replayKeys.length === evidence.length &&
+   replayKeys.every((key: unknown, index: number) => key === evidence[index]);
+  if (replayLookupError) throw replayLookupError;
+  if (replayCase && exactReplay && typeof replayCase.case_number === "string") {
+   const response = NextResponse.json({ ok: true, caseNumber: replayCase.case_number });
+   response.cookies.set(sessionCookieName, "", {
+    httpOnly: true, secure: process.env.NODE_ENV === "production",
+    sameSite: "strict", path: "/api/after-sales", maxAge: 0,
+   });
+   return response;
+  }
+
   // First inspect only object metadata, then validate every ticket. Do not
   // decode images or parse video containers until all files are authorized.
   const metadata: EvidenceObjectMetadata[] = [];
