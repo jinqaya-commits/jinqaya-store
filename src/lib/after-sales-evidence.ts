@@ -144,7 +144,7 @@ async function validateIsoBmffContainer(
  const MAX_TOP_LEVEL_BOXES = 4096;
  let rangeRequests = 0;
  let windowStart = -1;
- let window = new Uint8Array();
+ let window: Uint8Array<ArrayBufferLike> = new Uint8Array();
  let offset = 0;
  let boxCount = 0;
  let hasFtyp = false;
