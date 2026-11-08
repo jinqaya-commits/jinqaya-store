@@ -1,2 +1,2 @@
-export { default } from "@/app/about/";
-
+export { default } from "@/app/about/page";
+export * from "@/app/about/page";
