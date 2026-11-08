@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { StoreProductImage } from "@/lib/products";
 
 export function ProductGallery({ images, productName }: { images: StoreProductImage[]; productName: string }) {
-  const available = images.filter((image) => image.detail_url);
+  const available = useMemo(() => images.filter((image) => image.detail_url), [images]);
   const [activeId, setActiveId] = useState<string | null>(available.find((image) => image.is_primary)?.id ?? available[0]?.id ?? null);
   const [isZoomed, setIsZoomed] = useState(false);
   const touchStartX = useRef<number | null>(null);
