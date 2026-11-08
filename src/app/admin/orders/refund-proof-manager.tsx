@@ -7,6 +7,7 @@ export function RefundProofManager({orderId,refundId}:{orderId:string;refundId:s
  const [attachments,setAttachments]=useState<Attachment[]>([]);
  const [events,setEvents]=useState<Event[]>([]);
  const [busy,setBusy]=useState(false);
+ const [deleting,setDeleting]=useState<string|null>(null);
  const [error,setError]=useState("");
  const [message,setMessage]=useState("");
  const input=useRef<HTMLInputElement>(null);
@@ -18,6 +19,18 @@ export function RefundProofManager({orderId,refundId}:{orderId:string;refundId:s
   setAttachments(result.attachments||[]);setEvents(result.events||[]);
  },[endpoint]);
  useEffect(()=>{let alive=true;fetch(endpoint,{cache:"no-store"}).then(async r=>{const j=await r.json();if(!r.ok)throw new Error(j.error||"Unable to load refund documents.");if(alive){setAttachments(j.attachments||[]);setEvents(j.events||[]);}}).catch(e=>{if(alive)setError(e instanceof Error?e.message:"Unable to load refund documents.");});return()=>{alive=false};},[endpoint]);
+ async function removeAttachment(attachmentId:string){
+  if(!window.confirm("Delete this refund proof? The action will be recorded in the audit history."))return;
+  setDeleting(attachmentId);setError("");setMessage("");
+  try{
+   const response=await fetch(endpoint,{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({attachmentId})});
+   const result=await response.json();
+   if(!response.ok&&response.status!==202)throw new Error(result.error||"Unable to delete refund proof.");
+   setMessage(response.status===202?result.error||"Deletion is pending automatic retry.":"Refund proof deleted.");
+   await refresh();
+  }catch(e){setError(e instanceof Error?e.message:"Unable to delete refund proof.");}
+  finally{setDeleting(null);}
+ }
  async function upload(file:File){
   setBusy(true);setError("");setMessage("");
   try{
@@ -37,7 +50,7 @@ export function RefundProofManager({orderId,refundId}:{orderId:string;refundId:s
   <div className="admin-panel-heading"><div><strong>Refund proof & audit trail</strong><p>Private documents · PDF or images · 10 MB maximum per file</p></div><span>{attachments.length} FILES</span></div>
   <input ref={input} type="file" accept="application/pdf,image/jpeg,image/png,image/webp,image/avif" disabled={busy} onChange={e=>{const f=e.target.files?.[0];if(f)void upload(f);}}/>
   {busy&&<small>Uploading securely…</small>}{error&&<p className="admin-error" role="alert">{error}</p>}{message&&<p className="admin-success" role="status">{message}</p>}
-  {attachments.length===0?<p className="admin-help">No refund proof uploaded yet.</p>:<ul>{attachments.map(file=><li key={file.id}><a href={file.url} target="_blank" rel="noreferrer">{file.file_name}</a><small>{(file.file_size/1024/1024).toFixed(2)} MB · {dt(file.created_at)} · {file.uploaded_by||"Operator not available"}</small></li>)}</ul>}
+  {attachments.length===0?<p className="admin-help">No refund proof uploaded yet.</p>:<ul>{attachments.map(file=><li key={file.id}><a href={file.url} target="_blank" rel="noreferrer">{file.file_name}</a><small>{(file.file_size/1024/1024).toFixed(2)} MB · {dt(file.created_at)} · {file.uploaded_by||"Operator not available"}</small><button type="button" disabled={busy||deleting!==null} onClick={()=>void removeAttachment(file.id)}>{deleting===file.id?"Deleting…":"Delete proof"}</button></li>)}</ul>}
   {events.length>0&&<details><summary>Refund operation history ({events.length})</summary><ol>{events.map(event=><li key={event.id}><strong>{event.description}</strong><small>{dt(event.created_at)} · {event.actor_user_id||"System"}</small></li>)}</ol></details>}
  </div>;
 }
