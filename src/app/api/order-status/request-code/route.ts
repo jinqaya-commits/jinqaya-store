@@ -1,0 +1,50 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { newCode, readBoundedJson } from "@/lib/after-sales-evidence";
+import { sendOrderStatusVerificationCode } from "@/lib/order-email";
+
+export const dynamic = "force-dynamic";
+
+export async function POST(request: NextRequest) {
+  try {
+    const body: unknown = await readBoundedJson<unknown>(request, 8 * 1024);
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return NextResponse.json({ error: "Enter a valid order number and email." }, { status: 400 });
+    }
+    const input = body as Record<string, unknown>;
+    if (typeof input.orderNumber !== "string" || typeof input.email !== "string") {
+      return NextResponse.json({ error: "Enter a valid order number and email." }, { status: 400 });
+    }
+    const orderNumber = input.orderNumber.trim().slice(0, 80);
+    const email = input.email.trim().toLowerCase().slice(0, 254);
+    if (!orderNumber || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return NextResponse.json({ error: "Enter a valid order number and email." }, { status: 400 });
+    }
+
+    const code = newCode();
+    const supabase = createAdminClient();
+    const { data, error } = await supabase.rpc("create_order_status_email_challenge", {
+      p_order_number: orderNumber, p_email: email, p_code: code,
+    });
+    if (error) throw error;
+    if (data === true) {
+      const sent = await sendOrderStatusVerificationCode(email, code);
+      if (!sent) {
+        console.error("[order-status] verification email delivery failed");
+        return NextResponse.json({ error: "Unable to send the verification email. Please try again shortly." }, { status: 503 });
+      }
+    }
+    return NextResponse.json({
+      ok: true,
+      message: "If the order number and email match, a verification code will be sent.",
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message === "Request body is too large.") {
+      return NextResponse.json({ error: "Request body is too large." }, { status: 413 });
+    }
+    if (error instanceof SyntaxError || error instanceof TypeError) {
+      return NextResponse.json({ error: "Invalid request." }, { status: 400 });
+    }
+    return NextResponse.json({ error: "Unable to process this request. Please try again later." }, { status: 500 });
+  }
+}
