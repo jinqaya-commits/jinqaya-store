@@ -94,6 +94,12 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
   const size=Number(body.size);
   if(!fileName||!allowedTypes.has(contentType)||!Number.isInteger(size)||size<1||size>maxSize)return NextResponse.json({error:"Upload only PDF or image files up to 10 MB."},{status:400});
   const objectKey="refund-proofs/"+id+"/"+refundId+"/"+randomUUID();
+  const {error:ticketError}=await db.from("order_refund_upload_tickets").insert({
+   order_id:id,refund_id:refundId,object_key:objectKey,file_name:fileName,
+   content_type:contentType,file_size:size,uploaded_by:auth.userId,
+   expires_at:new Date(Date.now()+15*60*1000).toISOString()
+  });
+  if(ticketError)return NextResponse.json({error:"Unable to reserve refund proof upload."},{status:500});
   const uploadUrl=await getSignedUrl(client,new PutObjectCommand({Bucket:bucket,Key:objectKey,ContentType:contentType,ContentLength:size}),{expiresIn:300});
   return NextResponse.json({uploadUrl,objectKey,fileName,contentType,size});
  }
@@ -101,18 +107,37 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
   const objectKey=String(body.objectKey||"");
   const fileName=typeof body.fileName==="string"?cleanName(body.fileName):"";
   if(!fileName||!objectKey.startsWith("refund-proofs/"+id+"/"+refundId+"/")||objectKey.length>500)return NextResponse.json({error:"Invalid refund proof upload."},{status:400});
+  const {data:existing}=await db.from("order_refund_attachments").select("id,order_id,refund_id").eq("object_key",objectKey).maybeSingle();
+  if(existing) {
+   if(existing.order_id!==id||existing.refund_id!==refundId)return NextResponse.json({error:"Refund proof is already registered elsewhere."},{status:409});
+   return NextResponse.json({ok:true,attachmentId:existing.id,replayed:true});
+  }
+  const {data:ticket,error:ticketError}=await db.from("order_refund_upload_tickets")
+   .select("object_key,file_name,content_type,file_size,uploaded_by,expires_at,consumed_at")
+   .eq("object_key",objectKey).eq("order_id",id).eq("refund_id",refundId).maybeSingle();
+  if(ticketError||!ticket||ticket.consumed_at||new Date(ticket.expires_at).getTime()<=Date.now()||
+     ticket.file_name!==fileName||ticket.uploaded_by!==auth.userId) {
+   return NextResponse.json({error:"Refund proof upload ticket is missing, expired, or already consumed."},{status:409});
+  }
   let contentType="",size=0;
   try {
    const head=await client.send(new HeadObjectCommand({Bucket:bucket,Key:objectKey}),{abortSignal:AbortSignal.timeout(8000)});
    contentType=String(head.ContentType||"");size=Number(head.ContentLength||0);
-   if(!allowedTypes.has(contentType)||!Number.isSafeInteger(size)||size<1||size>maxSize)throw new Error("Uploaded file metadata is invalid.");
+   if(contentType!==ticket.content_type||size!==ticket.file_size||!allowedTypes.has(contentType)||!Number.isSafeInteger(size)||size<1||size>maxSize)throw new Error("Uploaded file metadata does not match the reserved upload.");
    await verifyRefundProofObject(client,bucket,objectKey,contentType,size);
   } catch(error) {
    return NextResponse.json({error:error instanceof Error?error.message:"Unable to verify uploaded file."},{status:400});
   }
-  const {data,error}=await db.from("order_refund_attachments").insert({refund_id:refundId,order_id:id,object_key:objectKey,file_name:fileName,content_type:contentType,file_size:size,uploaded_by:auth.userId}).select("id").single();
-  if(error)return NextResponse.json({error:"Unable to save refund proof metadata."},{status:400});
-  return NextResponse.json({ok:true,attachmentId:data.id});
+  const {data:attachmentId,error}=await db.rpc("complete_order_refund_proof_upload",{
+   p_order_id:id,p_refund_id:refundId,p_object_key:objectKey,p_file_name:fileName,
+   p_content_type:contentType,p_file_size:size,p_uploaded_by:auth.userId
+  });
+  if(error) {
+   const {data:replay}=await db.from("order_refund_attachments").select("id,order_id,refund_id").eq("object_key",objectKey).maybeSingle();
+   if(replay?.order_id===id&&replay?.refund_id===refundId)return NextResponse.json({ok:true,attachmentId:replay.id,replayed:true});
+   return NextResponse.json({error:"Unable to register refund proof."},{status:409});
+  }
+  return NextResponse.json({ok:true,attachmentId});
  }
  return NextResponse.json({error:"Unsupported action."},{status:400});
 }
