@@ -121,16 +121,28 @@ create or replace function public.list_expired_after_sales_orphan_keys(p_limit i
 returns table(object_key text)
 language sql security definer set search_path=''
 as $function$
+ with expired_tickets as (
+  -- Apply the batch limit to tickets, not individual object keys. This keeps
+  -- each staging/final pair together even when a batch boundary is reached.
+  select t.object_key, t.promoted_object_key, t.expires_at
+  from public.after_sales_upload_tickets t
+  where t.expires_at < now() - interval '1 hour'
+    and (
+     t.promoted_object_key is null
+     or not exists(
+      select 1 from public.after_sales_cases c
+      where t.promoted_object_key=any(c.evidence_urls)
+     )
+    )
+  order by t.expires_at asc, t.id asc
+  limit greatest(1,least(coalesce(p_limit,100),500))
+ )
  select candidates.object_key
- from public.after_sales_upload_tickets t
+ from expired_tickets t
  cross join lateral (
   values (t.object_key), (t.promoted_object_key)
  ) as candidates(object_key)
- where t.expires_at < now() - interval '1 hour'
- and candidates.object_key is not null
- and not exists(select 1 from public.after_sales_cases c where candidates.object_key=any(c.evidence_urls))
- order by t.expires_at asc
- limit greatest(1,least(coalesce(p_limit,100),500));
+ where candidates.object_key is not null;
 $function$;
 
 create or replace function public.delete_after_sales_orphan_ticket_rows(p_object_keys text[])
