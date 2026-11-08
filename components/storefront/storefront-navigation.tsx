@@ -73,6 +73,10 @@ export function StorefrontNavigation({ roots }: { roots: StorefrontCategory[] })
             aria-label="Site navigation"
             onClick={(event) => event.stopPropagation()}
           >
+            <div className="jq-mobile-panel-top">
+              <Link href="/" onClick={close} aria-label="JINQAYA home">JINQAYA</Link>
+              <button type="button" onClick={close} aria-label="Close navigation menu">CLOSE <span aria-hidden="true">×</span></button>
+            </div>
             <Link className="jq-mobile-nav-primary" href="/shop" onClick={close}>SHOP ALL <span>↗</span></Link>
             <Link className="jq-mobile-nav-primary" href="/#collections" onClick={close}>DISCOVER <span>↗</span></Link>
             <Link className="jq-mobile-nav-primary" href="/about" onClick={close}>OUR STORY <span>↗</span></Link>
