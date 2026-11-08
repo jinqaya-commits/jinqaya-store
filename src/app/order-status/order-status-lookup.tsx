@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 
 type OrderItem = { product_name: string; variant_name: string | null; quantity: number };
