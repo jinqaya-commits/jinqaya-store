@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { StoreProductImage } from "@/lib/products";
 
 export function ProductGallery({ images, productName }: { images: StoreProductImage[]; productName: string }) {
@@ -11,13 +11,14 @@ export function ProductGallery({ images, productName }: { images: StoreProductIm
   const activeIndex = Math.max(0, available.findIndex((image) => image.id === activeId));
   const active = available[activeIndex] ?? available[0];
 
-  function showImage(index: number) {
+  const showImage = useCallback((index: number) => {
     if (!available.length) return;
     const next = (index + available.length) % available.length;
     setActiveId(available[next].id);
-  }
-  function showNext() { showImage(activeIndex + 1); }
-  function showPrevious() { showImage(activeIndex - 1); }
+  }, [available]);
+
+  const showNext = useCallback(() => showImage(activeIndex + 1), [activeIndex, showImage]);
+  const showPrevious = useCallback(() => showImage(activeIndex - 1), [activeIndex, showImage]);
 
   useEffect(() => {
     if (!isZoomed) return;
@@ -28,7 +29,7 @@ export function ProductGallery({ images, productName }: { images: StoreProductIm
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [isZoomed, activeIndex, available.length]);
+  }, [isZoomed, showNext, showPrevious]);
 
   function handleTouchStart(event: React.TouchEvent<HTMLDivElement>) {
     touchStartX.current = event.touches[0]?.clientX ?? null;
@@ -36,7 +37,7 @@ export function ProductGallery({ images, productName }: { images: StoreProductIm
   function handleTouchEnd(event: React.TouchEvent<HTMLDivElement>) {
     if (touchStartX.current === null) return;
     const delta = event.changedTouches[0].clientX - touchStartX.current;
-    if (Math.abs(delta) > 45) delta < 0 ? showNext() : showPrevious();
+    if (Math.abs(delta) > 45) {\n      if (delta < 0) showNext();\n      else showPrevious();\n    }
     touchStartX.current = null;
   }
 
