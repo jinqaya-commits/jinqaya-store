@@ -3749,6 +3749,19 @@ export type Database = {
         }
         Returns: Json
       }
+      admin_update_after_sales_case: {
+        Args: {
+          p_case_id: string
+          p_order_id: string
+          p_refund_status?: string | null
+          p_resolution?: string | null
+          p_status?: string | null
+          p_update_refund_status?: boolean
+          p_update_resolution?: boolean
+          p_update_status?: boolean
+        }
+        Returns: Json
+      }
       admin_confirm_after_sales_refund: {
         Args: {
           p_case_id: string
