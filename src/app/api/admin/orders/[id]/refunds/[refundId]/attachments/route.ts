@@ -75,7 +75,6 @@ export async function GET(_request:NextRequest,{params}:{params:Promise<{id:stri
  if(error)return NextResponse.json({error:"Unable to load refund proofs"},{status:500});
  const {data:events,error:eventError}=await db.from("order_refund_events").select("id,event_type,description,old_values,new_values,actor_user_id,created_at").eq("refund_id",refundId).eq("order_id",id).order("created_at",{ascending:false});
  if(eventError)return NextResponse.json({error:"Unable to load refund history"},{status:500});
- const {bucket,client}=getEvidenceClient();
  const files=(attachments||[]).map(file=>({id:file.id,file_name:file.file_name,content_type:file.content_type,file_size:file.file_size,uploaded_by:file.uploaded_by,created_at:file.created_at,url:"/api/admin/orders/"+id+"/refunds/"+refundId+"/attachments/"+file.id+"/file"}));
  return NextResponse.json({attachments:files,events:events||[]},{headers:{"Cache-Control":"private, no-store, max-age=0"}});
 }
