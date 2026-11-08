@@ -38,6 +38,8 @@ declare
   v_order public.orders%rowtype;
   v_email text := lower(trim(p_email));
 begin
+  delete from public.customer_order_status_sessions where expires_at < now()-interval '1 day';
+  delete from public.order_status_email_challenges where created_at < now()-interval '7 days';
   perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtextextended(v_email, 41));
   select * into v_order
     from public.orders
