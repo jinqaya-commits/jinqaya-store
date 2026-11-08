@@ -10,7 +10,13 @@ export async function POST(req:NextRequest){
   const code=newCode();const supabase=createAdminClient();
   const {data,error}=await supabase.rpc("create_after_sales_email_challenge",{p_order_number:orderNumber,p_email:email,p_code:code});
   if(error)throw error;
-  if(data===true)await sendAfterSalesVerificationCode(email,code);
+  if(data===true){
+   const sent=await sendAfterSalesVerificationCode(email,code);
+   if(!sent){
+    console.error("[after-sales-request-code] verification email delivery failed");
+    return NextResponse.json({error:"Unable to send the verification email. Please try again shortly."},{status:503});
+   }
+  }
   return NextResponse.json({ok:true,message:"If the order details match an eligible delivered order, a verification code will be sent."});
  }catch(error){if(error instanceof Error&&error.message==="Request body is too large.")return NextResponse.json({error:"Request body is too large."},{status:413});if(error instanceof SyntaxError||error instanceof TypeError)return NextResponse.json({error:"Invalid request."},{status:400});return NextResponse.json({error:"Unable to process this request. Please try again later."},{status:500});}
 }
