@@ -13,7 +13,6 @@ type ReturnReceipt={id:string;issue_id:string;order_item_id:string;warehouse_id:
 type Props={shipmentId:string;orderId:string;shipmentStatus:string;issues:IssueRow[];orderItems:ReturnItemChoice[];warehouses:ReturnWarehouse[];returnReceipts:ReturnReceipt[]};
 const issueLabels:Record<string,string>={exception:"Delivery exception",returned:"Returned parcel"};
 const statusLabels:Record<string,string>={open:"Open",in_progress:"In progress",resolved:"Resolved"};
-const actionLabels:Record<string,string>={awaiting_carrier:"Awaiting carrier",reship:"Reship",refund:"Refund",other:"Other"};
 function dt(v:string){return new Intl.DateTimeFormat("en-US",{dateStyle:"medium",timeStyle:"short"}).format(new Date(v));}
 export function ShipmentIssueManager({shipmentId,orderId,shipmentStatus,issues,orderItems,warehouses,returnReceipts}:Props){
  const router=useRouter();const [reason,setReason]=useState("");const [busy,start]=useTransition();const [error,setError]=useState("");const [message,setMessage]=useState("");const [returnDrafts,setReturnDrafts]=useState<Record<string,{itemId:string;quantity:string;warehouseId:string;notes:string}>>({});const [inspectionDrafts,setInspectionDrafts]=useState<Record<string,{condition:string;notes:string}>>({});
