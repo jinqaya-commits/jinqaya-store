@@ -12,5 +12,5 @@ export async function POST(req:NextRequest){
   const response=NextResponse.json({ok:true,orderId});
   response.cookies.set(sessionCookieName,token,{httpOnly:true,secure:process.env.NODE_ENV==="production",sameSite:"strict",path:"/api/after-sales",maxAge:1800});
   return response;
- }catch{return NextResponse.json({error:"Unable to verify this code."},{status:500});}
+ }catch(error){if(error instanceof Error&&error.message==="Request body is too large.")return NextResponse.json({error:"Request body is too large."},{status:413});if(error instanceof SyntaxError||error instanceof TypeError)return NextResponse.json({error:"Invalid request."},{status:400});return NextResponse.json({error:"Unable to verify this code."},{status:500});}
 }
