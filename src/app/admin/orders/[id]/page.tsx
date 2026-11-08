@@ -27,7 +27,7 @@ export default async function AdminOrderDetail({params}:{params:Promise<{id:stri
   supabase.from("after_sales_cases").select("id,case_number,status,customer_description,evidence_urls,resolution,refund_status,refund_amount,refund_reference,refund_confirmed_at,created_at,after_sales_case_events(id,description,created_at)").eq("order_id",id).order("created_at",{ascending:false}),
   supabase.from("order_refunds").select("id,source_type,source_id,amount,currency,reference,refund_method,transaction_number,recorded_by,confirmed_at").eq("order_id",id).order("confirmed_at",{ascending:false})
  ]);
- const {data:emailOutbox}=await supabase.from("order_email_outbox").select("id,recipient_type,recipient_email,status,attempt_count,max_attempts,next_attempt_at,last_error,sent_at,created_at").eq("order_id",id).order("created_at",{ascending:true});
+ const {data:emailOutbox}=await (supabase as any).rpc("admin_list_order_email_outbox",{p_order_id:id});
  const currency=order.currency.trim()||"USD";
  const paidTotal=(payments||[]).filter(p=>["paid","partially_refunded","refunded"].includes(p.status)&&p.currency.trim()===currency).reduce((sum,p)=>sum+Number(p.amount),0);
  const refundedTotal=(refundLedger||[]).reduce((sum,r)=>sum+Number(r.amount),0);
