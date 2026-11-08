@@ -13,13 +13,22 @@ const types = new Set([
 
 export async function POST(req: NextRequest) {
  try {
-  const body = await readBoundedJson<{ orderId?: unknown; contentType?: unknown; size?: unknown }>(req, MAX_REQUEST_BYTES);
-  const orderId = String(body.orderId || "");
-  const contentType = String(body.contentType || "");
-  const size = Number(body.size);
+  const body: unknown = await readBoundedJson<unknown>(req, MAX_REQUEST_BYTES);
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+   return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
+  }
+  const payload = body as Record<string, unknown>;
+  if (typeof payload.orderId !== "string" ||
+      typeof payload.contentType !== "string" ||
+      typeof payload.size !== "number") {
+   return NextResponse.json({ error: "Please provide valid order, content type, and size fields." }, { status: 400 });
+  }
+  const orderId = payload.orderId;
+  const contentType = payload.contentType;
+  const size = payload.size;
 
   if (!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(orderId) || !types.has(contentType) ||
-      !Number.isInteger(size) || size <= 0 ||
+      !Number.isSafeInteger(size) || size <= 0 ||
       size > (contentType.startsWith("video/") ? 50 : 10) * 1024 * 1024) {
    return NextResponse.json({ error: "Unsupported file or file size." }, { status: 400 });
   }
