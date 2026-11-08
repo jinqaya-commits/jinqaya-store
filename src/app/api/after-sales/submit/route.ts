@@ -104,23 +104,11 @@ export async function POST(req: NextRequest) {
    p_upload_keys: evidence,
    p_final_evidence_keys: finalEvidenceKeys,
   });
-  if (error) {
-   try { await deleteEvidenceObjects(promotedKeys); }
-   catch (cleanupError) { console.error("[after-sales-submit] failed to clean unreferenced final evidence", cleanupError); }
-  } else {
-   // A still-valid staging PUT URL may recreate/overwrite only the temporary
-   // object. The final evidence key is separate and is never client-writable.
-   try { await deleteEvidenceObjects(evidence); }
-   catch (cleanupError) { console.error("[after-sales-submit] staging cleanup deferred to scheduled cleanup", cleanupError); }
-  }
 
-  // A client may retry after the database committed but the HTTP response was
-  // lost. The RPC consumes the upload tickets atomically, so a replay can fail
-  // ticket validation even though the original case already exists. Recover
-  // only an exact match on order, description, and the complete evidence-key
-  // array; those unguessable keys identify the original submission.
   let caseData = data as { case_number?: unknown } | null;
   if (error) {
+   // The RPC may have committed even if its response was lost. Never delete
+   // promoted evidence until a successful lookup proves no case references it.
    const { data: existingCase, error: lookupError } = await supabase
     .from("after_sales_cases")
     .select("case_number,submission_upload_keys")
@@ -129,12 +117,27 @@ export async function POST(req: NextRequest) {
     .contains("submission_upload_keys", evidence)
     .maybeSingle();
 
+   if (lookupError) {
+    console.error("[after-sales-submit] unable to resolve ambiguous RPC result; retaining promoted evidence", lookupError);
+    throw error;
+   }
+
    const existingKeys = existingCase?.submission_upload_keys;
    const exactEvidenceMatch = Array.isArray(existingKeys) &&
     existingKeys.length === evidence.length &&
     existingKeys.every((key: unknown, index: number) => key === evidence[index]);
-   if (lookupError || !existingCase || !exactEvidenceMatch) throw error;
-   caseData = existingCase as { case_number?: unknown };
+   if (existingCase && exactEvidenceMatch && typeof existingCase.case_number === "string") {
+    caseData = existingCase as { case_number?: unknown };
+   } else {
+    try { await deleteEvidenceObjects(promotedKeys); }
+    catch (cleanupError) { console.error("[after-sales-submit] failed to clean unreferenced final evidence", cleanupError); }
+    throw error;
+   }
+  } else {
+   // A still-valid staging PUT URL may recreate/overwrite only the temporary
+   // object. The final evidence key is separate and is never client-writable.
+   try { await deleteEvidenceObjects(evidence); }
+   catch (cleanupError) { console.error("[after-sales-submit] staging cleanup deferred to scheduled cleanup", cleanupError); }
   }
 
   if (!caseData || typeof caseData !== "object" || typeof caseData.case_number !== "string") {
