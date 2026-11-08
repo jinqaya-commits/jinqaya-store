@@ -198,9 +198,10 @@ async function validateIsoBmffContainer(
   })) return false;
 
   if (boxType === "ftyp") {
+   // ISO BMFF requires ftyp to be the first top-level box.
    // ftyp contains major_brand, minor_version and zero or more compatible brands.
    // Keep it small enough to validate completely in one bounded range read.
-   if (hasFtyp || boxSize < headerSize + 8 || boxSize > 4096 ||
+   if (offset !== 0 || hasFtyp || boxSize < headerSize + 8 || boxSize > 4096 ||
        (boxSize - headerSize - 8) % 4 !== 0) return false;
    if (!await ensureWindow(offset + headerSize, boxSize - headerSize)) return false;
    const ftyp = bytesAt(offset + headerSize, boxSize - headerSize);
