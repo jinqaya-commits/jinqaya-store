@@ -109,7 +109,7 @@ export async function retryOrderEmailAction(orderId: string, emailId: string) {
   if (!/^[0-9a-f-]{36}$/i.test(orderId) || !/^[0-9a-f-]{36}$/i.test(emailId)) {
     return { error: "Invalid order email reference." };
   }
-  const { error } = await supabase.rpc("admin_retry_order_email_outbox", { p_id: emailId });
+  const { error } = await (supabase as any).rpc("admin_retry_order_email_outbox", { p_id: emailId });
   if (error) return { error: error.message };
   revalidatePath(`/admin/orders/${orderId}`);
   return { success: true };
