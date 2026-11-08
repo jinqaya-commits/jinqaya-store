@@ -12,6 +12,34 @@ function money(value: number | string | null, currency: string) {
 function dateTime(value: string) {
   return new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
 }
+type IncomingPurchaseItem = {
+  variant_id: string;
+  quantity_ordered: number;
+  quantity_received: number;
+  purchase_orders: { warehouse_id: string | null } | { warehouse_id: string | null }[] | null;
+};
+type InventoryVariant = {
+  id: string;
+  sku: string;
+  products: { name: string } | null;
+  inventory: { warehouse_id: string | null; on_hand: number; reserved: number; damaged: number; reorder_point: number }[] | null;
+};
+type StockAlertRow = {
+  sku: string;
+  name: string;
+  available: number;
+  reorderPoint: number;
+  incoming: number;
+  replenishmentGap: number;
+};
+type DashboardFollowUp = {
+  id: string;
+  customer_id: string;
+  title: string;
+  due_at: string;
+  customers: { first_name: string | null; last_name: string | null; email: string | null } | null;
+};
+
 function dayStart() {
   const now = new Date();
   return new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
@@ -47,24 +75,24 @@ export default async function AdminDashboardPage() {
   if (incomingError) throw new Error("Unable to load incoming purchase quantities.");
 
   const incomingByVariant = new Map<string, number>();
-  (incomingItems || []).forEach((item: any) => {
+  ((incomingItems || []) as unknown as IncomingPurchaseItem[]).forEach((item) => {
     const purchaseOrder = Array.isArray(item.purchase_orders) ? item.purchase_orders[0] : item.purchase_orders;
     if (!warehouse || purchaseOrder?.warehouse_id !== warehouse.id) return;
     const remaining = Math.max(0, Number(item.quantity_ordered) - Number(item.quantity_received));
     if (remaining > 0) incomingByVariant.set(item.variant_id, (incomingByVariant.get(item.variant_id) || 0) + remaining);
   });
 
-  const stockRows = (variants || []).map((variant: any) => {
+  const stockRows = ((variants || []) as unknown as InventoryVariant[]).map((variant): StockAlertRow | null => {
     const stocks = Array.isArray(variant.inventory) ? variant.inventory : [];
-    const stock = stocks.find((item: any) => item.warehouse_id === warehouse?.id);
+    const stock = stocks.find((item) => item.warehouse_id === warehouse?.id);
     if (!stock) return null;
     const available = Number(stock.on_hand) - Number(stock.reserved) - Number(stock.damaged);
     const reorderPoint = Number(stock.reorder_point);
     const incoming = incomingByVariant.get(variant.id) || 0;
     return { sku: variant.sku, name: variant.products?.name || "Product", available, reorderPoint, incoming, replenishmentGap: Math.max(0, reorderPoint - available - incoming) };
-  }).filter((row: any) => row && row.available <= row.reorderPoint).sort((a: any, b: any) => a.available - b.available).slice(0, 6);
+  }).filter((row): row is StockAlertRow => row !== null && row.available <= row.reorderPoint).sort((a, b) => a.available - b.available).slice(0, 6);
 
-  const followUps = (dueFollowUps || []) as any[];
+  const followUps = (dueFollowUps || []) as unknown as DashboardFollowUp[];
   const orderStatus: Record<string, string> = { on_hold: "Needs review", pending_payment: "Awaiting payment", paid: "Paid", processing: "Processing", partially_shipped: "Partially shipped", shipped: "Shipped", delivered: "Delivered", cancelled: "Cancelled", partially_refunded: "Partially refunded", refunded: "Refunded" };
 
   return <main className="admin-shell">
@@ -87,12 +115,12 @@ export default async function AdminDashboardPage() {
         <section className="admin-panel">
           <div className="admin-panel-heading"><div><p className="admin-kicker">CUSTOMER RELATIONSHIP</p><h2>Follow-up tasks</h2></div><Link href="/admin/follow-ups">OPEN TASKS →</Link></div>
           <div className="admin-dashboard-mini-stats"><div><strong>{openFollowUps ?? 0}</strong><small>Open</small></div><div><strong className={(overdueFollowUps ?? 0) > 0 ? "admin-dashboard-alert" : ""}>{overdueFollowUps ?? 0}</strong><small>Overdue</small></div></div>
-          {!followUps.length ? <div className="admin-empty"><p>No pending follow-ups.</p></div> : <div className="admin-dashboard-list">{followUps.map(item => { const customer = item.customers; const name = [customer?.first_name, customer?.last_name].filter(Boolean).join(" ") || customer?.email || "Customer"; const overdue = new Date(item.due_at).getTime() < Date.now(); return <Link className="admin-dashboard-row" href={`/admin/customers/${item.customer_id}`} key={item.id}><span><strong>{item.title}</strong><small>{name}</small></span><span className={overdue ? "admin-dashboard-alert admin-dashboard-due" : "admin-dashboard-due"}>{overdue ? "Overdue" : dateTime(item.due_at)}</span></Link>; })}</div>}
+          {!followUps.length ? <div className="admin-empty"><p>No pending follow-ups.</p></div> : <div className="admin-dashboard-list">{followUps.map(item => { const customer = item.customers; const name = [customer?.first_name, customer?.last_name].filter(Boolean).join(" ") || customer?.email || "Customer"; const overdue = new Date(item.due_at).getTime() < new Date(now).getTime(); return <Link className="admin-dashboard-row" href={`/admin/customers/${item.customer_id}`} key={item.id}><span><strong>{item.title}</strong><small>{name}</small></span><span className={overdue ? "admin-dashboard-alert admin-dashboard-due" : "admin-dashboard-due"}>{overdue ? "Overdue" : dateTime(item.due_at)}</span></Link>; })}</div>}
         </section>
         <section className="admin-panel">
           <div className="admin-panel-heading"><div><p className="admin-kicker">STOCK CONTROL</p><h2>Inventory alerts</h2></div><Link href="/admin/inventory">INVENTORY →</Link></div>
-          {!warehouse ? <div className="admin-empty"><p>No active default warehouse configured.</p></div> : !stockRows.length ? <div className="admin-empty"><p>No low-stock variants detected.</p></div> : <div className="admin-dashboard-list">{stockRows.map((row: any) => <Link className="admin-dashboard-row" href="/admin/inventory" key={row.sku}><span><strong>{row.name}</strong><small>{row.sku} · {row.incoming} incoming · reorder at {row.reorderPoint}</small></span><span className={row.available <= 0 ? "admin-dashboard-alert admin-dashboard-due" : "admin-dashboard-due"}>{row.available} available{row.replenishmentGap > 0 ? " · +" + row.replenishmentGap + " needed" : ""}</span></Link>)}</div>}
-          <p className="admin-help">Available = on hand − reserved − damaged. Alerts use each SKU's reorder point.</p>
+          {!warehouse ? <div className="admin-empty"><p>No active default warehouse configured.</p></div> : !stockRows.length ? <div className="admin-empty"><p>No low-stock variants detected.</p></div> : <div className="admin-dashboard-list">{stockRows.map((row) => <Link className="admin-dashboard-row" href="/admin/inventory" key={row.sku}><span><strong>{row.name}</strong><small>{row.sku} · {row.incoming} incoming · reorder at {row.reorderPoint}</small></span><span className={row.available <= 0 ? "admin-dashboard-alert admin-dashboard-due" : "admin-dashboard-due"}>{row.available} available{row.replenishmentGap > 0 ? " · +" + row.replenishmentGap + " needed" : ""}</span></Link>)}</div>}
+          <p className="admin-help">Available = on hand − reserved − damaged. Alerts use each SKU&apos;s reorder point.</p>
         </section>
         <section className="admin-panel admin-dashboard-shortcuts">
           <div className="admin-panel-heading"><div><p className="admin-kicker">QUICK ACCESS</p><h2>Manage your store</h2></div></div>
