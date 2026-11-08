@@ -103,36 +103,65 @@ function hasExpectedFileSignature(type: string, bytes: Uint8Array) {
  return false;
 }
 
-function validateIsoBmffContainer(type: string, bytes: Uint8Array) {
- const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+async function readObjectRange(
+ client: S3Client,
+ bucket: string,
+ key: string,
+ start: number,
+ end: number,
+) {
+ const result = await client.send(new GetObjectCommand({
+  Bucket: bucket,
+  Key: key,
+  Range: `bytes=${start}-${end}`,
+ }));
+ if (!result.Body) throw new Error("Evidence file range is unavailable.");
+ return result.Body.transformToByteArray();
+}
+
+async function validateIsoBmffContainer(
+ client: S3Client,
+ bucket: string,
+ key: string,
+ type: string,
+ fileSize: number,
+) {
  let offset = 0;
+ let boxCount = 0;
  let hasFtyp = false;
  let hasMoov = false;
  let hasMdat = false;
  let majorBrand = "";
 
- while (offset < bytes.length) {
-  if (bytes.length - offset < 8) return false;
-  let boxSize = view.getUint32(offset);
-  const boxType = String.fromCharCode(bytes[offset + 4], bytes[offset + 5], bytes[offset + 6], bytes[offset + 7]);
+ while (offset < fileSize) {
+  if (++boxCount > 256 || fileSize - offset < 8) return false;
+
+  const header = await readObjectRange(client, bucket, key, offset, Math.min(offset + 15, fileSize - 1));
+  if (header.byteLength < 8) return false;
+
+  const view = new DataView(header.buffer, header.byteOffset, header.byteLength);
+  let boxSize = view.getUint32(0);
+  const boxType = String.fromCharCode(header[4], header[5], header[6], header[7]);
   let headerSize = 8;
 
   if (boxSize === 1) {
-   if (bytes.length - offset < 16) return false;
-   const largeSize = view.getBigUint64(offset + 8);
+   if (header.byteLength < 16) return false;
+   const largeSize = view.getBigUint64(8);
    if (largeSize > BigInt(Number.MAX_SAFE_INTEGER)) return false;
    boxSize = Number(largeSize);
    headerSize = 16;
   } else if (boxSize === 0) {
-   boxSize = bytes.length - offset;
+   boxSize = fileSize - offset;
   }
 
-  if (boxSize < headerSize || boxSize > bytes.length - offset) return false;
+  if (boxSize < headerSize || boxSize > fileSize - offset) return false;
 
   if (boxType === "ftyp") {
    if (hasFtyp || boxSize < headerSize + 8 || (boxSize - headerSize) % 4 !== 0) return false;
+   const ftyp = await readObjectRange(client, bucket, key, offset + headerSize, offset + headerSize + 3);
+   if (ftyp.byteLength !== 4) return false;
    hasFtyp = true;
-   majorBrand = String.fromCharCode(bytes[offset + headerSize], bytes[offset + headerSize + 1], bytes[offset + headerSize + 2], bytes[offset + headerSize + 3]);
+   majorBrand = String.fromCharCode(...ftyp);
   } else if (boxType === "moov") {
    hasMoov = boxSize > headerSize;
   } else if (boxType === "mdat") {
@@ -141,7 +170,7 @@ function validateIsoBmffContainer(type: string, bytes: Uint8Array) {
 
   offset += boxSize;
  }
- if (offset !== bytes.length || !hasFtyp || !hasMoov || !hasMdat) return false;
+ if (offset !== fileSize || !hasFtyp || !hasMoov || !hasMdat) return false;
  return type === "video/quicktime" ? majorBrand === "qt  " : majorBrand !== "qt  ";
 }
 
@@ -159,20 +188,19 @@ export async function verifyEvidenceObject(key: string, expectedOrderId: string)
   throw new Error("Evidence file metadata is invalid.");
  }
 
- const object = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
- if (!object.Body) throw new Error("Evidence file content is unavailable.");
- const bytes = await object.Body.transformToByteArray();
- if (bytes.byteLength !== size || !hasExpectedFileSignature(type, bytes)) {
-  throw new Error("Evidence file content does not match its declared type.");
- }
-
  if (type.startsWith("image/")) {
+  const object = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
+  if (!object.Body) throw new Error("Evidence file content is unavailable.");
+  const bytes = await object.Body.transformToByteArray();
+  if (bytes.byteLength !== size || !hasExpectedFileSignature(type, bytes)) {
+   throw new Error("Evidence file content does not match its declared type.");
+  }
   try {
    const image = sharp(Buffer.from(bytes), {
     failOn: "error",
     limitInputPixels: 20_000_000,
     animated: false,
-  });
+   });
    const metadata = await image.metadata();
    if (!metadata.width || !metadata.height || metadata.width * metadata.height > 20_000_000) {
     throw new Error("Image dimensions exceed the allowed limit.");
@@ -181,8 +209,12 @@ export async function verifyEvidenceObject(key: string, expectedOrderId: string)
   } catch {
    throw new Error("Image file is incomplete, corrupt, or cannot be decoded.");
   }
- } else if (!validateIsoBmffContainer(type, bytes)) {
-  throw new Error("Video container is incomplete or structurally invalid.");
+ } else {
+  const prefix = await readObjectRange(client, bucket, key, 0, Math.min(31, size - 1));
+  if (!hasExpectedFileSignature(type, prefix) ||
+      !await validateIsoBmffContainer(client, bucket, key, type, size)) {
+   throw new Error("Video container is incomplete or structurally invalid.");
+  }
  }
  return { contentType: type, size };
 }
