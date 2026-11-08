@@ -1,5 +1,5 @@
 import { createHash, randomBytes, randomInt } from "node:crypto";
-import { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand, CopyObjectCommand, DeleteObjectsCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import sharp from "sharp";
 
@@ -245,9 +245,49 @@ export type EvidenceObjectMetadata = {
 };
 
 function assertEvidenceKey(key: string, expectedOrderId: string) {
- if (!key.startsWith(`after-sales/${expectedOrderId}/`) || key.length > 500) {
+ const finalPrefix = `after-sales/${expectedOrderId}/`;
+ const stagingPrefix = `after-sales-staging/${expectedOrderId}/`;
+ if ((!key.startsWith(finalPrefix) && !key.startsWith(stagingPrefix)) || key.length > 500) {
   throw new Error("Invalid evidence key.");
  }
+}
+
+export function createFinalEvidenceKey(stagingKey: string, expectedOrderId: string) {
+ assertEvidenceKey(stagingKey, expectedOrderId);
+ if (!stagingKey.startsWith(`after-sales-staging/${expectedOrderId}/`)) {
+  throw new Error("Only staging evidence can be promoted.");
+ }
+ const extension = stagingKey.split(".").pop();
+ if (!extension || !/^(jpg|png|webp|avif|mp4|mov)$/.test(extension)) {
+  throw new Error("Invalid evidence file extension.");
+ }
+ return `after-sales/${expectedOrderId}/${randomBytes(16).toString("hex")}.${extension}`;
+}
+
+export async function promoteEvidenceObject(stagingKey: string, finalKey: string, expectedOrderId: string) {
+ assertEvidenceKey(stagingKey, expectedOrderId);
+ assertEvidenceKey(finalKey, expectedOrderId);
+ if (!stagingKey.startsWith(`after-sales-staging/${expectedOrderId}/`) ||
+     !finalKey.startsWith(`after-sales/${expectedOrderId}/`)) {
+  throw new Error("Invalid evidence promotion paths.");
+ }
+ const { bucket, client } = getEvidenceClient();
+ const copySource = `${bucket}/${stagingKey.split("/").map(encodeURIComponent).join("/")}`;
+ await client.send(new CopyObjectCommand({
+  Bucket: bucket,
+  Key: finalKey,
+  CopySource: copySource,
+  MetadataDirective: "COPY",
+ }));
+}
+
+export async function deleteEvidenceObjects(keys: string[]) {
+ if (!keys.length) return;
+ const { bucket, client } = getEvidenceClient();
+ await client.send(new DeleteObjectsCommand({
+  Bucket: bucket,
+  Delete: { Objects: keys.map((Key) => ({ Key })), Quiet: false },
+ }));
 }
 
 function parseEvidenceMetadata(contentType: string, contentLength: number) {
