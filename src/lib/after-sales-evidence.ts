@@ -1,6 +1,7 @@
 import { createHash, randomBytes, randomInt } from "node:crypto";
 import { S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import sharp from "sharp";
 
 export const sessionCookieName = "jq_after_sales_session";
 
@@ -102,6 +103,48 @@ function hasExpectedFileSignature(type: string, bytes: Uint8Array) {
  return false;
 }
 
+function validateIsoBmffContainer(type: string, bytes: Uint8Array) {
+ const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+ let offset = 0;
+ let hasFtyp = false;
+ let hasMoov = false;
+ let hasMdat = false;
+ let majorBrand = "";
+
+ while (offset < bytes.length) {
+  if (bytes.length - offset < 8) return false;
+  let boxSize = view.getUint32(offset);
+  const boxType = String.fromCharCode(bytes[offset + 4], bytes[offset + 5], bytes[offset + 6], bytes[offset + 7]);
+  let headerSize = 8;
+
+  if (boxSize === 1) {
+   if (bytes.length - offset < 16) return false;
+   const largeSize = view.getBigUint64(offset + 8);
+   if (largeSize > BigInt(Number.MAX_SAFE_INTEGER)) return false;
+   boxSize = Number(largeSize);
+   headerSize = 16;
+  } else if (boxSize === 0) {
+   boxSize = bytes.length - offset;
+  }
+
+  if (boxSize < headerSize || boxSize > bytes.length - offset) return false;
+
+  if (boxType === "ftyp") {
+   if (hasFtyp || boxSize < headerSize + 8 || (boxSize - headerSize) % 4 !== 0) return false;
+   hasFtyp = true;
+   majorBrand = String.fromCharCode(bytes[offset + headerSize], bytes[offset + headerSize + 1], bytes[offset + headerSize + 2], bytes[offset + headerSize + 3]);
+  } else if (boxType === "moov") {
+   hasMoov = boxSize > headerSize;
+  } else if (boxType === "mdat") {
+   hasMdat = boxSize > headerSize;
+  }
+
+  offset += boxSize;
+ }
+ if (offset !== bytes.length || !hasFtyp || !hasMoov || !hasMdat) return false;
+ return type === "video/quicktime" ? majorBrand === "qt  " : majorBrand !== "qt  ";
+}
+
 export async function verifyEvidenceObject(key: string, expectedOrderId: string) {
  if (!key.startsWith(`after-sales/${expectedOrderId}/`) || key.length > 500) {
   throw new Error("Invalid evidence key.");
@@ -116,15 +159,25 @@ export async function verifyEvidenceObject(key: string, expectedOrderId: string)
   throw new Error("Evidence file metadata is invalid.");
  }
 
- const sample = await client.send(new GetObjectCommand({
-  Bucket: bucket,
-  Key: key,
-  Range: "bytes=0-31",
- }));
- if (!sample.Body) throw new Error("Evidence file content is unavailable.");
- const signature = await sample.Body.transformToByteArray();
- if (!hasExpectedFileSignature(type, signature)) {
+ const object = await client.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
+ if (!object.Body) throw new Error("Evidence file content is unavailable.");
+ const bytes = await object.Body.transformToByteArray();
+ if (bytes.byteLength !== size || !hasExpectedFileSignature(type, bytes)) {
   throw new Error("Evidence file content does not match its declared type.");
+ }
+
+ if (type.startsWith("image/")) {
+  try {
+   await sharp(Buffer.from(bytes), {
+    failOn: "error",
+    limitInputPixels: 40_000_000,
+    animated: false,
+  }).rotate().toBuffer();
+  } catch {
+   throw new Error("Image file is incomplete, corrupt, or cannot be decoded.");
+  }
+ } else if (!validateIsoBmffContainer(type, bytes)) {
+  throw new Error("Video container is incomplete or structurally invalid.");
  }
  return { contentType: type, size };
 }
