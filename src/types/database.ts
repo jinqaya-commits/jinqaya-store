@@ -3806,6 +3806,21 @@ export type Database = {
         Args: { p_object_keys: string[] }
         Returns: number
       }
+      admin_list_order_email_outbox: {
+        Args: { p_order_id: string }
+        Returns: {
+          id: string
+          recipient_type: string
+          recipient_email: string
+          status: string
+          attempt_count: number
+          max_attempts: number
+          next_attempt_at: string | null
+          last_error: string | null
+          sent_at: string | null
+          created_at: string
+        }[]
+      }
       admin_retry_order_email_outbox: {
         Args: { p_id: string }
         Returns: undefined
