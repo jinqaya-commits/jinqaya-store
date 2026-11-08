@@ -7,6 +7,56 @@ alter table public.after_sales_cases
 
 alter table public.after_sales_upload_tickets
  add column if not exists promoted_object_key text;
+alter table public.after_sales_upload_tickets
+ add column if not exists promotion_lease_until timestamptz;
+
+-- Atomically lease one upload ticket to a single request while it promotes
+-- and validates the final object. Expired leases are reclaimable after a crash.
+create or replace function public.claim_after_sales_evidence_promotion(
+ p_order_id uuid,
+ p_token_hash text,
+ p_upload_key text,
+ p_candidate_final_key text
+)
+returns jsonb language plpgsql security definer set search_path=''
+as $function$
+declare
+ v_final_key text;
+ v_lease_until timestamptz;
+begin
+ update public.after_sales_upload_tickets t
+ set promoted_object_key=coalesce(t.promoted_object_key,p_candidate_final_key),
+     promotion_lease_until=now()+interval '90 seconds'
+ where t.order_id=p_order_id and t.token_hash=p_token_hash
+   and t.object_key=p_upload_key
+   and t.expires_at>now() and t.consumed_at is null
+   and (t.promotion_lease_until is null or t.promotion_lease_until<=now())
+   and p_candidate_final_key like 'after-sales/'||p_order_id::text||'/%'
+   and length(p_candidate_final_key)<=500
+ returning t.promoted_object_key,t.promotion_lease_until
+ into v_final_key,v_lease_until;
+
+ if found then
+  return jsonb_build_object('final_key',v_final_key,'acquired',true,'lease_until',v_lease_until);
+ end if;
+
+ select t.promoted_object_key,t.promotion_lease_until
+ into v_final_key,v_lease_until
+ from public.after_sales_upload_tickets t
+ where t.order_id=p_order_id and t.token_hash=p_token_hash
+   and t.object_key=p_upload_key
+   and t.expires_at>now() and t.consumed_at is null;
+
+ if not found then return null; end if;
+ return jsonb_build_object(
+  'final_key',v_final_key,
+  'acquired',false,
+  'lease_until',v_lease_until
+ );
+end; $function$;
+
+revoke all on function public.claim_after_sales_evidence_promotion(uuid,text,text,text) from public,anon,authenticated;
+grant execute on function public.claim_after_sales_evidence_promotion(uuid,text,text,text) to service_role;
 
 create or replace function public.reserve_after_sales_upload(
  p_order_id uuid,p_token_hash text,p_object_key text,p_content_type text,p_expected_size bigint
@@ -99,7 +149,7 @@ begin
  values(v_order.id,v_order.customer_id,v_number,trim(p_description),v_final_keys,v_upload_keys)
  returning * into v_case;
 
- update public.after_sales_upload_tickets set consumed_at=now()
+ update public.after_sales_upload_tickets set consumed_at=now(),promotion_lease_until=null
  where order_id=p_order_id and token_hash=p_token_hash
    and object_key=any(v_upload_keys) and consumed_at is null;
 
