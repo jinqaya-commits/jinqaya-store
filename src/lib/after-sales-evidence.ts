@@ -278,7 +278,7 @@ export async function promoteEvidenceObject(stagingKey: string, finalKey: string
   Key: finalKey,
   CopySource: copySource,
   MetadataDirective: "COPY",
- }));
+ }), { abortSignal: AbortSignal.timeout(20_000) });
 }
 
 export async function deleteEvidenceObjects(keys: string[]) {
@@ -287,7 +287,7 @@ export async function deleteEvidenceObjects(keys: string[]) {
  const result = await client.send(new DeleteObjectsCommand({
   Bucket: bucket,
   Delete: { Objects: keys.map((Key) => ({ Key })), Quiet: false },
- }));
+ }), { abortSignal: AbortSignal.timeout(8_000) });
  if (result.Errors?.length) {
   throw new Error(`Unable to delete ${result.Errors.length} evidence object(s).`);
  }
