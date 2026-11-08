@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sha256, sessionCookieName, getEvidenceObjectMetadata, verifyEvidenceObject, readBoundedJson, type EvidenceObjectMetadata } from "@/lib/after-sales-evidence";
+import { sha256, sessionCookieName, getEvidenceObjectMetadata, verifyEvidenceObject, readBoundedJson, type EvidenceObjectMetadata, createFinalEvidenceKey, promoteEvidenceObject, deleteEvidenceObjects } from "@/lib/after-sales-evidence";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
   const token = cookieStore.get(sessionCookieName)?.value;
   if (!token) return NextResponse.json({ error: "Please verify your email again." }, { status: 401 });
 
-  if (new Set(evidence).size !== evidence.length || evidence.some((key: string) => !key.startsWith(`after-sales/${orderId}/`) || key.length > 500)) {
+  if (new Set(evidence).size !== evidence.length || evidence.some((key: string) => !key.startsWith(`after-sales-staging/${orderId}/`) || key.length > 500)) {
    return NextResponse.json({ error: "Invalid evidence reference." }, { status: 400 });
   }
 
@@ -47,12 +47,12 @@ export async function POST(req: NextRequest) {
   // upload tickets: the original transaction consumes those tickets.
   const { data: replayCase, error: replayLookupError } = await supabase
    .from("after_sales_cases")
-   .select("case_number,evidence_urls")
+   .select("case_number,submission_upload_keys")
    .eq("order_id", orderId)
    .eq("customer_description", description)
-   .contains("evidence_urls", evidence)
+   .contains("submission_upload_keys", evidence)
    .maybeSingle();
-  const replayKeys = replayCase?.evidence_urls;
+  const replayKeys = replayCase?.submission_upload_keys;
   const exactReplay = Array.isArray(replayKeys) &&
    replayKeys.length === evidence.length &&
    replayKeys.every((key: unknown, index: number) => key === evidence[index]);
@@ -86,9 +86,36 @@ export async function POST(req: NextRequest) {
    await verifyEvidenceObject(evidence[index], orderId, metadata[index]);
   }
 
+  const finalEvidenceKeys = evidence.map((key) => createFinalEvidenceKey(key, orderId));
+  const promotedKeys: string[] = [];
+  try {
+   for (let index = 0; index < evidence.length; index++) {
+    await promoteEvidenceObject(evidence[index], finalEvidenceKeys[index], orderId);
+    promotedKeys.push(finalEvidenceKeys[index]);
+    await verifyEvidenceObject(finalEvidenceKeys[index], orderId, metadata[index]);
+   }
+  } catch (promotionError) {
+   try { await deleteEvidenceObjects(promotedKeys); }
+   catch (cleanupError) { console.error("[after-sales-submit] failed to clean promoted evidence", cleanupError); }
+   throw promotionError;
+  }
+
   const { data, error } = await supabase.rpc("submit_customer_after_sales_case", {
-   p_order_id: orderId, p_token_hash: tokenHash, p_description: description, p_evidence_keys: evidence,
+   p_order_id: orderId,
+   p_token_hash: tokenHash,
+   p_description: description,
+   p_upload_keys: evidence,
+   p_final_evidence_keys: finalEvidenceKeys,
   });
+  if (error) {
+   try { await deleteEvidenceObjects(promotedKeys); }
+   catch (cleanupError) { console.error("[after-sales-submit] failed to clean unreferenced final evidence", cleanupError); }
+  } else {
+   // A still-valid staging PUT URL may recreate/overwrite only the temporary
+   // object. The final evidence key is separate and is never client-writable.
+   try { await deleteEvidenceObjects(evidence); }
+   catch (cleanupError) { console.error("[after-sales-submit] staging cleanup deferred to scheduled cleanup", cleanupError); }
+  }
 
   // A client may retry after the database committed but the HTTP response was
   // lost. The RPC consumes the upload tickets atomically, so a replay can fail
@@ -99,13 +126,13 @@ export async function POST(req: NextRequest) {
   if (error) {
    const { data: existingCase, error: lookupError } = await supabase
     .from("after_sales_cases")
-    .select("case_number,evidence_urls")
+    .select("case_number,submission_upload_keys")
     .eq("order_id", orderId)
     .eq("customer_description", description)
-    .contains("evidence_urls", evidence)
+    .contains("submission_upload_keys", evidence)
     .maybeSingle();
 
-   const existingKeys = existingCase?.evidence_urls;
+   const existingKeys = existingCase?.submission_upload_keys;
    const exactEvidenceMatch = Array.isArray(existingKeys) &&
     existingKeys.length === evidence.length &&
     existingKeys.every((key: unknown, index: number) => key === evidence[index]);
