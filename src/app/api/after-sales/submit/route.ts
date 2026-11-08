@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sha256, sessionCookieName, getEvidenceObjectMetadata, verifyEvidenceObject, readBoundedJson } from "@/lib/after-sales-evidence";
+import { sha256, sessionCookieName, getEvidenceObjectMetadata, verifyEvidenceObject, readBoundedJson, type EvidenceObjectMetadata } from "@/lib/after-sales-evidence";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
 
   // First inspect only object metadata, then validate every ticket. Do not
   // decode images or parse video containers until all files are authorized.
-  const metadata = [];
+  const metadata: EvidenceObjectMetadata[] = [];
   for (const key of evidence) {
    metadata.push(await getEvidenceObjectMetadata(key, orderId));
   }
