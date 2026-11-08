@@ -1211,6 +1211,12 @@ export type Database = {
       order_refund_attachments: {
         Row: {
           content_type: string
+          deletion_requested_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deletion_requested_at: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           created_at: string
           file_name: string
           file_size: number
@@ -1233,6 +1239,9 @@ export type Database = {
         }
         Update: {
           content_type?: string
+          deletion_requested_at?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           created_at?: string
           file_name?: string
           file_size?: number
@@ -3764,6 +3773,18 @@ export type Database = {
       claim_order_email_outbox: {
         Args: { p_limit?: number; p_order_id?: string | null }
         Returns: Database["public"]["Tables"]["order_email_outbox"]["Row"][]
+      }
+      request_order_refund_attachment_deletion: {
+        Args: { p_actor_user_id: string; p_attachment_id: string; p_order_id: string; p_refund_id: string }
+        Returns: string
+      }
+      complete_order_refund_attachment_deletion: {
+        Args: { p_actor_user_id: string | null; p_attachment_id: string; p_object_key: string }
+        Returns: boolean
+      }
+      list_pending_refund_proof_deletions: {
+        Args: { p_limit?: number }
+        Returns: { attachment_id: string; object_key: string }[]
       }
       complete_order_refund_proof_upload: {
         Args: {
