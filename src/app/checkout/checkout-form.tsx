@@ -13,6 +13,7 @@ type OrderResult = {
   shipping_status: string;
   payment_status: string;
   currency: string;
+  customer_email?: string;
 };
 
 function newRequestKey() {
@@ -30,6 +31,7 @@ export function CheckoutForm() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [order, setOrder] = useState<OrderResult | null>(null);
+  const [submittedEmail, setSubmittedEmail] = useState("");
   const [requestKey, setRequestKey] = useState("");
 
   const currency = items[0]?.currency || "USD";
@@ -74,6 +76,7 @@ export function CheckoutForm() {
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "We couldn't submit your order request.");
+      setSubmittedEmail(String(payload.customer.email).trim());
       setOrder(result.order as OrderResult);
       writeCart([]);
     } catch (caught) {
@@ -91,10 +94,16 @@ export function CheckoutForm() {
         <section className="checkout-success">
           <p className="eyebrow">REQUEST RECEIVED</p>
           <h1>Thank you.</h1>
-          <p>Your order request <strong>{order.order_number}</strong> has been recorded.</p>
+          <p>Your order request has been recorded. Keep the reference below if you contact us about it.</p>
+          <div className="checkout-confirmation-reference" aria-label="Order confirmation details">
+            <span>ORDER REFERENCE</span>
+            <strong>{order.order_number}</strong>
+            {submittedEmail && <p>Order updates will be sent to <strong>{submittedEmail}</strong>.</p>}
+          </div>
           <div className="checkout-notice">
             <strong>What happens next</strong>
-            <p>We’ll confirm stock availability, shipping options and the final delivery cost before requesting payment. Your order is not paid or ready for dispatch yet.</p>
+            <p>We’ll review stock availability, confirm shipping options and the final delivery cost, then contact you before requesting payment. Your request is not a confirmed paid order and is not ready for dispatch.</p>
+            <p>If you don’t hear from us, check your spam folder or email <a href="mailto:info@jinqaya.com">info@jinqaya.com</a> with your order reference.</p>
           </div>
           <Link className="button button-dark" href="/shop">CONTINUE EXPLORING <span>↗</span></Link>
         </section>
