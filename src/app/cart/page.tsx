@@ -3,32 +3,24 @@
 import Link from "next/link";
 import { useMemo, useSyncExternalStore } from "react";
 import { formatCartMoney, getCartSnapshot, parseCartSnapshot, subscribeCart, writeCart } from "@/lib/cart";
-import { CartLink } from "@/components/storefront/cart-link";
+import { StorefrontHeader } from "@/components/storefront/storefront-header";
 
 export default function CartPage() {
   const snapshot = useSyncExternalStore(subscribeCart, getCartSnapshot, () => "[]");
   const items = useMemo(() => parseCartSnapshot(snapshot), [snapshot]);
 
   function updateQuantity(key: string, quantity: number) {
-    const next = items.map((item) => item.key === key ? { ...item, quantity: Math.max(1, Math.min(99, quantity)) } : item);
-    writeCart(next);
+    const safeQuantity = Math.max(1, Math.min(99, Math.trunc(quantity) || 1));
+    writeCart(items.map((item) => item.key === key ? { ...item, quantity: safeQuantity } : item));
   }
-
-  function removeItem(key: string) {
-    writeCart(items.filter((item) => item.key !== key));
-  }
+  function removeItem(key: string) { writeCart(items.filter((item) => item.key !== key)); }
 
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const currency = items[0]?.currency || "USD";
   const mixedCurrencies = items.some((item) => item.currency !== currency);
 
   return <main className="inner-page">
-    <header className="inner-page-header">
-      <Link className="wordmark" href="/">JINQAYA<span>®</span></Link>
-      <nav className="inner-nav" aria-label="Main navigation">
-        <Link href="/shop">SHOP ALL</Link><Link href="/#philosophy">OUR PHILOSOPHY</Link><CartLink />
-      </nav>
-    </header>
+    <StorefrontHeader />
     <section className="cart-page">
       <p className="eyebrow">YOUR SELECTION</p>
       <h1>Your bag</h1>
@@ -43,8 +35,8 @@ export default function CartPage() {
               <Link href={`/products/${item.productSlug}`}><h2>{item.productName}</h2></Link>
               <p>{item.variantName}</p><p>{formatCartMoney(item.price, item.currency)}</p>
               <div className="cart-item-actions">
-                <label>Qty <input aria-label={`Quantity for ${item.productName}`} type="number" min="1" max="99" value={item.quantity} onChange={(event) => updateQuantity(item.key, Number(event.target.value) || 1)} /></label>
-                <button type="button" onClick={() => removeItem(item.key)}>Remove</button>
+                <label>Qty <input aria-label={`Quantity for ${item.productName}`} type="number" inputMode="numeric" min="1" max="99" step="1" value={item.quantity} onChange={(event) => updateQuantity(item.key, Number(event.target.value))} /></label>
+                <button type="button" aria-label={`Remove ${item.productName} from bag`} onClick={() => removeItem(item.key)}>Remove</button>
               </div>
             </div>
             <strong>{formatCartMoney(item.price * item.quantity, item.currency)}</strong>
