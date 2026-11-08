@@ -284,10 +284,13 @@ export async function promoteEvidenceObject(stagingKey: string, finalKey: string
 export async function deleteEvidenceObjects(keys: string[]) {
  if (!keys.length) return;
  const { bucket, client } = getEvidenceClient();
- await client.send(new DeleteObjectsCommand({
+ const result = await client.send(new DeleteObjectsCommand({
   Bucket: bucket,
   Delete: { Objects: keys.map((Key) => ({ Key })), Quiet: false },
  }));
+ if (result.Errors?.length) {
+  throw new Error(`Unable to delete ${result.Errors.length} evidence object(s).`);
+ }
 }
 
 function parseEvidenceMetadata(contentType: string, contentLength: number) {
