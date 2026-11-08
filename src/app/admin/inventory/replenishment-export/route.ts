@@ -28,7 +28,7 @@ export async function GET() {
 
   const incomingByVariant = new Map<string, number>();
   const etaByVariant = new Map<string, string>();
-  (incomingItems || []).forEach((item: any) => {
+  (incomingItems || []).forEach((item) => {
     const po = Array.isArray(item.purchase_orders) ? item.purchase_orders[0] : item.purchase_orders;
     if (po?.warehouse_id !== warehouse.id) return;
     const remaining = Math.max(0, Number(item.quantity_ordered) - Number(item.quantity_received));
@@ -39,9 +39,9 @@ export async function GET() {
     }
   });
 
-  const output = (variants || []).flatMap((variant: any) => {
+  const output = (variants || []).flatMap((variant) => {
     const stocks = Array.isArray(variant.inventory) ? variant.inventory : [];
-    const stock = stocks.find((row: any) => row.warehouse_id === warehouse.id);
+    const stock = stocks.find((row) => row.warehouse_id === warehouse.id);
     if (!stock) return [];
     const onHand = Number(stock.on_hand || 0);
     const reserved = Number(stock.reserved || 0);
