@@ -72,7 +72,7 @@ export async function GET(_request:NextRequest,{params}:{params:Promise<{id:stri
  const {id,refundId}=await params;
  if(!/^[0-9a-f-]{36}$/i.test(id)||!/^[0-9a-f-]{36}$/i.test(refundId))return NextResponse.json({error:"Invalid ID"},{status:400});
  const db=createAdminClient(); if(!await refundExists(db,id,refundId))return NextResponse.json({error:"Refund not found"},{status:404});
- const {data:attachments,error}=await db.from("order_refund_attachments").select("id,file_name,content_type,file_size,uploaded_by,created_at,object_key").eq("refund_id",refundId).eq("order_id",id).order("created_at",{ascending:false});
+ const {data:attachments,error}=await db.from("order_refund_attachments").select("id,file_name,content_type,file_size,uploaded_by,created_at,object_key").eq("refund_id",refundId).eq("order_id",id).is("deletion_requested_at",null).is("deleted_at",null).order("created_at",{ascending:false});
  if(error)return NextResponse.json({error:"Unable to load refund proofs"},{status:500});
  const {data:events,error:eventError}=await db.from("order_refund_events").select("id,event_type,description,old_values,new_values,actor_user_id,created_at").eq("refund_id",refundId).eq("order_id",id).order("created_at",{ascending:false});
  if(eventError)return NextResponse.json({error:"Unable to load refund history"},{status:500});
