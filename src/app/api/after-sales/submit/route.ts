@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
   const description = String(body.description || "").trim();
   const evidence = Array.isArray(body.evidenceKeys) ? body.evidenceKeys.map((value: unknown) => String(value)) : [];
 
-  if (!/^[0-9a-f-]{36}$/i.test(orderId) || description.length < 10 || description.length > 5000 || evidence.length < 1 || evidence.length > 5) {
+  if (!/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(orderId) || description.length < 10 || description.length > 5000 || evidence.length < 1 || evidence.length > 5) {
    return NextResponse.json({ error: "Please check your description and evidence files." }, { status: 400 });
   }
 
