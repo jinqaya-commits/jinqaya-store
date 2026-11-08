@@ -102,7 +102,7 @@ export function OrderStatusLookup() {
   }
 
   const status = order?.status || "";
-  const currentIndex = status === "partially_shipped" ? 4 : steps.findIndex((step) => step.key === status);
+  const currentIndex = status === "partially_shipped" ? 4 : status === "partially_refunded" ? 5 : steps.findIndex((step) => step.key === status);
   const terminal = status === "cancelled" || status === "refunded";
 
   return (
