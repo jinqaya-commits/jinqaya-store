@@ -84,9 +84,9 @@ export async function POST(req: NextRequest) {
   // server-owned final copies. A still-valid staging URL cannot alter a final
   // object after this copy has completed.
   const finalEvidenceKeys = evidence.map((key) => createFinalEvidenceKey(key, orderId));
-  // Persist the intended final key on each reservation before copying. The
-  // scheduled orphan cleanup can then recover objects if the request dies
-  // between R2 promotion and the database case transaction.
+  // Persist one stable final key per upload ticket before copying. Concurrent
+  // retries must reuse the first reservation rather than orphaning competing
+  // final objects that the cleanup worker cannot discover.
   for (let index = 0; index < evidence.length; index++) {
    const { data: ticket, error: ticketUpdateError } = await supabase
     .from("after_sales_upload_tickets")
@@ -96,10 +96,26 @@ export async function POST(req: NextRequest) {
     .eq("object_key", evidence[index])
     .gt("expires_at", new Date().toISOString())
     .is("consumed_at", null)
+    .is("promoted_object_key", null)
     .select("id")
     .maybeSingle();
-   if (ticketUpdateError || !ticket) {
-    throw new Error("Unable to reserve final evidence storage. Please retry your request.");
+   if (ticketUpdateError) throw ticketUpdateError;
+   if (!ticket) {
+    const { data: existingTicket, error: existingTicketError } = await supabase
+     .from("after_sales_upload_tickets")
+     .select("promoted_object_key")
+     .eq("order_id", orderId)
+     .eq("token_hash", tokenHash)
+     .eq("object_key", evidence[index])
+     .gt("expires_at", new Date().toISOString())
+     .is("consumed_at", null)
+     .maybeSingle();
+    const existingKey = existingTicket?.promoted_object_key;
+    if (existingTicketError || typeof existingKey !== "string" ||
+        !existingKey.startsWith(`after-sales/${orderId}/`) || existingKey.length > 500) {
+     throw new Error("Unable to reserve final evidence storage. Please retry your request.");
+    }
+    finalEvidenceKeys[index] = existingKey;
    }
   }
 
