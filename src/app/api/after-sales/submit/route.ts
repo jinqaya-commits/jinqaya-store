@@ -83,41 +83,29 @@ export async function POST(req: NextRequest) {
   // Promote the client-writable staging objects first, then validate the
   // server-owned final copies. A still-valid staging URL cannot alter a final
   // object after this copy has completed.
-  const finalEvidenceKeys = evidence.map((key) => createFinalEvidenceKey(key, orderId));
-  // Persist one stable final key per upload ticket before copying. Concurrent
-  // retries must reuse the first reservation rather than orphaning competing
-  // final objects that the cleanup worker cannot discover.
-  for (let index = 0; index < evidence.length; index++) {
-   const { data: ticket, error: ticketUpdateError } = await supabase
-    .from("after_sales_upload_tickets")
-    .update({ promoted_object_key: finalEvidenceKeys[index] })
-    .eq("order_id", orderId)
-    .eq("token_hash", tokenHash)
-    .eq("object_key", evidence[index])
-    .gt("expires_at", new Date().toISOString())
-    .is("consumed_at", null)
-    .is("promoted_object_key", null)
-    .select("id")
-    .maybeSingle();
-   if (ticketUpdateError) throw ticketUpdateError;
-   if (!ticket) {
-    const { data: existingTicket, error: existingTicketError } = await supabase
-     .from("after_sales_upload_tickets")
-     .select("promoted_object_key")
-     .eq("order_id", orderId)
-     .eq("token_hash", tokenHash)
-     .eq("object_key", evidence[index])
-     .gt("expires_at", new Date().toISOString())
-     .is("consumed_at", null)
-     .maybeSingle();
-    const existingKey = existingTicket?.promoted_object_key;
-    if (existingTicketError || typeof existingKey !== "string" ||
-        !existingKey.startsWith(`after-sales/${orderId}/`) || existingKey.length > 500) {
-     throw new Error("Unable to reserve final evidence storage. Please retry your request.");
-    }
-    finalEvidenceKeys[index] = existingKey;
-   }
+  const candidateFinalKeys = evidence.map((key) => createFinalEvidenceKey(key, orderId));
+  const { data: promotion, error: promotionError } = await supabase.rpc(
+   "claim_after_sales_evidence_promotions",
+   {
+    p_order_id: orderId,
+    p_token_hash: tokenHash,
+    p_upload_keys: evidence,
+    p_candidate_final_keys: candidateFinalKeys,
+   },
+  );
+  if (promotionError) throw promotionError;
+  if (!promotion || typeof promotion !== "object" ||
+      promotion.acquired !== true ||
+      !Array.isArray(promotion.final_keys) ||
+      promotion.final_keys.length !== evidence.length ||
+      !promotion.final_keys.every((key: unknown) =>
+       typeof key === "string" && key.startsWith(`after-sales/${orderId}/`) && key.length <= 500
+      )) {
+   return NextResponse.json({
+    error: "These files are already being processed. Please wait briefly and submit again.",
+   }, { status: 409 });
   }
+  const finalEvidenceKeys = promotion.final_keys as string[];
 
   try {
    for (let index = 0; index < evidence.length; index++) {
