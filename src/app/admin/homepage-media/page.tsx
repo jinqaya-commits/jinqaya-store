@@ -22,7 +22,11 @@ export default async function AdminHomepageMediaPage() {
   const { data, error } = await supabase
     .from("homepage_media")
     .select("media_key,image_path");
-  const rows: HomepageMediaRow[] = data ?? [];
+  const rows: HomepageMediaRow[] = (data ?? []).flatMap((row) =>
+    row.media_key === "hero" || row.media_key === "lifestyle"
+      ? [{ media_key: row.media_key, image_path: row.image_path }]
+      : [],
+  );
   const imageByKey = new Map<string, string | null>(
     rows.map((row): [string, string | null] => [row.media_key, row.image_path]),
   );
