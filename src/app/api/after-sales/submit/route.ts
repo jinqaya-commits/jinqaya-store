@@ -84,6 +84,24 @@ export async function POST(req: NextRequest) {
   // server-owned final copies. A still-valid staging URL cannot alter a final
   // object after this copy has completed.
   const finalEvidenceKeys = evidence.map((key) => createFinalEvidenceKey(key, orderId));
+  // Persist the intended final key on each reservation before copying. The
+  // scheduled orphan cleanup can then recover objects if the request dies
+  // between R2 promotion and the database case transaction.
+  for (let index = 0; index < evidence.length; index++) {
+   const { data: ticket, error: ticketUpdateError } = await supabase
+    .from("after_sales_upload_tickets")
+    .update({ promoted_object_key: finalEvidenceKeys[index] })
+    .eq("order_id", orderId)
+    .eq("token_hash", tokenHash)
+    .eq("object_key", evidence[index])
+    .is("consumed_at", null)
+    .select("id")
+    .maybeSingle();
+   if (ticketUpdateError || !ticket) {
+    throw new Error("Unable to reserve final evidence storage. Please retry your request.");
+   }
+  }
+
   const promotedKeys: string[] = [];
   try {
    for (let index = 0; index < evidence.length; index++) {
