@@ -105,6 +105,7 @@ as $function$
     'order_number', o.order_number,
     'status', o.status,
     'created_at', o.created_at,
+    'updated_at', o.updated_at,
     'currency', o.currency,
     'subtotal', o.subtotal,
     'shipping_amount', o.shipping_amount,
