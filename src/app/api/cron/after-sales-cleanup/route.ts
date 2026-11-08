@@ -1,6 +1,6 @@
 import {NextRequest,NextResponse} from "next/server";
 import {createClient as createSupabaseClient} from "@supabase/supabase-js";
-import {DeleteObjectsCommand,S3Client} from "@aws-sdk/client-s3";
+import {DeleteObjectCommand,DeleteObjectsCommand,S3Client} from "@aws-sdk/client-s3";
 
 export const dynamic="force-dynamic";
 export const runtime="nodejs";
