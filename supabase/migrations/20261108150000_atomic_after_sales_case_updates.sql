@@ -46,6 +46,18 @@ begin
  if p_update_refund_status and v_case.refund_status='confirmed' then
   raise exception 'A confirmed refund cannot be changed.';
  end if;
+ if p_update_status and p_status='rejected' and v_case.refund_status='confirmed' then
+  raise exception 'A case with a confirmed refund cannot be rejected.';
+ end if;
+ if p_update_status and p_status in ('rejected','resolved')
+    and v_case.refund_status='pending_manual'
+    and not (p_update_refund_status and p_refund_status='not_started') then
+  raise exception 'Clear the pending manual refund before rejecting or resolving this case.';
+ end if;
+ if p_update_refund_status and p_refund_status='pending_manual'
+    and ((p_update_status and p_status='rejected') or v_case.status='rejected') then
+  raise exception 'A rejected case cannot have a pending manual refund.';
+ end if;
 
  v_old:=jsonb_build_object(
   'status',v_case.status,
@@ -86,3 +98,23 @@ $function$;
 
 revoke all on function public.admin_update_after_sales_case(uuid,uuid,boolean,text,boolean,text,boolean,text) from public,anon;
 grant execute on function public.admin_update_after_sales_case(uuid,uuid,boolean,text,boolean,text,boolean,text) to authenticated;
+
+-- A rejected case must never receive a refund; refund confirmation remains ledger-backed.
+do $guard$
+declare
+ v_def text;
+ v_old text;
+ v_new text;
+begin
+ select pg_get_functiondef('public.admin_confirm_after_sales_refund(uuid,numeric,text,text,text)'::regprocedure)
+ into v_def;
+ v_old:=$needle$if v_case.refund_status='confirmed' or v_case.refund_confirmed_at is not null then raise exception 'This after-sales refund has already been recorded.'; end if;$needle$;
+ v_new:=v_old||chr(10)||
+  ' if v_case.status=''rejected'' then raise exception ''A rejected after-sales case cannot receive a refund.''; end if;';
+ if position(v_old in v_def)=0 then
+  raise exception 'Could not locate the refund confirmation guard.';
+ end if;
+ v_def:=replace(v_def,v_old,v_new);
+ execute v_def;
+end;
+$guard$;
