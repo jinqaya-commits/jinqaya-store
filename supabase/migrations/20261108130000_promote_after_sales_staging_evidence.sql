@@ -127,20 +127,23 @@ as $function$
   select t.object_key, t.promoted_object_key, t.expires_at
   from public.after_sales_upload_tickets t
   where t.expires_at < now() - interval '1 hour'
-    and (
-     t.promoted_object_key is null
-     or not exists(
-      select 1 from public.after_sales_cases c
-      where t.promoted_object_key=any(c.evidence_urls)
-     )
-    )
   order by t.expires_at asc, t.id asc
   limit greatest(1,least(coalesce(p_limit,100),500))
  )
  select candidates.object_key
  from expired_tickets t
  cross join lateral (
-  values (t.object_key), (t.promoted_object_key)
+  values
+   (t.object_key),
+   (case
+     when t.promoted_object_key is not null
+      and not exists(
+       select 1 from public.after_sales_cases c
+       where t.promoted_object_key=any(c.evidence_urls)
+      )
+     then t.promoted_object_key
+     else null
+    end)
  ) as candidates(object_key)
  where candidates.object_key is not null;
 $function$;
