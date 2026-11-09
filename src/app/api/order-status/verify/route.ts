@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { newSessionToken, readBoundedJson, sha256 } from "@/lib/order-status-security";
 
@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     const orderNumber = input.orderNumber.trim().slice(0, 80);
     const email = input.email.trim().toLowerCase().slice(0, 254);
     const code = input.code.trim();
-    if (!orderNumber || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !/^\d{6}$/.test(code)) {
+    if (!orderNumber || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email) || !/^\\d{6}$/.test(code)) {
       return NextResponse.json({ error: "Enter the six-digit code." }, { status: 400 });
     }
 
