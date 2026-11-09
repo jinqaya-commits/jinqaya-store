@@ -4,6 +4,8 @@ import { CartLink } from "@/components/storefront/cart-link";
 import { CategoryNavigation } from "@/components/storefront/category-navigation";
 import { StorefrontFooter } from "@/components/storefront/storefront-footer";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   alternates: { canonical: "/contact" },
   openGraph: { type: "website", url: "https://jinqaya.com/contact", title: "Contact JINQAYA", description: "Contact JINQAYA for product, order and customer care questions." },
