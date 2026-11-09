@@ -1,11 +1,11 @@
 "use client";
 
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { useMemo, useSyncExternalStore } from "react";
 import { formatCartMoney, getCartSnapshot, parseCartSnapshot, subscribeCart, writeCart } from "@/lib/cart";
-import { StorefrontHeader } from "@/components/storefront/storefront-header";
 
-export default function CartPage() {
+export default function CartPage({ header }: { header: ReactNode }) {
   const snapshot = useSyncExternalStore(subscribeCart, getCartSnapshot, () => "[]");
   const items = useMemo(() => parseCartSnapshot(snapshot), [snapshot]);
 
@@ -20,7 +20,7 @@ export default function CartPage() {
   const mixedCurrencies = items.some((item) => item.currency !== currency);
 
   return <main className="inner-page">
-    <StorefrontHeader />
+    {header}
     <section className="cart-page">
       <p className="eyebrow">YOUR SELECTION</p>
       <h1>Your bag</h1>
