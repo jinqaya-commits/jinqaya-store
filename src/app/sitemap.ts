@@ -2,6 +2,8 @@ import type { MetadataRoute } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { getStoreProducts } from "@/lib/products";
 
+export const dynamic = "force-dynamic";
+
 const siteUrl = "https://jinqaya.com";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
