@@ -5,6 +5,8 @@ import { getStoreProducts } from "@/lib/products";
 import { ProductCard } from "@/components/storefront/product-card";
 import { StorefrontHeader } from "@/components/storefront/storefront-header";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   alternates: { canonical: "/shop" },
   openGraph: { type: "website", url: "https://jinqaya.com/shop", title: "Shop Pet Lifestyle Essentials | JINQAYA", description: "Explore thoughtful lifestyle essentials for cats and dogs from JINQAYA." },
