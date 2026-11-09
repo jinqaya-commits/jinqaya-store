@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState, useSyncExternalStore, type FormEvent } from "react";
+import { useMemo, useState, useSyncExternalStore, type FormEvent, type ReactNode } from "react";
 import { formatCartMoney, getCartSnapshot, parseCartSnapshot, subscribeCart, writeCart } from "@/lib/cart";
-import { StorefrontHeader } from "@/components/storefront/storefront-header";
 
 type OrderResult = {
   order_id: string;
@@ -25,7 +24,7 @@ function newRequestKey() {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
-export function CheckoutForm() {
+export function CheckoutForm({ header }: { header: ReactNode }) {
   const snapshot = useSyncExternalStore(subscribeCart, getCartSnapshot, () => "[]");
   const items = useMemo(() => parseCartSnapshot(snapshot), [snapshot]);
   const [busy, setBusy] = useState(false);
@@ -88,7 +87,7 @@ export function CheckoutForm() {
 
   return (
     <main className="inner-page">
-      <StorefrontHeader />
+      {header}
 
       {order ? (
         <section className="checkout-success">
