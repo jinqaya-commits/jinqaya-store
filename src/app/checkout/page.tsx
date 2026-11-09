@@ -1,4 +1,5 @@
 import { CheckoutForm } from "./checkout-form";
+import { StorefrontHeader } from "@/components/storefront/storefront-header";
 
 export const metadata = {
   title: "Checkout | JINQAYA",
@@ -6,5 +7,5 @@ export const metadata = {
 };
 
 export default function CheckoutPage() {
-  return <CheckoutForm />;
+  return <CheckoutForm header={<StorefrontHeader />} />;
 }
