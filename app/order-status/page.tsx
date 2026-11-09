@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { StorefrontHeader } from "@/components/storefront/storefront-header";
 import { OrderStatusLookup } from "@/app/order-status/order-status-lookup";
 
@@ -17,7 +18,7 @@ export default function OrderStatusPage() {
         <p className="checkout-intro">Check your order progress securely with your order reference and checkout email. We’ll send a one-time verification code to confirm it’s you.</p>
         <OrderStatusLookup />
       </section>
-      <footer className="inner-footer"><a href="/">JINQAYA</a><span>BETTER LIVING, TOGETHER.</span></footer>
+      <footer className="inner-footer"><Link href="/">JINQAYA</Link><span>BETTER LIVING, TOGETHER.</span></footer>
     </main>
   );
 }
