@@ -17,7 +17,7 @@ test("Edge Function keeps elevated database credentials server-side", () => {
   assert.doesNotMatch(source, /serviceRoleKey[^\n]*Response|Response[^\n]*serviceRoleKey/);
 });
 
-test("Edge Function exposes only the four order-status RPC actions", () => {
+test("Edge Function exposes order-status actions including protected delivery failure marking", () => {
   for (const action of ["request-code", "verify-code", "get-order"]) {
     assert.ok(source.includes(`"${action}"`), `missing action ${action}`);
   }
@@ -31,7 +31,14 @@ test("Edge Function supports server-side session revocation using only the hashe
   assert.match(source, /action === "end-session"/);
   assert.match(source, /validTokenHash\(body\.tokenHash\)/);
   assert.match(source, /revoke_customer_order_status_session/);
-  assert.doesNotMatch(source, /action === "delivery-failed"/);
+});
+
+test("delivery failure action requires the private internal secret before its privileged RPC", () => {
+  assert.match(source, /action === "delivery-failed"/);
+  assert.match(source, /Deno\.env\.get\("ORDER_STATUS_INTERNAL_SECRET"\)/);
+  assert.match(source, /req\.headers\.get\("x-order-status-internal-secret"\)/);
+  assert.match(source, /if \(mismatch !== 0\) return json\(\{ error: "Unauthorized\." \}, 401\)/);
+  assert.ok(source.indexOf("if (mismatch !== 0)") < source.indexOf("mark_order_status_email_challenge_delivery_failed"));
 });
 
 test("Edge Function never returns database errors or logs customer inputs", () => {
