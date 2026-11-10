@@ -9,19 +9,11 @@ const NO_STORE = { "Cache-Control": "no-store, private" };
 export async function POST(request: NextRequest) {
   try {
     const body: unknown = await readBoundedJson<unknown>(request, 8 * 1024);
-    if (!body || typeof body !== "object" || Array.isArray(body)) {
+    const input = parseOrderStatusVerifyInput(body);
+    if (!input) {
       return NextResponse.json({ error: "Enter the six-digit code." }, { status: 400, headers: NO_STORE });
     }
-    const input = body as Record<string, unknown>;
-    if (typeof input.orderNumber !== "string" || typeof input.email !== "string" || typeof input.code !== "string") {
-      return NextResponse.json({ error: "Enter the six-digit code." }, { status: 400, headers: NO_STORE });
-    }
-    const orderNumber = input.orderNumber.trim().slice(0, 80);
-    const email = input.email.trim().toLowerCase().slice(0, 254);
-    const code = input.code.trim();
-    if (!orderNumber || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !/^\d{6}$/.test(code)) {
-      return NextResponse.json({ error: "Enter the six-digit code." }, { status: 400, headers: NO_STORE });
-    }
+    const { orderNumber, email, code } = input;
 
     const token = newSessionToken();
     const supabase = createAdminClient();
