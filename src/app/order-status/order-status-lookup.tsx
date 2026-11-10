@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type OrderItem = { product_name: string; variant_name: string | null; quantity: number };
 type Shipment = {
@@ -56,6 +56,35 @@ export function OrderStatusLookup() {
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    async function restoreSession() {
+      try {
+        const response = await fetch("/api/order-status", {
+          method: "GET",
+          cache: "no-store",
+          credentials: "same-origin",
+        });
+        if (!response.ok) {
+          // No active session is the normal initial state; the user can request a code.
+          if (response.status !== 401 && active) {
+            setError("Unable to restore your order session. Please try again.");
+          }
+          return;
+        }
+        const result = await response.json();
+        if (active && result?.order) {
+          setOrder(result.order as CustomerOrder);
+          setStage("result");
+        }
+      } catch {
+        if (active) setError("Unable to restore your order session. Please try again.");
+      }
+    }
+    void restoreSession();
+    return () => { active = false; };
+  }, []);
 
   async function post(path: string, body: unknown) {
     const response = await fetch(path, {
