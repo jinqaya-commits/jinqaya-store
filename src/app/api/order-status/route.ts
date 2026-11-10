@@ -41,6 +41,24 @@ export async function GET() {
 }
 
 export async function DELETE() {
+  const token = (await cookies()).get(COOKIE)?.value;
+  if (token) {
+    try {
+      await callOrderStatusApi<boolean>({
+        action: "end-session", tokenHash: sha256(token),
+      });
+    } catch {
+      const response = NextResponse.json(
+        { error: "Unable to end the secure session. Please try again." },
+        { status: 503, headers: NO_STORE },
+      );
+      response.cookies.set(COOKIE, "", {
+        httpOnly: true, secure: process.env.NODE_ENV === "production",
+        sameSite: "strict", path: "/api/order-status", maxAge: 0,
+      });
+      return response;
+    }
+  }
   const response = NextResponse.json({ ok: true }, { headers: NO_STORE });
   response.cookies.set(COOKIE, "", {
     httpOnly: true, secure: process.env.NODE_ENV === "production",
