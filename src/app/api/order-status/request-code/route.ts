@@ -24,7 +24,14 @@ export async function POST(request: NextRequest) {
     if (data === true) {
       const sent = await sendOrderStatusVerificationCode(email, code);
       if (!sent) {
-        console.error("[order-status] verification email delivery failed");
+        const { error: deliveryError } = await supabase.rpc("mark_order_status_email_challenge_delivery_failed", {
+          p_order_number: orderNumber, p_email: email,
+        });
+        if (deliveryError) {
+          console.error("[order-status] unable to mark verification email delivery failure");
+        } else {
+          console.error("[order-status] verification email delivery failed");
+        }
       }
     }
     return NextResponse.json({
