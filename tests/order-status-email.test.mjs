@@ -19,7 +19,9 @@ test("verification email sends the correct recipient, subject, code and expiry c
     return Response.json({ id: "email_test_123" }, { status: 200 });
   });
   try {
-    const result = await sendOrderStatusVerificationCode("buyer@example.test", "004219");\n    assert.equal(result.ok, true);\n    assert.equal(result.retryable, false);
+    const result = await sendOrderStatusVerificationCode("buyer@example.test", "004219");
+    assert.equal(result.ok, true);
+    assert.equal(result.retryable, false);
     assert.equal(captured.url, "https://api.resend.com/emails");
     assert.equal(captured.init.method, "POST");
     assert.equal(captured.init.headers.Authorization, "Bearer re_test_only");
@@ -36,7 +38,9 @@ test("verification email sends the correct recipient, subject, code and expiry c
 test("verification email reports provider rejection without throwing", async () => {
   const restore = mockFetch(async () => Response.json({ message: "rate limited" }, { status: 429 }));
   try {
-    const result = await sendOrderStatusVerificationCode("buyer@example.test", "123456");\n    assert.equal(result.ok, false);\n    assert.equal(result.retryable, true);
+    const result = await sendOrderStatusVerificationCode("buyer@example.test", "123456");
+    assert.equal(result.ok, false);
+    assert.equal(result.retryable, true);
   } finally {
     restore();
   }
@@ -45,7 +49,9 @@ test("verification email reports provider rejection without throwing", async () 
 test("verification email reports server errors without throwing", async () => {
   const restore = mockFetch(async () => new Response("unavailable", { status: 503 }));
   try {
-    const result = await sendOrderStatusVerificationCode("buyer@example.test", "123456");\n    assert.equal(result.ok, false);\n    assert.equal(result.retryable, true);
+    const result = await sendOrderStatusVerificationCode("buyer@example.test", "123456");
+    assert.equal(result.ok, false);
+    assert.equal(result.retryable, true);
   } finally {
     restore();
   }
@@ -54,7 +60,9 @@ test("verification email reports server errors without throwing", async () => {
 test("verification email handles network failures without leaking provider details", async () => {
   const restore = mockFetch(async () => { throw new Error("simulated network failure"); });
   try {
-    assert.equal(await sendOrderStatusVerificationCode("buyer@example.test", "123456"), false);
+    const result = await sendOrderStatusVerificationCode("buyer@example.test", "123456");
+    assert.equal(result.ok, false);
+    assert.equal(result.retryable, true);
   } finally {
     restore();
   }
