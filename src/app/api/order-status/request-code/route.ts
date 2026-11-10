@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { newCode, readBoundedJson } from "@/lib/order-status-security";
+import { newCode, parseOrderStatusRequestInput, readBoundedJson } from "@/lib/order-status-security";
 import { sendOrderStatusVerificationCode } from "@/lib/order-email";
 
 export const dynamic = "force-dynamic";
