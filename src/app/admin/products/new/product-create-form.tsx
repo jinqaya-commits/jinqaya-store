@@ -18,7 +18,15 @@ export function ProductCreateForm({ categories }: { categories: Category[] }) {
   const [createdProductId, setCreatedProductId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [draggingFiles, setDraggingFiles] = useState(false);
   const router = useRouter();
+
+  function addSelectedFiles(selected: File[]) {
+    setFiles((current) => {
+      const keys = new Set(current.map((file) => file.name + "-" + file.size + "-" + file.lastModified));
+      return [...current, ...selected.filter((file) => !keys.has(file.name + "-" + file.size + "-" + file.lastModified))];
+    });
+  }
 
   function update<K extends keyof CreateProductInput>(key: K, value: CreateProductInput[K]) {
     setValues((current) => ({ ...current, [key]: value }));
@@ -102,14 +110,17 @@ export function ProductCreateForm({ categories }: { categories: Category[] }) {
       <p className="admin-help">Leave SKU blank to create the product first without a purchasable variant. Inventory and checkout are not connected yet.</p>
     </section>
     <section className="admin-form-section"><div className="admin-form-heading"><span>03</span><div><h2>Product images</h2><p>Upload real product photos. After saving, add a specific alt description for each image in the product editor; generic image labels are not accepted as complete.</p></div></div>
-      <label className="admin-upload">Choose product images<input type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple onChange={(e) => {
-        const selected = Array.from(e.target.files ?? []);
-        setFiles((current) => {
-          const keys = new Set(current.map((file) => file.name + "-" + file.size + "-" + file.lastModified));
-          return [...current, ...selected.filter((file) => !keys.has(file.name + "-" + file.size + "-" + file.lastModified))];
-        });
-        e.currentTarget.value = "";
-      }} /><span className="admin-help">Select several images at once, or add more images in separate selections.</span></label>
+      <label className={"admin-upload" + (draggingFiles ? " is-dragging" : "")}
+        onDragOver={(event) => { event.preventDefault(); setDraggingFiles(true); }}
+        onDragLeave={() => setDraggingFiles(false)}
+        onDrop={(event) => { event.preventDefault(); setDraggingFiles(false); addSelectedFiles(Array.from(event.dataTransfer.files).filter((file) => file.type.startsWith("image/"))); }}>
+        Choose product images
+        <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple onChange={(event) => {
+          addSelectedFiles(Array.from(event.currentTarget.files ?? []));
+          event.currentTarget.value = "";
+        }} />
+        <span className="admin-help">Select multiple images: on Windows, hold Ctrl and click each image (or Shift-click a range). You can also drag several image files from File Explorer into this area. JPG, PNG, WebP or AVIF; max 20 MB each.</span>
+      </label>
       {files.length > 0 && <div className="admin-selected-images"><p className="admin-help">{files.length} image(s) ready. The first image will be the main product image.</p>{files.map((file, index) => <div className="admin-selected-image" key={file.name + "-" + file.size + "-" + file.lastModified}><span>{String(index + 1).padStart(2, "0")}. {file.name}</span><button type="button" disabled={busy} onClick={() => setFiles((current) => current.filter((_, i) => i !== index))}>Remove</button></div>)}</div>}
     </section>
     <section className="admin-form-section"><div className="admin-form-heading"><span>04</span><div><h2>Publishing</h2><p>Keep the product as a draft until its information is ready.</p></div></div>
