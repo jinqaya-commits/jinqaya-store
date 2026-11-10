@@ -14,7 +14,7 @@ export function ProductEditForm({product,categoryId,categories,variants: initial
  const [variants,setVariants]=useState(initialVariants);
  const [images,setImages]=useState([...initialImages].sort((a,b)=>a.sort_order-b.sort_order));
  const [draggedImageId,setDraggedImageId]=useState<string|null>(null);
- const [error,setError]=useState(""); const [busy,setBusy]=useState(false); const [uploadBusy,setUploadBusy]=useState(false); const router=useRouter();
+ const [error,setError]=useState(""); const [busy,setBusy]=useState(false); const [uploadBusy,setUploadBusy]=useState(false); const [draggingFiles,setDraggingFiles]=useState(false); const router=useRouter();
  async function run(action:()=>Promise<{error?:string;success?:boolean}>) {setBusy(true);setError("");try{const result=await action();if(result.error){setError(result.error);setBusy(false);return false;}setBusy(false);router.refresh();return true;}catch(e){setError(e instanceof Error?e.message:"Unable to save.");setBusy(false);return false;}}
  async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();await run(()=>updateProduct(product.id,fields));}
  async function saveVariant(v:Variant,index:number){setBusy(true);setError("");try{const result=await updateVariant(product.id,v);if(result.error){setError(result.error);setBusy(false);return;}if(result.variantId)setVariants(current=>current.map((x,i)=>i===index?{...x,id:result.variantId}:x));setBusy(false);router.refresh();}catch(e){setError(e instanceof Error?e.message:"Unable to save variant.");setBusy(false);}}
@@ -75,8 +75,14 @@ export function ProductEditForm({product,categoryId,categories,variants: initial
   </section>
 
   <section className="admin-form-section"><div className="admin-form-heading"><span>03</span><div><h2>Product images</h2><p>Upload JPG, PNG, WebP or AVIF images (maximum 20 MB each). The first image becomes the main image.</p></div></div>
-   <label>Upload product images<input type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple disabled={uploadBusy||busy} onChange={e=>{const selected=Array.from(e.currentTarget.files??[]);e.currentTarget.value="";void uploadImages(selected);}}/></label>
-   <p className="admin-help">Select multiple images at once. Each image can be up to 20 MB.</p>
+   <label className={"admin-upload"+(draggingFiles?" is-dragging":"")}
+    onDragOver={event=>{event.preventDefault();setDraggingFiles(true);}}
+    onDragLeave={()=>setDraggingFiles(false)}
+    onDrop={event=>{event.preventDefault();setDraggingFiles(false);void uploadImages(Array.from(event.dataTransfer.files).filter(file=>file.type.startsWith("image/")));}}>
+    Upload product images
+    <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple disabled={uploadBusy||busy} onChange={event=>{const selected=Array.from(event.currentTarget.files??[]);event.currentTarget.value="";void uploadImages(selected);}}/>
+    <span className="admin-help">Select multiple images: on Windows, hold Ctrl and click each image (or Shift-click a range). You can also drag several image files from File Explorer into this area. JPG, PNG, WebP or AVIF; max 20 MB each.</span>
+   </label>
    {uploadBusy&&<p className="admin-help">Uploading image…</p>}
    {images.length===0?<p className="admin-help">No images uploaded.</p>:images.map((img,i)=><div className={"admin-image-management-row"+(draggedImageId===img.id?" is-dragging":"")} key={img.id} draggable={!busy&&!uploadBusy} onDragStart={event=>{setDraggedImageId(img.id);event.dataTransfer.effectAllowed="move";event.dataTransfer.setData("text/plain",img.id);}} onDragOver={event=>{event.preventDefault();event.dataTransfer.dropEffect="move";}} onDrop={event=>{event.preventDefault();void dropImageOn(img.id);}} onDragEnd={()=>setDraggedImageId(null)}><div className="admin-image-order"><span className="admin-image-drag-handle" aria-hidden="true">⠿</span><strong>{i===0?"Main image":"Image "+(i+1)}</strong></div><div><label>Image description (Alt text)<input maxLength={180} value={img.alt_text??""} onChange={e=>setImages(current=>current.map(x=>x.id===img.id?{...x,alt_text:e.target.value}:x))} placeholder="Describe the actual subject, color, shape and view shown"/></label><button type="button" className="admin-secondary-button" disabled={busy||uploadBusy} onClick={()=>void saveImageAlt(img)}>Save image description</button></div><div className="admin-form-actions">{i!==0&&<button type="button" className="admin-secondary-button" disabled={busy||uploadBusy} onClick={()=>void moveImageToMain(img.id)}>Set as main</button>}<button type="button" className="admin-secondary-button" disabled={busy||uploadBusy||i===0} onClick={()=>void moveImage(i,-1)}>Move up</button><button type="button" className="admin-secondary-button" disabled={busy||uploadBusy||i===images.length-1} onClick={()=>void moveImage(i,1)}>Move down</button><button type="button" className="admin-secondary-button" disabled={busy||uploadBusy} onClick={()=>void dropImage(img)}>Delete</button></div></div>)}
   </section>
