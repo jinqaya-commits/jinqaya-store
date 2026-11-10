@@ -46,7 +46,7 @@ export async function markOrderStatusEmailDeliveryFailed(
   }
 
   const response = await fetch(
-    `${supabaseUrl.replace(/\\/$/, "")}/functions/v1/order-status-api`,
+    `${supabaseUrl.replace(/\/$/, "")}/functions/v1/order-status-api`,
     {
       method: "POST",
       headers: {
