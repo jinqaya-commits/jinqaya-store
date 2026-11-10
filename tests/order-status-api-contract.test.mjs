@@ -58,7 +58,15 @@ test("logout clears the scoped session cookie and API responses are not cacheabl
   assert.match(verify, /Cache-Control": "no-store, private"/);
 });
 
-test("failed verification email delivery does not expose the privileged failure RPC", () => {
-  assert.match(requestCode, /normal 60-second resend cooldown/);
+test("failed verification email delivery records failure only through the server-side helper", () => {
+  assert.match(requestCode, /if \(!sent\.ok\)[\s\S]*?markOrderStatusEmailDeliveryFailed\(orderNumber, email\)/);
   assert.doesNotMatch(requestCode, /action:\s*["\']delivery-failed|mark_order_status_email_challenge_delivery_failed/);
+});
+
+test("delivery failure helper keeps its secret server-side and sends the internal header", async () => {
+  const helper = await readFile(new URL("../src/lib/order-status-api.ts", import.meta.url), "utf8");
+  assert.match(helper, /process\.env\.ORDER_STATUS_INTERNAL_SECRET/);
+  assert.match(helper, /"x-order-status-internal-secret": internalSecret/);
+  assert.match(helper, /action: "delivery-failed"/);
+  assert.doesNotMatch(helper, /NEXT_PUBLIC_ORDER_STATUS_INTERNAL_SECRET/);
 });
