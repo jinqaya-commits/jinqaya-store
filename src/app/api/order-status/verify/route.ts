@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { callOrderStatusApi } from "@/lib/order-status-api";
 import { newSessionToken, parseOrderStatusVerifyInput, readBoundedJson, sha256 } from "@/lib/order-status-security";
 
 export const dynamic = "force-dynamic";
@@ -16,11 +16,10 @@ export async function POST(request: NextRequest) {
     const { orderNumber, email, code } = input;
 
     const token = newSessionToken();
-    const supabase = createAdminClient();
-    const { data, error } = await supabase.rpc("verify_order_status_email_code", {
-      p_order_number: orderNumber, p_email: email, p_code: code, p_token_hash: sha256(token),
+    const verified = await callOrderStatusApi<boolean>({
+      action: "verify-code", orderNumber, email, code, tokenHash: sha256(token),
     });
-    if (error || data !== true) {
+    if (verified !== true) {
       return NextResponse.json(
         { error: "The code is invalid or expired. Request a new code and try again." },
         { status: 400, headers: NO_STORE },
