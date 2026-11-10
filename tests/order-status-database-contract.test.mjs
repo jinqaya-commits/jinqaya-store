@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
-const migrationUrl = new URL("../supabase/migrations/20261109100000_customer_order_status_lookup.sql", import.meta.url);
+const migrationUrl = new URL("../supabase/migrations/20261108173549_customer_order_status_lookup.sql", import.meta.url);
 const sql = (await readFile(migrationUrl, "utf8")).toLowerCase();
 
 function functionBody(name) {
