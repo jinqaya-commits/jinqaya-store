@@ -64,3 +64,12 @@ jobs:
           PGPASSWORD: postgres
           PGDATABASE: jinqaya_test
         run: psql -v ON_ERROR_STOP=1 -f tests/order-status-postgres-integration.sql
+
+      - name: Test concurrent order status verification
+        env:
+          PGHOST: localhost
+          PGPORT: 5432
+          PGUSER: postgres
+          PGPASSWORD: postgres
+          PGDATABASE: jinqaya_test
+        run: bash tests/order-status-postgres-concurrency.sh
