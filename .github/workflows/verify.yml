@@ -38,6 +38,7 @@ jobs:
           src/lib/order-email.ts
           src/lib/order-status-security.ts
           src/types/database.ts
+          src/components/storefront/category-navigation.tsx
 
       - name: Security unit tests
         run: npm test
