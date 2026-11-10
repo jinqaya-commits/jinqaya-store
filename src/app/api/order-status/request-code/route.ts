@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { callOrderStatusApi } from "@/lib/order-status-api";
+import { callOrderStatusApi, markOrderStatusEmailDeliveryFailed } from "@/lib/order-status-api";
 import { newCode, parseOrderStatusRequestInput, readBoundedJson } from "@/lib/order-status-security";
 import { sendOrderStatusVerificationCode } from "@/lib/order-email";
 
@@ -21,10 +21,12 @@ export async function POST(request: NextRequest) {
     });
     if (allowed === true) {
       const sent = await sendOrderStatusVerificationCode(email, code);
-      // A failed delivery keeps the normal 60-second resend cooldown.
-      // The internal delivery-failed RPC is intentionally not exposed by the public Edge Function.
       if (!sent.ok) {
-        console.error("[order-status] verification email delivery was not confirmed");
+        try {
+          await markOrderStatusEmailDeliveryFailed(orderNumber, email);
+        } catch {
+          console.error("[order-status] verification email delivery failure could not be recorded");
+        }
       }
     }
     return NextResponse.json({
