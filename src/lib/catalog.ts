@@ -8,19 +8,16 @@ export type StoreCategory = {
   description: string;
 };
 
-function isNextDynamicServerUsageError(error: unknown): error is Error & { digest: string } {
-  return typeof error === "object" && error !== null &&
-    "digest" in error && error.digest === "DYNAMIC_SERVER_USAGE";
-}
-
 export async function getRootCategories(): Promise<StoreCategory[]> {
   let supabase;
   try {
     supabase = await createClient();
   } catch (error) {
-    if (isNextDynamicServerUsageError(error)) throw error;
-    console.error("Supabase is not configured for the storefront catalog:", error);
-    return [];
+    if (error instanceof Error &&
+      error.message === "Missing Supabase public environment variables.") {
+      return [];
+    }
+    throw error;
   }
 
   const { data, error } = await supabase.from("categories")
@@ -28,10 +25,8 @@ export async function getRootCategories(): Promise<StoreCategory[]> {
     .is("parent_id", null)
     .eq("is_active", true)
     .order("sort_order", { ascending: true });
-  if (error) {
-    console.error("Unable to load main categories:", error.message);
-    return [];
-  }
+  if (error) throw error;
+
   return (data ?? []).map((category, index) => ({
     id: category.id,
     slug: category.slug,
