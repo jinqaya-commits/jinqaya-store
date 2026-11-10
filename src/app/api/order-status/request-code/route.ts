@@ -4,21 +4,22 @@ import { newCode, readBoundedJson } from "@/lib/order-status-security";
 import { sendOrderStatusVerificationCode } from "@/lib/order-email";
 
 export const dynamic = "force-dynamic";
+const NO_STORE = { "Cache-Control": "no-store, private" };
 
 export async function POST(request: NextRequest) {
   try {
     const body: unknown = await readBoundedJson<unknown>(request, 8 * 1024);
     if (!body || typeof body !== "object" || Array.isArray(body)) {
-      return NextResponse.json({ error: "Enter a valid order number and email." }, { status: 400 });
+      return NextResponse.json({ error: "Enter a valid order number and email." }, { status: 400, headers: NO_STORE });
     }
     const input = body as Record<string, unknown>;
     if (typeof input.orderNumber !== "string" || typeof input.email !== "string") {
-      return NextResponse.json({ error: "Enter a valid order number and email." }, { status: 400 });
+      return NextResponse.json({ error: "Enter a valid order number and email." }, { status: 400, headers: NO_STORE });
     }
     const orderNumber = input.orderNumber.trim().slice(0, 80);
     const email = input.email.trim().toLowerCase().slice(0, 254);
     if (!orderNumber || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return NextResponse.json({ error: "Enter a valid order number and email." }, { status: 400 });
+      return NextResponse.json({ error: "Enter a valid order number and email." }, { status: 400, headers: NO_STORE });
     }
 
     const code = newCode();
@@ -30,22 +31,20 @@ export async function POST(request: NextRequest) {
     if (data === true) {
       const sent = await sendOrderStatusVerificationCode(email, code);
       if (!sent) {
-        // Keep the response identical for matching and non-matching order details.
-        // The challenge expires automatically; do not reveal whether an order exists.
         console.error("[order-status] verification email delivery failed");
       }
     }
     return NextResponse.json({
       ok: true,
       message: "If the order number and email match, a verification code will be sent.",
-    }, { headers: { "Cache-Control": "no-store, private" } });
+    }, { headers: NO_STORE });
   } catch (error) {
     if (error instanceof Error && error.message === "Request body is too large.") {
-      return NextResponse.json({ error: "Request body is too large." }, { status: 413 });
+      return NextResponse.json({ error: "Request body is too large." }, { status: 413, headers: NO_STORE });
     }
     if (error instanceof SyntaxError || error instanceof TypeError) {
-      return NextResponse.json({ error: "Invalid request." }, { status: 400 });
+      return NextResponse.json({ error: "Invalid request." }, { status: 400, headers: NO_STORE });
     }
-    return NextResponse.json({ error: "Unable to process this request. Please try again later." }, { status: 500 });
+    return NextResponse.json({ error: "Unable to process this request. Please try again later." }, { status: 500, headers: NO_STORE });
   }
 }
