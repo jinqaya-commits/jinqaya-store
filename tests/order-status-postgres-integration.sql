@@ -64,8 +64,8 @@ values
 ('10000000-0000-4000-8000-000000000001', 'Test Cat Carrier', 'Forest Green', 1),
 ('10000000-0000-4000-8000-000000000002', 'Test Dog Bed', 'Medium', 2);
 
-\ir ../supabase/migrations/20261109100000_customer_order_status_lookup.sql
-\ir ../supabase/migrations/20261110120000_order_status_email_retry.sql
+\ir ../supabase/migrations/20261108173549_customer_order_status_lookup.sql
+\ir ../supabase/migrations/20261110035728_order_status_email_retry.sql
 
 do $$
 declare
