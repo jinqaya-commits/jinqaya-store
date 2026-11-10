@@ -1,6 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-type Action = "request-code" | "verify-code" | "get-order" | "end-session";
+type Action = "request-code" | "verify-code" | "get-order" | "end-session" | "delivery-failed";
 
 const json = (body: unknown, status = 200) =>
   Response.json(body, {
@@ -125,6 +125,32 @@ Deno.serve(async (req: Request) => {
     }
     ({ data: result, error } = await admin.rpc("revoke_customer_order_status_session", {
       p_token_hash: body.tokenHash,
+    }));
+  } else if (action === "delivery-failed") {
+    const expectedSecret = Deno.env.get("ORDER_STATUS_INTERNAL_SECRET");
+    const suppliedSecret = req.headers.get("x-order-status-internal-secret");
+    if (!expectedSecret || !suppliedSecret) {
+      return json({ error: "Unauthorized." }, 401);
+    }
+    const expectedDigest = new Uint8Array(await crypto.subtle.digest(
+      "SHA-256",
+      new TextEncoder().encode(expectedSecret),
+    ));
+    const suppliedDigest = new Uint8Array(await crypto.subtle.digest(
+      "SHA-256",
+      new TextEncoder().encode(suppliedSecret),
+    ));
+    let mismatch = 0;
+    for (let i = 0; i < expectedDigest.length; i++) {
+      mismatch |= expectedDigest[i] ^ suppliedDigest[i];
+    }
+    if (mismatch !== 0) return json({ error: "Unauthorized." }, 401);
+    if (!validOrderNumber(body.orderNumber) || !validEmail(body.email)) {
+      return json({ error: "Invalid request." }, 400);
+    }
+    ({ data: result, error } = await admin.rpc("mark_order_status_email_challenge_delivery_failed", {
+      p_order_number: body.orderNumber.trim(),
+      p_email: body.email.trim().toLowerCase(),
     }));
   } else {
     return json({ error: "Unsupported action." }, 400);
