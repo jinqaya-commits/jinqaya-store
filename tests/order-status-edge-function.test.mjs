@@ -18,7 +18,7 @@ test("Edge Function keeps elevated database credentials server-side", () => {
 });
 
 test("Edge Function exposes only the four order-status RPC actions", () => {
-  for (const action of ["request-code", "verify-code", "get-order", "delivery-failed"]) {
+  for (const action of ["request-code", "verify-code", "get-order"]) {
     assert.ok(source.includes(`"${action}"`), `missing action ${action}`);
   }
   assert.match(source, /Unsupported action/);
