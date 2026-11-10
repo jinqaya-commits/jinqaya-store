@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { callOrderStatusApi } from "@/lib/order-status-api";
 import { sha256 } from "@/lib/order-status-security";
 
 export const dynamic = "force-dynamic";
@@ -17,11 +17,9 @@ export async function GET() {
   }
 
   try {
-    const supabase = createAdminClient();
-    const { data, error } = await supabase.rpc("get_customer_order_status", {
-      p_token_hash: sha256(token),
+    const data = await callOrderStatusApi<unknown>({
+      action: "get-order", tokenHash: sha256(token),
     });
-    if (error) throw error;
     if (!data || typeof data !== "object" || Array.isArray(data)) {
       const response = NextResponse.json(
         { error: "Your verification has expired. Please verify again." },
