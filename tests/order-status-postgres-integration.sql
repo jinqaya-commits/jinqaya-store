@@ -118,6 +118,8 @@ begin
   if v_ok is distinct from true then raise exception 'Could not create second customer challenge'; end if;
   select public.verify_order_status_email_code('JQ-TEST-1002', 'second@example.test', '654321', v_token) into v_ok;
   if v_ok is distinct from true then raise exception 'Correct OTP did not create a session'; end if;
+  select public.verify_order_status_email_code('JQ-TEST-1002', 'second@example.test', '654321', repeat('e',64)) into v_ok;
+  if v_ok is distinct from false then raise exception 'A verified OTP was accepted more than once'; end if;
   select public.get_customer_order_status(v_token) into v_result;
   if v_result->>'order_number' <> 'JQ-TEST-1002' then raise exception 'Session returned the wrong order'; end if;
   if v_result ? 'shipping_address' or v_result ? 'customer_phone' or v_result ? 'internal_notes' then
