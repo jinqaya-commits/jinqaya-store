@@ -59,6 +59,6 @@ test("logout clears the scoped session cookie and API responses are not cacheabl
 });
 
 test("failed verification email delivery invalidates its code and releases the resend cooldown", () => {
-  assert.match(requestCode, /if \(!sent\)[\s\S]*?mark_order_status_email_challenge_delivery_failed/);
+  assert.match(requestCode, /if \(!sent\.ok && !sent\.retryable\)[\s\S]*?mark_order_status_email_challenge_delivery_failed/);
   assert.match(requestCode, /p_order_number: orderNumber, p_email: email/);
 });
