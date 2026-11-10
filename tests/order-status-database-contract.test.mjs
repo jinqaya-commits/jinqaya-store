@@ -74,3 +74,18 @@ test("customer response is an explicit allowlist without private address or inte
     assert.ok(!body.includes(`'${forbidden}'`), `private field must not be returned: ${forbidden}`);
   }
 });
+
+
+const revokeMigration = await readFile(
+  new URL("../supabase/migrations/20261110120000_revoke_order_status_session.sql", import.meta.url),
+  "utf8",
+);
+
+test("session revocation deletes only the session matching the supplied token hash", () => {
+  assert.match(revokeMigration, /delete from public\.customer_order_status_sessions\s+where token_hash=p_token_hash/i);
+  assert.match(revokeMigration, /returns boolean/i);
+  assert.match(revokeMigration, /security definer/i);
+  assert.match(revokeMigration, /set search_path\s*=\s*''/i);
+  assert.match(revokeMigration, /revoke all on function public\.revoke_customer_order_status_session\(text\) from public, anon, authenticated/i);
+  assert.match(revokeMigration, /grant execute on function public\.revoke_customer_order_status_session\(text\) to service_role/i);
+});
