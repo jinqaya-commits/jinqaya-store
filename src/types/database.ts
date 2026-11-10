@@ -4068,6 +4068,10 @@ export type Database = {
         Args: { p_code: string; p_email: string; p_order_number: string }
         Returns: boolean
       }
+      mark_order_status_email_challenge_delivery_failed: {
+        Args: { p_email: string; p_order_number: string }
+        Returns: boolean
+      }
       get_customer_order_status: {
         Args: { p_token_hash: string }
         Returns: Json
