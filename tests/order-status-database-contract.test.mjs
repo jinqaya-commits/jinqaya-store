@@ -43,11 +43,10 @@ test("RPC execution is revoked from public client roles and granted only to serv
 
 test("challenge issuance enforces per-order, per-email, and cooldown limits", () => {
   const body = functionBody("create_order_status_email_challenge");
-  assert.match(body, /order_id=v_order\.id and created_at>now\(\)-interval '1 hour'\) >= 5/);
-  assert.match(body, /email=v_email and created_at>now\(\)-interval '1 hour'\) >= 8/);
-  assert.match(body, /created_at>now\(\)-interval '60 seconds'/);
+  assert.ok(body.includes("order_id=v_order.id and created_at>now()-interval '1 hour') >= 5"));
+  assert.ok(body.includes("email=v_email and created_at>now()-interval '1 hour') >= 8"));
+  assert.ok(body.includes("created_at>now()-interval '60 seconds'"));
 });
-
 test("verification limits attempts, locks the selected challenge, and creates a 20-minute session", () => {
   const body = functionBody("verify_order_status_email_code");
   assert.match(body, /attempts>=5/);
