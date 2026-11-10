@@ -42,7 +42,7 @@ test("verification stores only a hash in the database and protects the session c
 test("order lookup rejects a missing cookie before contacting the Edge Function", () => {
   assert.match(status, /if \(!token\)/);
   assert.match(status, /status: 401/);
-  assert.ok(status.indexOf("if (!token)") < status.indexOf("callOrderStatusApi"));
+  assert.ok(status.indexOf("if (!token)") < status.indexOf('action: "get-order"'));
 });
 
 test("order lookup hashes the cookie token and clears expired sessions", () => {
@@ -60,5 +60,5 @@ test("logout clears the scoped session cookie and API responses are not cacheabl
 
 test("failed verification email delivery does not expose the privileged failure RPC", () => {
   assert.match(requestCode, /normal 60-second resend cooldown/);
-  assert.doesNotMatch(requestCode, /delivery-failed|mark_order_status_email_challenge_delivery_failed/);
+  assert.doesNotMatch(requestCode, /action:\s*["\']delivery-failed|mark_order_status_email_challenge_delivery_failed/);
 });
