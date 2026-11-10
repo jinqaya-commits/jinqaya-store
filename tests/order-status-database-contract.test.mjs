@@ -13,8 +13,8 @@ function functionBody(name) {
 }
 
 test("challenge and session tables both enable RLS", () => {
-  assert.match(sql, /alter table public\\.order_status_email_challenges enable row level security/);
-  assert.match(sql, /alter table public\\.customer_order_status_sessions enable row level security/);
+  assert.match(sql, /alter table public\.order_status_email_challenges enable row level security/);
+  assert.match(sql, /alter table public\.customer_order_status_sessions enable row level security/);
 });
 
 test("challenge and session tables revoke direct access from public client roles", () => {
@@ -43,7 +43,7 @@ test("RPC execution is revoked from public client roles and granted only to serv
 
 test("challenge issuance enforces per-order, per-email, and cooldown limits", () => {
   const body = functionBody("create_order_status_email_challenge");
-  assert.match(body, /order_id=v_order\\.id and created_at>now\\(\\)-interval '1 hour'\\) >= 5/);
+  assert.match(body, /order_id=v_order\.id and created_at>now\(\)-interval '1 hour'\) >= 5/);
   assert.match(body, /email=v_email and created_at>now\\(\\)-interval '1 hour'\\) >= 8/);
   assert.match(body, /created_at>now\\(\\)-interval '60 seconds'/);
 });
@@ -62,8 +62,8 @@ test("email challenges expire after 10 minutes", () => {
 
 test("order lookup requires a matching unexpired session token", () => {
   const body = functionBody("get_customer_order_status");
-  assert.match(body, /where s\\.token_hash=p_token_hash and s\\.expires_at>now\\(\\)/);
-  assert.match(body, /join public\\.orders o on o\\.id=s\\.order_id/);
+  assert.match(body, /where s\.token_hash=p_token_hash and s\.expires_at>now\(\)/);
+  assert.match(body, /join public\.orders o on o\.id=s\.order_id/);
 });
 
 test("customer response is an explicit allowlist without private address or internal notes", () => {
