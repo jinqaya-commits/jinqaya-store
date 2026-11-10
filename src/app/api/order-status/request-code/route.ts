@@ -9,18 +9,11 @@ const NO_STORE = { "Cache-Control": "no-store, private" };
 export async function POST(request: NextRequest) {
   try {
     const body: unknown = await readBoundedJson<unknown>(request, 8 * 1024);
-    if (!body || typeof body !== "object" || Array.isArray(body)) {
+    const input = parseOrderStatusRequestInput(body);
+    if (!input) {
       return NextResponse.json({ error: "Enter a valid order number and email." }, { status: 400, headers: NO_STORE });
     }
-    const input = body as Record<string, unknown>;
-    if (typeof input.orderNumber !== "string" || typeof input.email !== "string") {
-      return NextResponse.json({ error: "Enter a valid order number and email." }, { status: 400, headers: NO_STORE });
-    }
-    const orderNumber = input.orderNumber.trim().slice(0, 80);
-    const email = input.email.trim().toLowerCase().slice(0, 254);
-    if (!orderNumber || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return NextResponse.json({ error: "Enter a valid order number and email." }, { status: 400, headers: NO_STORE });
-    }
+    const { orderNumber, email } = input;
 
     const code = newCode();
     const supabase = createAdminClient();
