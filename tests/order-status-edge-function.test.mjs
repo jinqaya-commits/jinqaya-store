@@ -27,6 +27,13 @@ test("Edge Function exposes only the four order-status RPC actions", () => {
   assert.match(source, /Cache-Control/);
 });
 
+test("Edge Function supports server-side session revocation using only the hashed token", () => {
+  assert.match(source, /action === "end-session"/);
+  assert.match(source, /validTokenHash\(body\.tokenHash\)/);
+  assert.match(source, /revoke_customer_order_status_session/);
+  assert.doesNotMatch(source, /action === "delivery-failed"/);
+});
+
 test("Edge Function never returns database errors or logs customer inputs", () => {
   assert.match(source, /Unable to process this request/);
   assert.doesNotMatch(source, /console\.(?:log|error|warn)\([^\n]*(?:email|orderNumber|code|token)/i);
