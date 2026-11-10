@@ -8,7 +8,7 @@ const sql = (await readFile(migrationUrl, "utf8")).toLowerCase();
 function functionBody(name) {
   const start = sql.indexOf(`create or replace function public.${name}`);
   assert.notEqual(start, -1, `missing function: ${name}`);
-  const next = sql.indexOf("\\ncreate or replace function public.", start + 1);
+  const next = sql.indexOf("\ncreate or replace function public.", start + 1);
   return sql.slice(start, next === -1 ? sql.length : next);
 }
 
