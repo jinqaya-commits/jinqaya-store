@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
     if (error) throw error;
     if (data === true) {
       const sent = await sendOrderStatusVerificationCode(email, code);
-      if (!sent) {
+      // A timeout/network error may still mean Resend accepted the email.\n      // Only invalidate the code when delivery failure is definitive.\n      if (!sent.ok && !sent.retryable) {
         const { error: deliveryError } = await supabase.rpc("mark_order_status_email_challenge_delivery_failed", {
           p_order_number: orderNumber, p_email: email,
         });
