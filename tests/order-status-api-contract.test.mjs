@@ -58,7 +58,7 @@ test("logout clears the scoped session cookie and API responses are not cacheabl
   assert.match(verify, /Cache-Control": "no-store, private"/);
 });
 
-test("failed verification email delivery invalidates its code through the Edge Function", () => {
-  assert.match(requestCode, /if \(!sent\.ok && !sent\.retryable\)[\s\S]*?action: "delivery-failed"/);
-  assert.match(requestCode, /orderNumber, email/);
+test("failed verification email delivery does not expose the privileged failure RPC", () => {
+  assert.match(requestCode, /normal 60-second resend cooldown/);
+  assert.doesNotMatch(requestCode, /delivery-failed|mark_order_status_email_challenge_delivery_failed/);
 });
