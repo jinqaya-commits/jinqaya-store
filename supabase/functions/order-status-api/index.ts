@@ -1,6 +1,6 @@
 import { createClient } from "npm:@supabase/supabase-js@2";
 
-type Action = "request-code" | "verify-code" | "get-order";
+type Action = "request-code" | "verify-code" | "get-order" | "end-session";
 
 const json = (body: unknown, status = 200) =>
   Response.json(body, {
@@ -117,6 +117,13 @@ Deno.serve(async (req: Request) => {
       return json({ error: "Invalid request." }, 400);
     }
     ({ data: result, error } = await admin.rpc("get_customer_order_status", {
+      p_token_hash: body.tokenHash,
+    }));
+  } else if (action === "end-session") {
+    if (!validTokenHash(body.tokenHash)) {
+      return json({ error: "Invalid request." }, 400);
+    }
+    ({ data: result, error } = await admin.rpc("revoke_customer_order_status_session", {
       p_token_hash: body.tokenHash,
     }));
   } else {
