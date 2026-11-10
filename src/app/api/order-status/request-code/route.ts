@@ -21,16 +21,10 @@ export async function POST(request: NextRequest) {
     });
     if (allowed === true) {
       const sent = await sendOrderStatusVerificationCode(email, code);
-      // A timeout/network error may still mean Resend accepted the email.
-      // Only invalidate the code when delivery failure is definitive.
-      if (!sent.ok && !sent.retryable) {
-        try {
-          await callOrderStatusApi<boolean>({
-            action: "delivery-failed", orderNumber, email,
-          });
-        } catch {
-          console.error("[order-status] unable to mark verification email delivery failure");
-        }
+      // A failed delivery keeps the normal 60-second resend cooldown.
+      // The internal delivery-failed RPC is intentionally not exposed by the public Edge Function.
+      if (!sent.ok) {
+        console.error("[order-status] verification email delivery was not confirmed");
       }
     }
     return NextResponse.json({
