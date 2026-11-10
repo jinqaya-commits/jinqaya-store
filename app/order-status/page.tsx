@@ -2,6 +2,8 @@ import Link from "next/link";
 import { StorefrontHeader } from "@/components/storefront/storefront-header";
 import { OrderStatusLookup } from "@/app/order-status/order-status-lookup";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Track Your Order | JINQAYA",
   description: "Securely check the latest status of your JINQAYA order.",
