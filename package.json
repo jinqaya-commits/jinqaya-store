@@ -18,7 +18,8 @@
     "@supabase/supabase-js": "^2.58.0",
     "@aws-sdk/client-s3": "^3.900.0",
     "@aws-sdk/s3-request-presigner": "^3.900.0",
-    "sharp": "^0.35.5"
+    "sharp": "^0.35.5",
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.0.0",
