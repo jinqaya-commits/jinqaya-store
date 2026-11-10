@@ -66,3 +66,8 @@ test("readBoundedJson rejects invalid UTF-8 instead of silently replacing bytes"
   const request = new Request("https://example.test", { method: "POST", body, duplex: "half" });
   await assert.rejects(readBoundedJson(request, 1024), TypeError);
 });
+
+test("readBoundedJson classifies a missing request body as invalid JSON input", async () => {
+  const request = new Request("https://example.test", { method: "POST" });
+  await assert.rejects(readBoundedJson(request, 1024), SyntaxError);
+});
