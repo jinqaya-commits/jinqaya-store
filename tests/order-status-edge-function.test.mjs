@@ -46,3 +46,19 @@ test("Edge Function never returns database errors or logs customer inputs", () =
   assert.doesNotMatch(source, /console\.(?:log|error|warn)\([^\n]*(?:email|orderNumber|code|token)/i);
   assert.doesNotMatch(source, /return json\(\{[^}]*serviceRoleKey/);
 });
+
+test("delivery failure action rejects a missing internal secret before any privileged RPC", () => {
+  assert.match(source, /if \(!expectedSecret \|\| !suppliedSecret\)\s*\{\s*return json\(\{ error: "Unauthorized\\." \}, 401\);\s*\}/);
+  const actionStart = source.indexOf('action === "delivery-failed"');
+  const missingSecretCheck = source.indexOf("if (!expectedSecret || !suppliedSecret)", actionStart);
+  const privilegedRpc = source.indexOf('admin.rpc("mark_order_status_email_challenge_delivery_failed"', actionStart);
+  assert.ok(actionStart >= 0 && missingSecretCheck > actionStart && privilegedRpc > missingSecretCheck);
+});
+
+test("delivery failure action rejects a wrong internal secret before any privileged RPC", () => {
+  const actionStart = source.indexOf('action === "delivery-failed"');
+  const mismatchCheck = source.indexOf("if (mismatch !== 0)", actionStart);
+  const privilegedRpc = source.indexOf('admin.rpc("mark_order_status_email_challenge_delivery_failed"', actionStart);
+  assert.ok(actionStart >= 0 && mismatchCheck > actionStart && privilegedRpc > mismatchCheck);
+  assert.match(source, /expectedDigest\[i\] \^ suppliedDigest\[i\]/);
+});
