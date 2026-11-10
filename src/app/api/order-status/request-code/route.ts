@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { callOrderStatusApi } from "@/lib/order-status-api";
 import { newCode, parseOrderStatusRequestInput, readBoundedJson } from "@/lib/order-status-security";
 import { sendOrderStatusVerificationCode } from "@/lib/order-email";
 
@@ -16,23 +16,20 @@ export async function POST(request: NextRequest) {
     const { orderNumber, email } = input;
 
     const code = newCode();
-    const supabase = createAdminClient();
-    const { data, error } = await supabase.rpc("create_order_status_email_challenge", {
-      p_order_number: orderNumber, p_email: email, p_code: code,
+    const allowed = await callOrderStatusApi<boolean>({
+      action: "request-code", orderNumber, email, code,
     });
-    if (error) throw error;
-    if (data === true) {
+    if (allowed === true) {
       const sent = await sendOrderStatusVerificationCode(email, code);
       // A timeout/network error may still mean Resend accepted the email.
       // Only invalidate the code when delivery failure is definitive.
       if (!sent.ok && !sent.retryable) {
-        const { error: deliveryError } = await supabase.rpc("mark_order_status_email_challenge_delivery_failed", {
-          p_order_number: orderNumber, p_email: email,
-        });
-        if (deliveryError) {
+        try {
+          await callOrderStatusApi<boolean>({
+            action: "delivery-failed", orderNumber, email,
+          });
+        } catch {
           console.error("[order-status] unable to mark verification email delivery failure");
-        } else {
-          console.error("[order-status] verification email delivery failed");
         }
       }
     }
