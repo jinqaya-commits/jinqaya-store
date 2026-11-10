@@ -27,5 +27,8 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Security unit tests
+        run: npm test
+
       - name: Production build
         run: npm run build
