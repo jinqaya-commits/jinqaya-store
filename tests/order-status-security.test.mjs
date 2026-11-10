@@ -86,7 +86,7 @@ test("request input validation rejects malformed objects and emails", () => {
 });
 
 test("request input validation enforces maximum field lengths", () => {
-  const parsed = parseOrderStatusRequestInput({ orderNumber: "X".repeat(100), email: "A".repeat(250) + "@b.co" });
+  const parsed = parseOrderStatusRequestInput({ orderNumber: "X".repeat(100), email: "a".repeat(242) + "@example.com" });
   assert.equal(parsed?.orderNumber.length, 80);
   assert.equal(parsed?.email.length, 254);
 });
