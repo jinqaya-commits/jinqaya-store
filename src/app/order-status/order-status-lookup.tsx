@@ -106,8 +106,18 @@ export function OrderStatusLookup() {
   }
 
   async function endSession() {
-    await fetch("/api/order-status", { method: "DELETE" });
-    setOrder(null); setCode(""); setStage("details"); setNotice(""); setError("");
+    setBusy(true);
+    try {
+      const response = await fetch("/api/order-status", { method: "DELETE", cache: "no-store" });
+      const result = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(result?.error || "Unable to revoke the secure session.");
+      setOrder(null); setCode(""); setStage("details"); setNotice(""); setError("");
+    } catch (caught) {
+      setOrder(null); setCode(""); setStage("details");
+      setError(caught instanceof Error ? caught.message : "Unable to end the secure session.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   const status = order?.status || "";
