@@ -48,7 +48,8 @@ insert into public.orders (id, order_number, customer_email, status) values
 ('10000000-0000-4000-8000-000000000002', 'JQ-TEST-1002', 'second@example.test', 'shipped'),
 ('10000000-0000-4000-8000-000000000003', 'JQ-TEST-1003', 'expiry@example.test', 'processing'),
 ('10000000-0000-4000-8000-000000000004', 'JQ-TEST-1004', 'rate-order@example.test', 'processing'),
-('10000000-0000-4000-8000-000000000005', 'JQ-TEST-1005', 'rate-email@example.test', 'processing');
+('10000000-0000-4000-8000-000000000005', 'JQ-TEST-1005', 'rate-email@example.test', 'processing'),
+('10000000-0000-4000-8000-000000000006', 'JQ-TEST-1006', 'retry@example.test', 'processing');
 
 insert into public.orders (id, order_number, customer_email, status)
 select
@@ -132,6 +133,16 @@ begin
    where order_id='10000000-0000-4000-8000-000000000003';
   select public.verify_order_status_email_code('JQ-TEST-1003', 'expiry@example.test', '777777', repeat('c',64)) into v_ok;
   if v_ok is distinct from false then raise exception 'Expired OTP was accepted'; end if;
+
+  -- A provider delivery failure invalidates the code and releases only the short cooldown.
+  select public.create_order_status_email_challenge('JQ-TEST-1006', 'retry@example.test', '333333') into v_ok;
+  if v_ok is distinct from true then raise exception 'Could not create retry test challenge'; end if;
+  select public.mark_order_status_email_challenge_delivery_failed('JQ-TEST-1006', 'retry@example.test') into v_ok;
+  if v_ok is distinct from true then raise exception 'Could not mark failed email delivery'; end if;
+  select public.verify_order_status_email_code('JQ-TEST-1006', 'retry@example.test', '333333', repeat('d',64)) into v_ok;
+  if v_ok is distinct from false then raise exception 'A code from a failed email delivery was accepted'; end if;
+  select public.create_order_status_email_challenge('JQ-TEST-1006', 'retry@example.test', '444444') into v_ok;
+  if v_ok is distinct from true then raise exception 'Immediate retry after failed delivery was blocked'; end if;
 
   -- Per-order hourly cap: backdate each test challenge past cooldown but keep it in the hour.
   for v_attempt in 1..5 loop
