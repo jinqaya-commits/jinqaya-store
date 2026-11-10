@@ -21,7 +21,7 @@ export async function readBoundedJson<T>(request: Request, maxBytes: number): Pr
       throw new Error("Request body is too large.");
     }
   }
-  if (!request.body) throw new Error("Request body is required.");
+  if (!request.body) throw new SyntaxError("Request body is required.");
 
   const reader = request.body.getReader();
   const chunks: Uint8Array[] = [];
