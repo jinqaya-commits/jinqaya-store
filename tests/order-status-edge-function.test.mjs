@@ -5,7 +5,7 @@ import { readFile } from "node:fs/promises";
 const source = await readFile(new URL("../supabase/functions/order-status-api/index.ts", import.meta.url), "utf8");
 
 test("Edge Function authenticates the public application key itself", () => {
-  assert.match(source, /verify_jwt/i) === false;
+  assert.doesNotMatch(source, /verify_jwt/i);
   assert.match(source, /req\.headers\.get\("apikey"\)/);
   assert.match(source, /SUPABASE_PUBLISHABLE_KEYS/);
   assert.match(source, /return accepted\.has\(supplied\)/);
