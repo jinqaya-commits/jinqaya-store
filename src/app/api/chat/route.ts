@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
       guest_token_hash: hash(token),
       visitor_id: linkedVisitorId,
       session_id: linkedSessionId,
-      source: value(body.source, 120),
+      source: linkedSessionId ? value(body.source, 120) : null,
       page_url: pageUrl,
       last_message_at: now,
       unread_by_staff: 1,
