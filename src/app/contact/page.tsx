@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { CartLink } from "@/components/storefront/cart-link";
 import { CategoryNavigation } from "@/components/storefront/category-navigation";
+import { InquiryForm } from "@/components/storefront/inquiry-form";
+import { getStoreProductBySlug } from "@/lib/products";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/contact" },
@@ -11,7 +13,9 @@ export const metadata: Metadata = {
   description: "Get in touch with JINQAYA for product, order and customer care questions.",
 };
 
-export default function ContactPage() {
+export default async function ContactPage({ searchParams }: { searchParams: Promise<{ product?: string }> }) {
+  const params = await searchParams;
+  const product = params.product ? await getStoreProductBySlug(params.product) : null;
   return (
     <main className="jq-home jq-policy-page">
       <div className="jq-topline"><span>JINQAYA / A PET LIFESTYLE HOUSE</span><span>MADE FOR LIFE, SHARED</span></div>
@@ -27,8 +31,11 @@ export default function ContactPage() {
       </section>
       <article className="jq-policy-content">
         <p className="jq-policy-updated">CONTACT JINQAYA</p>
-        <h2>Customer enquiries</h2>
-        <p>For product information, order enquiries, delivery questions or general support, please email our team.</p>
+        <h2>Send an enquiry</h2>
+        <p>For product information, order requests, delivery questions or general support, send us a message using the form below. Our team will reply by email.</p>
+        <InquiryForm productId={product?.id || null} productName={product?.name || null} />
+        <h2>Prefer email?</h2>
+        <p>You can also contact us directly at <a href="mailto:info@jinqaya.com">info@jinqaya.com</a>.</p>
         <div className="jq-policy-note">
           <strong>Email us</strong>
           <p><a href="mailto:info@jinqaya.com">info@jinqaya.com</a></p>
