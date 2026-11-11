@@ -27,8 +27,8 @@ BEGIN
             AND r.expires_at <= v_now
        )
      ORDER BY o.created_at
-     FOR UPDATE OF o SKIP LOCKED
      LIMIT LEAST(GREATEST(COALESCE(p_limit, 100), 1), 500)
+     FOR UPDATE OF o SKIP LOCKED
   LOOP
     FOR v_reservation IN
       SELECT *
