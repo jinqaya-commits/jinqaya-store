@@ -66,7 +66,6 @@ export async function createProduct(input: CreateProductInput) {
   }
   if (input.status === "active") return { error: "New products are created as drafts. Complete the product information, add images and a priced SKU, then publish from the product list." };
 
-  // Validate SKU prices before creating the product or any category links.
   const price = input.sku.trim() && input.price.trim() ? Number(input.price) : null;
   const compareAtPrice = input.sku.trim() && input.compareAtPrice.trim() ? Number(input.compareAtPrice) : null;
   if ((price !== null && (!Number.isFinite(price) || price < 0)) ||
@@ -74,70 +73,41 @@ export async function createProduct(input: CreateProductInput) {
     return { error: "Enter valid non-negative prices." };
   }
 
-  const { data: existing } = await supabase
+  const { data: existing, error: slugReadError } = await supabase
     .from("products").select("id").eq("slug", slug).maybeSingle();
+  if (slugReadError) return { error: slugReadError.message };
   const uniqueSlug = existing ? `${slug}-${Date.now().toString(36)}` : slug;
 
-  const { data: product, error: productError } = await supabase
-    .from("products")
-    .insert({
-      name,
-      slug: uniqueSlug,
-      pet_type: input.petType,
+  const { data: productId, error } = await supabase.rpc("admin_save_product_catalog", {
+    p_product_id: null,
+    p_product: {
+      name, slug: uniqueSlug, pet_type: input.petType,
       short_description: input.shortDescription.trim() || null,
       description: input.description.trim() || null,
       material: input.material.trim() || null,
       care_instructions: input.careInstructions.trim() || null,
       seo_title: input.seoTitle.trim() || null,
       seo_description: input.seoDescription.trim() || null,
-      status: input.status,
-      brand_name: "JINQAYA",
-      published_at: null,
-    })
-    .select("id")
-    .single();
-
-  if (productError || !product) {
-    return { error: productError?.message || "Unable to create product." };
-  }
-
-  const { error: categoryError } = await supabase.from("product_categories").insert(
-    categoryIds.map(categoryId => ({
-      product_id: product.id,
-      category_id: categoryId,
-      is_primary: categoryId === input.primaryCategoryId,
-    }))
-  );
-
-  if (categoryError) {
-    await supabase.from("products").delete().eq("id", product.id);
-    return { error: categoryError.message };
-  }
-
-  if (input.sku.trim()) {
-    const { error: variantError } = await supabase.from("product_variants").insert({
-      product_id: product.id,
+      status: "draft",
+    },
+    p_category_ids: categoryIds,
+    p_primary_category_id: input.primaryCategoryId,
+    p_variant: input.sku.trim() ? {
       sku: input.sku.trim(),
       variant_name: input.variantName.trim() || null,
       color: input.color.trim() || null,
       size: input.size.trim() || null,
       price,
       compare_at_price: compareAtPrice,
-      currency: "USD",
-    });
-
-    if (variantError) {
-      await supabase.from("products").delete().eq("id", product.id);
-      return { error: variantError.message };
-    }
-  }
+    } : null,
+  });
+  if (error || !productId) return { error: error?.message || "Unable to create product." };
 
   revalidatePath("/admin/products");
   revalidatePath("/shop");
-  revalidatePath(`/collections`);
-  return { productId: product.id };
+  revalidatePath("/collections");
+  return { productId };
 }
-
 export async function setProductStatus(productId: string, status: "draft" | "active" | "archived") {
   const supabase = await requireCatalogManager();
   if (status === "active") {
@@ -218,39 +188,29 @@ export async function updateProduct(productId: string, values: {
     if (!readiness.ready) return { error: "Complete the product checklist before publishing: " + readiness.missing.join(", ") + "." };
   }
 
-  const { data: conflict } = await supabase.from("products").select("id").eq("slug",slug).neq("id",productId).maybeSingle();
-  const { error: productError } = await supabase.from("products").update({
-    name, slug: conflict ? slug + "-" + productId.slice(0,8) : slug,
-    pet_type: values.petType, short_description: values.shortDescription.trim() || null,
-    description: values.description.trim() || null, material: values.material.trim() || null,
-    care_instructions: values.careInstructions.trim() || null,
-    seo_title: values.seoTitle.trim() || null,
-    seo_description: values.seoDescription.trim() || null,
-    status: values.status,
-    published_at: values.status === "active" ? new Date().toISOString() : null,
-  }).eq("id",productId);
-  if (productError) return { error: productError.message };
+  const { data: conflict, error: conflictError } = await supabase.from("products")
+    .select("id").eq("slug", slug).neq("id", productId).maybeSingle();
+  if (conflictError) return { error: conflictError.message };
 
-  // Upsert the selected links first so the product always has its chosen primary category.
-  const { error: upsertError } = await supabase.from("product_categories").upsert(
-    categoryIds.map(categoryId => ({
-      product_id: productId,
-      category_id: categoryId,
-      is_primary: categoryId === values.primaryCategoryId,
-    })),
-    { onConflict: "product_id,category_id" }
-  );
-  if (upsertError) return { error: upsertError.message };
-
-  const { error: clearOtherPrimaryError } = await supabase.from("product_categories")
-    .update({ is_primary: false })
-    .eq("product_id", productId)
-    .neq("category_id", values.primaryCategoryId);
-  if (clearOtherPrimaryError) return { error: clearOtherPrimaryError.message };
-
-  const { error: removeUncheckedError } = await supabase.from("product_categories")
-    .delete().eq("product_id", productId).not("category_id", "in", `(${categoryIds.join(",")})`);
-  if (removeUncheckedError) return { error: removeUncheckedError.message };
+  const { error: saveError } = await supabase.rpc("admin_save_product_catalog", {
+    p_product_id: productId,
+    p_product: {
+      name,
+      slug: conflict ? `${slug}-${productId.slice(0, 8)}` : slug,
+      pet_type: values.petType,
+      short_description: values.shortDescription.trim() || null,
+      description: values.description.trim() || null,
+      material: values.material.trim() || null,
+      care_instructions: values.careInstructions.trim() || null,
+      seo_title: values.seoTitle.trim() || null,
+      seo_description: values.seoDescription.trim() || null,
+      status: values.status,
+    },
+    p_category_ids: categoryIds,
+    p_primary_category_id: values.primaryCategoryId,
+    p_variant: null,
+  });
+  if (saveError) return { error: saveError.message };
 
   revalidatePath("/admin/products"); revalidatePath("/shop"); revalidatePath("/collections");
   for (const categoryId of categoryIds) {
