@@ -181,7 +181,32 @@ export async function getStoreProducts(categorySlug?: string): Promise<StoreProd
     return [];
   }
 
-  return attachProductData((data ?? []) as ProductRow[]);
+  const productRows = (data ?? []) as ProductRow[];
+  const [products, categoryResult] = await Promise.all([
+    attachProductData(productRows),
+    supabase
+      .from("product_categories")
+      .select("product_id,is_primary,categories(name,slug)")
+      .in("product_id", productRows.map((product) => product.id))
+      .eq("is_primary", true),
+  ]);
+
+  if (categoryResult.error) {
+    console.error("Unable to load primary product categories:", categoryResult.error.message);
+    return products;
+  }
+
+  const primaryCategories = new Map(
+    (categoryResult.data ?? []).map((item) => [
+      item.product_id,
+      item.categories as unknown as { name: string; slug: string } | null,
+    ]),
+  );
+
+  return products.map((product) => ({
+    ...product,
+    primary_category: primaryCategories.get(product.id) ?? null,
+  }));
 }
 
 export async function getStoreProductBySlug(slug: string): Promise<StoreProduct | null> {
