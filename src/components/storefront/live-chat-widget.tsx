@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore, type FormEvent } from "react";
 import styles from "./live-chat-widget.module.css";
 
 type ChatSession = { ticketId: string; ticketNumber: string; chatToken: string; status: string };
@@ -8,6 +8,24 @@ type ChatMessage = { id: string; sender_type: "customer" | "staff" | "system"; m
 type ChatResponse = { ticket: { id: string; ticket_number: string; subject: string; status: string; created_at: string }; messages: ChatMessage[] };
 
 const STORAGE_KEY = "jq-live-chat-session";
+const sessionListeners = new Set<() => void>();
+function subscribeSession(onChange: () => void) {
+  sessionListeners.add(onChange);
+  window.addEventListener("storage", onChange);
+  return () => { sessionListeners.delete(onChange); window.removeEventListener("storage", onChange); };
+}
+function subscribeMount() { return () => undefined; }
+function getMountedSnapshot() { return true; }
+function getServerMountedSnapshot() { return false; }
+function notifySessionChange() { sessionListeners.forEach((listener) => listener()); }
+function saveSession(session: ChatSession) {
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+  notifySessionChange();
+}
+function clearSession() {
+  window.localStorage.removeItem(STORAGE_KEY);
+  notifySessionChange();
+}
 
 function readSession(): ChatSession | null {
   try {
@@ -26,14 +44,13 @@ function timeLabel(value: string) {
 }
 
 export function LiveChatWidget() {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(subscribeMount, getMountedSnapshot, getServerMountedSnapshot);
   const [open, setOpen] = useState(false);
-  const [session, setSession] = useState<ChatSession | null>(null);
+  const session = useSyncExternalStore(subscribeSession, readSession, () => null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [draft, setDraft] = useState("");
-  const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
   const [website, setWebsite] = useState("");
@@ -54,20 +71,15 @@ export function LiveChatWidget() {
       }
       const result = await response.json() as ChatResponse;
       setMessages(result.messages || []);
-      setSession((previous) => previous ? { ...previous, status: result.ticket.status } : previous);
+      if (session) saveSession({ ...session, status: result.ticket.status });
     } catch {
       // Keep the current conversation visible if a refresh briefly fails.
     }
-  }, []);
+  }, [session]);
 
   useEffect(() => {
-    setMounted(true);
-    const existing = readSession();
-    if (existing) {
-      setSession(existing);
-      void loadMessages(existing);
-    }
-  }, [loadMessages]);
+    if (session) void loadMessages(session);
+  }, [session?.ticketId, loadMessages]);
 
   useEffect(() => {
     if (!open || !session || session.status === "closed" || session.status === "resolved") return;
@@ -123,7 +135,7 @@ export function LiveChatWidget() {
           status: result.ticket.status,
         };
         window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-        setSession(next);
+        saveSession(next);
         setDraft("");
         await loadMessages(next);
       }
@@ -135,8 +147,7 @@ export function LiveChatWidget() {
   }
 
   function startNewChat() {
-    window.localStorage.removeItem(STORAGE_KEY);
-    setSession(null);
+    clearSession();
     setMessages([]);
     setError("");
   }
