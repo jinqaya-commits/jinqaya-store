@@ -4,8 +4,30 @@ import { getStoreProducts } from "@/lib/products";
 
 const siteUrl = "https://jinqaya.com";
 
+const staticRoutes: MetadataRoute.Sitemap = [
+  { url: siteUrl, changeFrequency: "weekly", priority: 1 },
+  { url: `${siteUrl}/shop`, changeFrequency: "daily", priority: 0.9 },
+  { url: `${siteUrl}/about`, changeFrequency: "monthly", priority: 0.6 },
+  { url: `${siteUrl}/contact`, changeFrequency: "yearly", priority: 0.4 },
+  { url: `${siteUrl}/policies/shipping`, changeFrequency: "yearly", priority: 0.3 },
+  { url: `${siteUrl}/policies/returns-refunds`, changeFrequency: "yearly", priority: 0.3 },
+  { url: `${siteUrl}/policies/privacy`, changeFrequency: "yearly", priority: 0.2 },
+  { url: `${siteUrl}/policies/terms`, changeFrequency: "yearly", priority: 0.2 },
+];
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const supabase = await createClient();
+  let supabase;
+  try {
+    supabase = await createClient();
+  } catch (error) {
+    // CI builds may not have public Supabase configuration. Keep static URLs
+    // available there; production with Supabase configured still gets dynamic URLs.
+    if (error instanceof Error && error.message === "Missing Supabase public environment variables.") {
+      return staticRoutes;
+    }
+    throw error;
+  }
+
   const [{ data: categories }, products, { data: activeProducts }] = await Promise.all([
     supabase.from("categories").select("id,parent_id,slug").eq("is_active", true),
     getStoreProducts(),
@@ -36,21 +58,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     return [...subtree].some((id) => assignedCategoryIds.has(id));
   });
 
-  const staticRoutes: MetadataRoute.Sitemap = [
-    { url: siteUrl, changeFrequency: "weekly", priority: 1 },
-    { url: `${siteUrl}/shop`, changeFrequency: "daily", priority: 0.9 },
-    { url: `${siteUrl}/about`, changeFrequency: "monthly", priority: 0.6 },
-    { url: `${siteUrl}/contact`, changeFrequency: "yearly", priority: 0.4 },
-    { url: `${siteUrl}/policies/shipping`, changeFrequency: "yearly", priority: 0.3 },
-    { url: `${siteUrl}/policies/returns-refunds`, changeFrequency: "yearly", priority: 0.3 },
-    { url: `${siteUrl}/policies/privacy`, changeFrequency: "yearly", priority: 0.2 },
-    { url: `${siteUrl}/policies/terms`, changeFrequency: "yearly", priority: 0.2 },
-    ...indexableCategories.map((category) => ({
-      url: `${siteUrl}/collections/${category.slug}`,
-      changeFrequency: "weekly" as const,
-      priority: 0.7,
-    })),
-  ];
+  const categoryRoutes: MetadataRoute.Sitemap = indexableCategories.map((category) => ({
+    url: `${siteUrl}/collections/${category.slug}`,
+    changeFrequency: "weekly",
+    priority: 0.7,
+  }));
 
   const productRoutes: MetadataRoute.Sitemap = products.map((product) => ({
     url: `${siteUrl}/products/${product.slug}`,
@@ -58,5 +70,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  return [...staticRoutes, ...productRoutes];
+  return [...staticRoutes, ...categoryRoutes, ...productRoutes];
 }

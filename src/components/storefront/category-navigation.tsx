@@ -5,11 +5,25 @@ import { ShopMenu, type ShopNavCategory } from "./shop-menu";
 type CategoryRow = { id:string; parent_id:string|null; name:string; slug:string; sort_order:number; is_active:boolean };
 
 export async function CategoryNavigation() {
-  const supabase = await createClient();
-  const { data } = await supabase.from("categories")
-    .select("id,parent_id,name,slug,sort_order,is_active")
-    .eq("is_active", true).order("sort_order", { ascending:true });
-  const rows = (data ?? []) as CategoryRow[];
+  let rows: CategoryRow[] = [];
+  let supabase;
+  try {
+    supabase = await createClient();
+  } catch (error) {
+    if (!(error instanceof Error &&
+      error.message === "Missing Supabase public environment variables.")) {
+      throw error;
+    }
+  }
+
+  if (supabase) {
+    const { data, error } = await supabase.from("categories")
+      .select("id,parent_id,name,slug,sort_order,is_active")
+      .eq("is_active", true).order("sort_order", { ascending:true });
+    if (error) throw error;
+    rows = (data ?? []) as CategoryRow[];
+  }
+
   const buildTree = (parentId: string | null): ShopNavCategory[] =>
     rows.filter(row => row.parent_id === parentId).map(row => ({
       id: row.id,

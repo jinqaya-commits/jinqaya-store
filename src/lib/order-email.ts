@@ -160,6 +160,16 @@ export async function sendOrderStatusEmail(order: OrderEmailData, event: "quote_
   return result.ok;
 }
 
+export async function sendOrderStatusVerificationCode(email: string, code: string): Promise<SendResult> {
+  const result = await send({
+    to: email,
+    subject: "Your JINQAYA order status verification code",
+    html: shell("View your order.", `<p>Use this six-digit code to securely view your JINQAYA order status:</p><p style="font-size:30px;letter-spacing:8px;font-weight:bold">${escapeHtml(code)}</p><p>This code expires in 10 minutes and can be used only once. If you did not request it, you can ignore this email.</p>`),
+    text: `Your JINQAYA order status verification code is ${code}. It expires in 10 minutes and can be used only once. If you did not request it, ignore this email.`,
+  });
+  return result;
+}
+
 export async function sendAfterSalesVerificationCode(email: string, code: string) {
   const result = await send({
     to: email,
