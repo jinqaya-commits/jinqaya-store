@@ -28,7 +28,7 @@ export default async function AdminVisitorsPage() {
   const today = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate())).toISOString();
   const [{ data: sessions, error }, { count: totalSessions }, { count: todaySessions }, { count: pageViews }] = await Promise.all([
     supabase.from("visitor_sessions")
-      .select("id,visitor_id,started_at,last_seen_at,ip_country_code,ip_region,ip_city,source,medium,campaign,landing_page,referrer_url,device_type,browser,operating_system,visitor_page_views(page_path,viewed_at)")
+      .select("id,visitor_id,started_at,last_seen_at,ip_country_code,ip_region,ip_city,source,medium,campaign,landing_page,referrer_url,device_type,browser,operating_system,visitor_page_views(page_path,viewed_at),customers(id,email,first_name,last_name)")
       .order("last_seen_at", { ascending: false })
       .limit(100),
     supabase.from("visitor_sessions").select("id", { count: "exact", head: true }),
@@ -92,9 +92,11 @@ export default async function AdminVisitorsPage() {
                     const recentPages = views.slice(-4).reverse();
                     const location = [session.ip_city, session.ip_region, countryName(session.ip_country_code)].filter(Boolean).join(", ");
                     const source = [session.source || "Unknown", session.medium].filter(Boolean).join(" / ");
+                    const customer = session.customers;
+                    const customerName = customer ? [customer.first_name, customer.last_name].filter(Boolean).join(" ") || "Customer" : null;
                     return (
                       <tr key={session.id}>
-                        <td><strong>{session.visitor_id.slice(0, 8)}</strong><small>First seen {dateTime(session.started_at)}</small><small>Last seen {dateTime(session.last_seen_at)}</small></td>
+                        <td>{customer ? <><strong>{customerName}</strong><small><Link href={"/admin/customers/" + customer.id}>{customer.email}</Link></small></> : <><strong>Anonymous · {session.visitor_id.slice(0, 8)}</strong><small>No contact details provided</small></>}<small>First seen {dateTime(session.started_at)}</small><small>Last seen {dateTime(session.last_seen_at)}</small></td>
                         <td>{location || "Unknown location"}</td>
                         <td><strong>{source}</strong>{session.campaign ? <small>{session.campaign}</small> : null}</td>
                         <td>{session.device_type || "Unknown"}<small>{[session.browser, session.operating_system].filter(Boolean).join(" · ")}</small></td>
