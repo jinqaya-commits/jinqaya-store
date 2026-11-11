@@ -1,0 +1,95 @@
+.form {
+  width: 100%;
+  max-width: 760px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.form :global(label) {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: #5d5145;
+  font-size: 10px;
+  letter-spacing: 1.1px;
+}
+.form :global(label span) {
+  display: inline;
+  color: #9a8d7d;
+  font-size: 8px;
+  letter-spacing: 1px;
+}
+.form :global(input), .form :global(textarea) {
+  width: 100%;
+  min-height: 46px;
+  padding: 12px 14px;
+  border: 1px solid #d9d0c3;
+  border-radius: 0;
+  background: #fffdfa;
+  color: #383129;
+  font: 14px/1.5 Arial, sans-serif;
+  letter-spacing: 0;
+}
+.form :global(textarea) {
+  min-height: 150px;
+  resize: vertical;
+}
+.form :global(input:focus), .form :global(textarea:focus) {
+  outline: 1px solid #8b735e;
+  outline-offset: 1px;
+}
+.form :global(.jq-inquiry-grid) {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.form :global(.jq-inquiry-product) {
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  border-left: 2px solid #8b735e;
+  background: #eee9e0;
+}
+.form :global(.jq-inquiry-product span) {
+  color: #8b735e;
+  font-size: 8px;
+  letter-spacing: 1.6px;
+}
+.form :global(.jq-inquiry-product strong) {
+  font-family: Georgia, serif;
+  font-size: 17px;
+  font-weight: 400;
+}
+.form :global(.jq-inquiry-honeypot) {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+.form :global(button:disabled) {
+  cursor: wait;
+  opacity: .65;
+}
+.form :global(.jq-inquiry-success), .form :global(.jq-inquiry-error) {
+  margin: 0;
+  padding: 14px 16px;
+  font: 13px/1.6 Georgia, serif;
+}
+.form :global(.jq-inquiry-success) {
+  background: #e9eee7;
+  color: #334b38;
+}
+.form :global(.jq-inquiry-error) {
+  background: #f5e8e5;
+  color: #7c3027;
+}
+.form :global(.jq-inquiry-privacy) {
+  margin: 0;
+  color: #8a7d6e;
+  font: 11px/1.6 Georgia, serif;
+}
+@media (max-width: 620px) {
+  .form :global(.jq-inquiry-grid) { grid-template-columns: 1fr; }
+}
