@@ -164,7 +164,7 @@ export async function POST(request: NextRequest) {
     visitor_id: canonicalVisitorId,
     page_path: pathOnly,
     page_title: value(body.pageTitle, 200),
-    page_type: pathOnly.startsWith("/products/") ? "product" : pathOnly.startsWith("/shop/") ? "collection" : "page",
+    page_type: pathOnly.startsWith("/products/") ? "product" : pathOnly.startsWith("/collections/") ? "collection" : "page",
     referrer_url: referrer,
     metadata: {},
     viewed_at: now,
