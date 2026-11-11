@@ -1,4 +1,19 @@
 -- Enqueue one customer notification in the same transaction that expires a reservation.
+-- Allow the new event in the outbox event type constraint.
+ALTER TABLE public.order_email_outbox
+  DROP CONSTRAINT IF EXISTS order_email_outbox_event_type_check;
+ALTER TABLE public.order_email_outbox
+  ADD CONSTRAINT order_email_outbox_event_type_check
+  CHECK (event_type = ANY (ARRAY[
+    'order_received',
+    'quote_confirmed',
+    'payment_received',
+    'shipped',
+    'delivered',
+    'cancelled',
+    'reservation_expired'
+  ]::text[]));
+
 -- Replaces the expiry worker so inventory release, order state and email enqueue are atomic.
 -- Release expired stock reservations for unpaid orders.
 -- Runs transactionally: inventory, reservation ledger, order state and history stay in sync.
