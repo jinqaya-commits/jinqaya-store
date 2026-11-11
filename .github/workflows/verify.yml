@@ -137,5 +137,11 @@ jobs:
           PY
           docker exec -i "$container_id" psql -U postgres -d jinqaya_test -v ON_ERROR_STOP=1 < /tmp/order-status-integration.sql
 
+      - name: Test legacy product image cleanup migration
+        run: |
+          container_id="$(docker ps --filter ancestor=postgres:17 --format '{{.ID}}' | head -n 1)"
+          test -n "$container_id"
+          docker exec -i "$container_id" psql -U postgres -d jinqaya_test -v ON_ERROR_STOP=1 < tests/product-image-cleanup-migration.sql
+
       - name: Test concurrent order status verification
         run: bash tests/order-status-postgres-concurrency.sh
