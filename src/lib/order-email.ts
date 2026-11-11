@@ -106,11 +106,16 @@ function money(amount: number | string | null | undefined, currency: string) {
 }
 
 export type OrderEmailOutboxPayload = {
+  eventType?: "order_received" | "quote_confirmed" | "payment_received" | "shipped" | "delivered" | "cancelled";
   orderNumber: string;
   customerName: string;
   customerEmail: string;
   subtotal: number | string;
   currency: string;
+  shippingAmount?: number | string | null;
+  shippingMethod?: string | null;
+  trackingNumber?: string | null;
+  trackingUrl?: string | null;
 };
 
 export async function sendOrderOutboxEmail(
@@ -120,8 +125,23 @@ export async function sendOrderOutboxEmail(
   idempotencyKey: string
 ): Promise<SendResult> {
   const safeName = escapeHtml(order.customerName || "there");
+  const event = order.eventType || "order_received";
+  if (event !== "order_received") {
+    const statusDetails: Record<Exclude<NonNullable<OrderEmailOutboxPayload["eventType"]>, "order_received">, { subject: string; title: string; copy: string }> = {
+      quote_confirmed: { subject: `Shipping quote for JINQAYA order ${order.orderNumber}`, title: "Your order quote is ready.", copy: `We’ve confirmed shipping: ${order.shippingMethod || "Shipping method confirmed"} · ${money(order.shippingAmount, order.currency)}. Please reply to confirm the final total and payment arrangements. Your order is still unpaid.` },
+      payment_received: { subject: `Payment confirmed for JINQAYA order ${order.orderNumber}`, title: "Payment confirmed.", copy: "We have verified receipt of your payment. Your order will move into preparation." },
+      shipped: { subject: `Your JINQAYA order ${order.orderNumber} has shipped`, title: "Your order is on its way.", copy: `Carrier: ${order.shippingMethod || "Carrier"} · Tracking: ${order.trackingNumber || "Not provided"}.${order.trackingUrl ? ` Track your shipment: ${order.trackingUrl}` : ""}` },
+      delivered: { subject: `JINQAYA order ${order.orderNumber} marked delivered`, title: "Delivery update.", copy: "Your order has been marked as delivered. We hope it settles beautifully into your life together." },
+      cancelled: { subject: `JINQAYA order ${order.orderNumber} cancelled`, title: "Your order request was cancelled.", copy: "Your order has been cancelled. If you believe this was a mistake, please contact us." },
+    };
+    const detail = statusDetails[event];
+    return send({
+      to: recipientEmail, subject: detail.subject,
+      html: shell(detail.title, `<p>Hello ${safeName},</p><p>${escapeHtml(detail.copy)}</p><p><strong>Order:</strong> ${escapeHtml(order.orderNumber)}</p>`),
+      text: `Hello ${order.customerName || "there"},\n\n${detail.copy}\nOrder: ${order.orderNumber}\n\nJINQAYA`,
+    }, idempotencyKey);
+  }
   const subtotal = money(order.subtotal, order.currency);
-
   if (recipientType === "customer") {
     return send({
       to: recipientEmail,
@@ -133,7 +153,6 @@ export async function sendOrderOutboxEmail(
       text: `Hello ${order.customerName || "there"},\n\nWe received order request ${order.orderNumber}. Estimated item subtotal: ${subtotal}. We’ll confirm availability, shipping and the final total before requesting payment. This request is not paid or dispatched.\n\nJINQAYA`,
     }, idempotencyKey);
   }
-
   return send({
     to: recipientEmail,
     subject: `New order request: ${order.orderNumber}`,
