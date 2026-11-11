@@ -102,7 +102,7 @@ export function ProductCreateForm({ categories }: { categories: Category[] }) {
         const completedKey = file.name + "-" + file.size + "-" + file.lastModified;
         setFiles((current) => current.filter((item) => item.name + "-" + item.size + "-" + item.lastModified !== completedKey));
       }
-      router.push("/admin/products");
+      router.push(`/admin/products/${productId}/edit`);
       router.refresh();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : "Something went wrong.");
@@ -124,7 +124,7 @@ export function ProductCreateForm({ categories }: { categories: Category[] }) {
       <label>SKU<input value={values.sku} onChange={(e) => update("sku", e.target.value)} placeholder="e.g. JQ-WT-001-BE" /></label>
       <div className="admin-form-grid"><label>Variant name<input value={values.variantName} onChange={(e) => update("variantName", e.target.value)} placeholder="e.g. Beige / Small" /></label><label>Color<input value={values.color} onChange={(e) => update("color", e.target.value)} placeholder="Color" /></label><label>Size<input value={values.size} onChange={(e) => update("size", e.target.value)} placeholder="Size" /></label></div>
       <div className="admin-form-grid"><label>Price (USD)<input type="number" min="0" step="0.01" value={values.price} onChange={(e) => update("price", e.target.value)} placeholder="0.00" /></label><label>Compare-at price (USD)<input type="number" min="0" step="0.01" value={values.compareAtPrice} onChange={(e) => update("compareAtPrice", e.target.value)} placeholder="Optional" /></label></div>
-      <p className="admin-help">Leave SKU blank to create the product first without a purchasable variant. Inventory and checkout are not connected yet.</p>
+      <p className="admin-help">Leave SKU blank to create the product first without a purchasable variant. Stock, shipping and the final order total are confirmed after the customer submits an order request.</p>
     </section>
     <section className="admin-form-section"><div className="admin-form-heading"><span>03</span><div><h2>Product images</h2><p>Upload real product photos. After saving, add a specific alt description for each image in the product editor; generic image labels are not accepted as complete.</p></div></div>
       <label className="admin-upload">Choose product images<input type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple onChange={(e) => {
