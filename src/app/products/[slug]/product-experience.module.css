@@ -1,0 +1,29 @@
+.accordion {
+  margin-top: 12px;
+  border-top: 1px solid #ded7cc;
+  color: #655b50;
+}
+.accordion:last-of-type { border-bottom: 1px solid #ded7cc; }
+.accordion summary {
+  display: flex;
+  min-height: 54px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  cursor: pointer;
+  list-style: none;
+  color: #51463a;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 1.25px;
+}
+.accordion summary::-webkit-details-marker { display: none; }
+.accordion summary::after { content: "+"; color: #8b735e; font: 20px Georgia, serif; }
+.accordion[open] summary::after { content: "−"; }
+.accordion > p, .accordion > a {
+  display: block;
+  margin: 0 0 17px;
+  color: #766b5e;
+  font: 13px/1.8 Georgia, serif;
+}
+.accordion > a { width: fit-content; border-bottom: 1px solid #c8bdaf; font: 9px/1.8 Arial, sans-serif; letter-spacing: .7px; }
