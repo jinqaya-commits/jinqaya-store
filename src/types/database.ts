@@ -4001,6 +4001,10 @@ export type Database = {
         Args: { p_token_hash: string }
         Returns: Json
       }
+      revoke_customer_order_status_session: {
+        Args: { p_token_hash: string }
+        Returns: boolean
+      }
       create_guest_order_request: {
         Args: {
           p_address: Json
