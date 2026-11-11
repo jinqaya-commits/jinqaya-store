@@ -124,7 +124,18 @@ jobs:
         run: |
           container_id="$(docker ps --filter ancestor=postgres:17 --format '{{.ID}}' | head -n 1)"
           test -n "$container_id"
-          docker exec -i "$container_id" psql -U postgres -d jinqaya_test -v ON_ERROR_STOP=1 < tests/order-status-postgres-integration.sql
+          python3 - <<'PY' > /tmp/order-status-integration.sql
+          from pathlib import Path
+          sql = Path("tests/order-status-postgres-integration.sql").read_text()
+          for name in (
+              "20261108173549_customer_order_status_lookup.sql",
+              "20261110035728_order_status_email_retry.sql",
+          ):
+              marker = f"\\ir ../supabase/migrations/{name}"
+              sql = sql.replace(marker, Path("supabase/migrations", name).read_text())
+          print(sql)
+          PY
+          docker exec -i "$container_id" psql -U postgres -d jinqaya_test -v ON_ERROR_STOP=1 < /tmp/order-status-integration.sql
 
       - name: Test concurrent order status verification
         run: bash tests/order-status-postgres-concurrency.sh
