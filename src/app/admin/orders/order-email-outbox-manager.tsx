@@ -6,6 +6,7 @@ import { retryOrderEmailAction } from "./actions";
 
 type EmailItem = {
   id: string;
+  event_type: string;
   recipient_type: string;
   recipient_email: string;
   status: string;
@@ -15,6 +16,11 @@ type EmailItem = {
   last_error: string | null;
   sent_at: string | null;
   created_at: string;
+};
+
+const eventLabels: Record<string, string> = {
+  order_received: "Order request", quote_confirmed: "Shipping quote", payment_received: "Payment confirmed",
+  shipped: "Shipped", delivered: "Delivered", cancelled: "Cancelled",
 };
 
 const statusLabels: Record<string, string> = {
@@ -60,7 +66,7 @@ export function OrderEmailOutboxManager({ orderId, items }: { orderId: string; i
   return (
     <section className="admin-panel">
       <div className="admin-panel-heading">
-        <div><p className="admin-kicker">CUSTOMER COMMUNICATION</p><h2>Order emails</h2></div>
+        <div><p className="admin-kicker">CUSTOMER COMMUNICATION</p><h2>Order notifications</h2></div>
         <span>{items.length} EMAILS</span>
       </div>
       {!items.length ? <p className="admin-help">No order email tasks have been recorded.</p> : (
@@ -69,7 +75,7 @@ export function OrderEmailOutboxManager({ orderId, items }: { orderId: string; i
             <thead><tr><th>RECIPIENT</th><th>STATUS</th><th>ATTEMPTS</th><th>LAST SENT</th><th>NEXT RETRY</th><th>ACTION</th></tr></thead>
             <tbody>{items.map(item => (
               <tr key={item.id}>
-                <td><strong>{item.recipient_type === "staff" ? "Admin notification" : "Customer confirmation"}</strong><small>{item.recipient_email}</small></td>
+                <td><strong>{eventLabels[item.event_type] || item.event_type} · {item.recipient_type === "staff" ? "Admin notification" : "Customer"}</strong><small>{item.recipient_email}</small></td>
                 <td><span className={item.status === "sent" ? "admin-status status-active" : "admin-status status-draft"}>{statusLabels[item.status] || item.status}</span>{item.last_error && <small title={item.last_error}>{item.last_error.slice(0, 120)}</small>}</td>
                 <td>{item.attempt_count} / {item.max_attempts}</td>
                 <td>{formatDate(item.sent_at)}</td>
@@ -82,7 +88,7 @@ export function OrderEmailOutboxManager({ orderId, items }: { orderId: string; i
       )}
       {error && <p className="admin-error" role="alert">{error}</p>}
       {success && <p className="admin-success" role="status">{success}</p>}
-      <p className="admin-help">Retrying queues the email; it does not send immediately. If a previous send timed out after delivery, a duplicate is still possible.</p>
+      <p className="admin-help">Notifications are queued with each order status change. Failed deliveries are retried automatically; manual retry remains available for failed messages.</p>
     </section>
   );
 }
