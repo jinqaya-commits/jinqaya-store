@@ -32,10 +32,10 @@ begin
     raise exception 'Invalid product image storage path';
   end if;
 
-  insert into public.product_image_cleanup_queue(storage_path, last_error)
+  insert into public.product_image_cleanup_queue as q(storage_path, last_error)
   values (p_storage_path, left(coalesce(p_error_message, 'Storage deletion failed'), 1000))
   on conflict (storage_path) do update
-    set next_attempt_at = least(public.product_image_cleanup_queue.next_attempt_at, now()),
+    set next_attempt_at = least(q.next_attempt_at, now()),
         last_error = excluded.last_error,
         updated_at = now();
 end;
