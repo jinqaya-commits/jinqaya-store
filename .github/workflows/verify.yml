@@ -19,7 +19,7 @@ jobs:
         run: |
           migration_file="supabase/migrations/20261111100000_release_expired_stock_reservations.sql"
           test -f "$migration_file"
-          [[ "$(basename "$migration_file")" =~ ^[0-9]{14}_reliable_order_status_email_outbox\.sql$ ]]
+          [[ "$(basename "$migration_file")" =~ ^[0-9]{14}_release_expired_stock_reservations\.sql$ ]]
 
       - name: Set up Python
         uses: actions/setup-python@v5
