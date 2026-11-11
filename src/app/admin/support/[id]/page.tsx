@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import SupportThread from "../support-thread";
-import "./support-thread.css";
+import "../support-thread.css";
 
 export const dynamic = "force-dynamic";
 export default async function AdminSupportDetailPage({ params }: { params: Promise<{ id: string }> }) {
