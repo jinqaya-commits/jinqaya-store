@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 
 type Consent = "granted" | "denied" | null;
 
@@ -16,7 +16,6 @@ function getOrCreateId(storage: Storage, key: string) {
 
 export function VisitorAnalytics() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const [consent, setConsent] = useState<Consent>(null);
   const [ready, setReady] = useState(false);
 
@@ -57,7 +56,7 @@ export function VisitorAnalytics() {
     } catch {
       // Analytics is optional; storage restrictions must never block shopping.
     }
-  }, [consent, pathname, searchParams]);
+  }, [consent, pathname]);
 
   function chooseConsent(next: Exclude<Consent, null>) {
     window.localStorage.setItem("jq-analytics-consent", next);
