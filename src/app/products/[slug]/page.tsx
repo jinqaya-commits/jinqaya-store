@@ -82,6 +82,7 @@ export default async function ProductPage({ params }: Props) {
             <p>Stock availability, shipping options, and the final order total are confirmed after you submit your request. No payment is collected at this stage.</p>
           </div>
           <AddToCart product={product} />
+          <Link className="back-link" href={`/contact?product=${encodeURIComponent(product.slug)}`}>ASK A QUESTION ABOUT THIS PRODUCT →</Link>
           {product.primary_category && <Link className="back-link" href={`/collections/${product.primary_category.slug}`}>← BACK TO {product.primary_category.name.toUpperCase()}</Link>}
           <Link className="back-link" href="/shop">← BACK TO SHOP</Link>
         </section>
