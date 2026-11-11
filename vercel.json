@@ -7,7 +7,7 @@
     },
     {
       "path": "/api/cron/order-email-outbox",
-      "schedule": "*/15 * * * *"
+      "schedule": "30 4 * * *"
     }
   ]
 }
