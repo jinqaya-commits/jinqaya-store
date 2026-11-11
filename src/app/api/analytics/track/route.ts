@@ -76,7 +76,6 @@ export async function POST(request: NextRequest) {
   const referrer = safeReferrer(body.referrerUrl);
   const userAgent = request.headers.get("user-agent") || "";
   const details = deviceDetails(userAgent);
-  const query = new URL(request.url).searchParams;
   const sourceParam = value(body.source, 120);
   const medium = value(body.medium, 120);
   const campaign = value(body.campaign, 160);
