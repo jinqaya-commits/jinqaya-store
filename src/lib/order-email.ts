@@ -106,7 +106,7 @@ function money(amount: number | string | null | undefined, currency: string) {
 }
 
 export type OrderEmailOutboxPayload = {
-  eventType?: "order_received" | "quote_confirmed" | "payment_received" | "shipped" | "delivered" | "cancelled";
+  eventType?: "order_received" | "quote_confirmed" | "payment_received" | "shipped" | "delivered" | "cancelled" | "reservation_expired";
   orderNumber: string;
   customerName: string;
   customerEmail: string;
@@ -133,6 +133,7 @@ export async function sendOrderOutboxEmail(
       shipped: { subject: `Your JINQAYA order ${order.orderNumber} has shipped`, title: "Your order is on its way.", copy: `Carrier: ${order.shippingMethod || "Carrier"} · Tracking: ${order.trackingNumber || "Not provided"}.${order.trackingUrl ? ` Track your shipment: ${order.trackingUrl}` : ""}` },
       delivered: { subject: `JINQAYA order ${order.orderNumber} marked delivered`, title: "Delivery update.", copy: "Your order has been marked as delivered. We hope it settles beautifully into your life together." },
       cancelled: { subject: `JINQAYA order ${order.orderNumber} cancelled`, title: "Your order request was cancelled.", copy: "Your order has been cancelled. If you believe this was a mistake, please contact us." },
+      reservation_expired: { subject: `Action needed: JINQAYA order ${order.orderNumber} reservation expired`, title: "Your stock reservation has expired.", copy: "The 48-hour payment window has passed, so the stock reserved for this order has been released and the previous shipping quote is no longer valid. No payment was collected and this order will not be dispatched. Please email info@jinqaya.com so we can reconfirm current stock, shipping options and the final total before you proceed." },
     };
     const detail = statusDetails[event];
     return send({
