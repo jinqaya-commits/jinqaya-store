@@ -18,7 +18,7 @@ function subscribeConsent(onChange: () => void) {
   };
 }
 
-function getConsentSnapshot(): Consent {
+function getConsentSnapshot(): ConsentSnapshot {
   try {
     const saved = window.localStorage.getItem("jq-analytics-consent");
     return saved === "granted" || saved === "denied" ? saved : null;
