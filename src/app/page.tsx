@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
   openGraph: {
     type: "website",
-    url: "https://jinqaya.com/",
+    url: "https://www.jinqaya.com/",
     title: "JINQAYA | Premium Pet Lifestyle",
     description: "Considered everyday essentials for the life you share with cats and dogs.",
   },
