@@ -32,12 +32,14 @@ export function ShopProductBrowser({ products }: { products: StoreProduct[] }) {
     return result.sort((a, b) => {
       if (sort === "name") return a.name.localeCompare(b.name);
       if (sort === "newest") return Number(b.is_new_arrival) - Number(a.is_new_arrival);
-      if (sort === "price-low") return (lowestPrice(a) ?? Number.MAX_SAFE_INTEGER) - (lowestPrice(b) ?? Number.MAX_SAFE_INTEGER);
-      if (sort === "price-high") return (lowestPrice(b) ?? -1) - (lowestPrice(a) ?? -1);
+      if (sort === "price-low" && canSortByPrice) return (lowestPrice(a) ?? Number.MAX_SAFE_INTEGER) - (lowestPrice(b) ?? Number.MAX_SAFE_INTEGER);
+      if (sort === "price-high" && canSortByPrice) return (lowestPrice(b) ?? -1) - (lowestPrice(a) ?? -1);
       return Number(b.is_featured) - Number(a.is_featured) || Number(b.is_new_arrival) - Number(a.is_new_arrival);
     });
   }, [products, search, pet, category, sort]);
 
+  const currencies = new Set(products.flatMap((product) => product.variants.filter((variant) => variant.is_active && variant.price !== null).map((variant) => variant.currency || "USD")));
+  const canSortByPrice = currencies.size <= 1;
   const hasFilters = search.trim() !== "" || pet !== "all" || category !== "all" || sort !== "featured";
   function reset() { setSearch(""); setPet("all"); setCategory("all"); setSort("featured"); }
 
@@ -47,9 +49,9 @@ export function ShopProductBrowser({ products }: { products: StoreProduct[] }) {
         <label className={styles.search}><span>SEARCH THE COLLECTION</span><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search products…" /></label>
         <label><span>FOR</span><select value={pet} onChange={(event) => setPet(event.target.value)}><option value="all">Cats &amp; dogs</option><option value="cat">Cats</option><option value="dog">Dogs</option><option value="shared">Shared / general</option></select></label>
         <label><span>COLLECTION</span><select value={category} onChange={(event) => setCategory(event.target.value)}><option value="all">All collections</option>{categories.map(([slug, name]) => <option value={slug} key={slug}>{name}</option>)}</select></label>
-        <label><span>SORT BY</span><select value={sort} onChange={(event) => setSort(event.target.value as SortOption)}><option value="featured">Featured</option><option value="newest">New arrivals</option><option value="price-low">Price: low to high</option><option value="price-high">Price: high to low</option><option value="name">Name: A to Z</option></select></label>
+        <label><span>SORT BY</span><select value={sort} onChange={(event) => setSort(event.target.value as SortOption)}><option value="featured">Featured</option><option value="newest">New arrivals</option><option value="price-low" disabled={!canSortByPrice}>Price: low to high</option><option value="price-high" disabled={!canSortByPrice}>Price: high to low</option><option value="name">Name: A to Z</option></select></label>
       </div>
-      <div className={styles.resultLine}><p>{filtered.length} {filtered.length === 1 ? "piece" : "pieces"}</p>{hasFilters && <button type="button" onClick={reset}>CLEAR FILTERS ×</button>}</div>
+      <div className={styles.resultLine} aria-live="polite"><p>{filtered.length} {filtered.length === 1 ? "piece" : "pieces"}{!canSortByPrice ? " · Price sorting is unavailable across multiple currencies." : ""}</p>{hasFilters && <button type="button" onClick={reset}>CLEAR FILTERS ×</button>}</div>
       {filtered.length ? <div className="product-grid">{filtered.map((product) => <ProductCard key={product.id} product={product} />)}</div> : (
         <div className={styles.empty}><p className="eyebrow">NO MATCHES JUST YET</p><h3>Try another search.</h3><p>Adjust your filters or clear them to explore the full collection.</p><button type="button" onClick={reset}>CLEAR FILTERS</button></div>
       )}
