@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import SupportInboxRefresh from "./inbox-refresh";
+import "./support-thread.css";
 
 export const dynamic = "force-dynamic";
 const statuses = [["all","All chats"],["open","Open"],["in_progress","In progress"],["waiting_customer","Waiting for customer"],["resolved","Resolved"],["closed","Closed"]] as const;
