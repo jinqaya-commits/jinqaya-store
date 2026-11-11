@@ -3264,14 +3264,22 @@ export type Database = {
           customer_email: string | null
           customer_id: string | null
           customer_name: string | null
+          guest_token_hash: string | null
           id: string
+          last_message_at: string | null
           order_id: string | null
+          page_url: string | null
           priority: Database["public"]["Enums"]["ticket_priority"]
           resolved_at: string | null
+          session_id: string | null
+          source: string | null
           status: Database["public"]["Enums"]["ticket_status"]
           subject: string
           ticket_number: string
+          unread_by_customer: number
+          unread_by_staff: number
           updated_at: string
+          visitor_id: string | null
         }
         Insert: {
           assigned_to?: string | null
@@ -3279,14 +3287,22 @@ export type Database = {
           customer_email?: string | null
           customer_id?: string | null
           customer_name?: string | null
+          guest_token_hash?: string | null
           id?: string
+          last_message_at?: string | null
           order_id?: string | null
+          page_url?: string | null
           priority?: Database["public"]["Enums"]["ticket_priority"]
           resolved_at?: string | null
+          session_id?: string | null
+          source?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
           subject: string
           ticket_number: string
+          unread_by_customer?: number
+          unread_by_staff?: number
           updated_at?: string
+          visitor_id?: string | null
         }
         Update: {
           assigned_to?: string | null
@@ -3294,14 +3310,22 @@ export type Database = {
           customer_email?: string | null
           customer_id?: string | null
           customer_name?: string | null
+          guest_token_hash?: string | null
           id?: string
+          last_message_at?: string | null
           order_id?: string | null
+          page_url?: string | null
           priority?: Database["public"]["Enums"]["ticket_priority"]
           resolved_at?: string | null
+          session_id?: string | null
+          source?: string | null
           status?: Database["public"]["Enums"]["ticket_status"]
           subject?: string
           ticket_number?: string
+          unread_by_customer?: number
+          unread_by_staff?: number
           updated_at?: string
+          visitor_id?: string | null
         }
         Relationships: [
           {
@@ -3316,6 +3340,13 @@ export type Database = {
             columns: ["order_id"]
             isOneToOne: false
             referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_tickets_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "visitor_sessions"
             referencedColumns: ["id"]
           },
         ]
