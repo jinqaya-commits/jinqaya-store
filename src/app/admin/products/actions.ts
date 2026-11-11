@@ -66,6 +66,14 @@ export async function createProduct(input: CreateProductInput) {
   }
   if (input.status === "active") return { error: "New products are created as drafts. Complete the product information, add images and a priced SKU, then publish from the product list." };
 
+  // Validate SKU prices before creating the product or any category links.
+  const price = input.sku.trim() && input.price.trim() ? Number(input.price) : null;
+  const compareAtPrice = input.sku.trim() && input.compareAtPrice.trim() ? Number(input.compareAtPrice) : null;
+  if ((price !== null && (!Number.isFinite(price) || price < 0)) ||
+      (compareAtPrice !== null && (!Number.isFinite(compareAtPrice) || compareAtPrice < 0))) {
+    return { error: "Enter valid non-negative prices." };
+  }
+
   const { data: existing } = await supabase
     .from("products").select("id").eq("slug", slug).maybeSingle();
   const uniqueSlug = existing ? `${slug}-${Date.now().toString(36)}` : slug;
@@ -107,14 +115,6 @@ export async function createProduct(input: CreateProductInput) {
   }
 
   if (input.sku.trim()) {
-    const price = input.price.trim() ? Number(input.price) : null;
-    const compareAtPrice = input.compareAtPrice.trim() ? Number(input.compareAtPrice) : null;
-    if ((price !== null && (!Number.isFinite(price) || price < 0)) ||
-        (compareAtPrice !== null && (!Number.isFinite(compareAtPrice) || compareAtPrice < 0))) {
-      await supabase.from("products").delete().eq("id", product.id);
-      return { error: "Enter valid non-negative prices." };
-    }
-
     const { error: variantError } = await supabase.from("product_variants").insert({
       product_id: product.id,
       sku: input.sku.trim(),
