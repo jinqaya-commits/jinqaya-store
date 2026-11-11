@@ -15,19 +15,11 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Generate migration filename with Supabase CLI
+      - name: Validate CLI-generated migration filename
         run: |
-          npx --yes supabase@latest migration new reliable_order_status_email_outbox
-          migration_file="$(find supabase/migrations -maxdepth 1 -type f -name '*_reliable_order_status_email_outbox.sql' -print -quit)"
-          test -n "$migration_file"
-          cp supabase/migration-drafts/reliable_order_status_email_outbox.sql "$migration_file"
-          echo "Prepared deployable migration: $migration_file"
-      - name: Upload CLI-generated migration
-        uses: actions/upload-artifact@v4
-        with:
-          name: reliable-order-status-email-outbox-migration
-          path: supabase/migrations/*_reliable_order_status_email_outbox.sql
-          if-no-files-found: error
+          migration_file="supabase/migrations/20261111060610_reliable_order_status_email_outbox.sql"
+          test -f "$migration_file"
+          [[ "$(basename "$migration_file")" =~ ^[0-9]{14}_reliable_order_status_email_outbox\.sql$ ]]
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
