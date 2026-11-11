@@ -31,7 +31,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       card: "summary_large_image",
       title: product.seo_title || product.name,
       description: product.seo_description || product.short_description || product.description || undefined,
-      images: product.images.filter((image) => image.detail_url).slice(0, 1).map((image) => ({ url: product.images.find((image) => image.detail_url)?.detail_url as string, alt: product.name })),
+      images: product.images.filter((image) => image.detail_url).slice(0, 1).map((image) => ({ url: image.detail_url as string, alt: image.alt_text || product.name })),
     },
   };
 }
@@ -49,9 +49,7 @@ export default async function ProductPage({ params }: Props) {
   const product = await getStoreProductBySlug(slug);
   if (!product) notFound();
 
-  const [relatedProducts] = await Promise.all([
-    getStoreProducts(product.primary_category?.slug),
-  ]);
+  const relatedProducts = await getStoreProducts(product.primary_category?.slug);
   const recommendations = relatedProducts.filter((item) => item.id !== product.id).slice(0, 4);
   const price = formatProductPrice(product.variants);
   const breadcrumbs = [
