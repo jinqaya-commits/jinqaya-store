@@ -71,6 +71,7 @@ export function LiveChatWidget() {
 
   useEffect(() => {
     if (!open || !session || session.status === "closed" || session.status === "resolved") return;
+    void loadMessages(session);
     const timer = window.setInterval(() => { void loadMessages(session); }, 5000);
     return () => window.clearInterval(timer);
   }, [open, session, loadMessages]);
@@ -110,7 +111,7 @@ export function LiveChatWidget() {
             analyticsConsent: consent,
             visitorId,
             sessionToken,
-            source: params.get("utm_source"),
+            source: consent === "granted" ? params.get("utm_source") : null,
           }),
         });
         const result = await response.json().catch(() => ({}));
