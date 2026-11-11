@@ -159,27 +159,40 @@ export async function setProductStatus(productId: string, status: "draft" | "act
 
 export async function updateProduct(productId: string, values: {
   name: string; petType: "cat"|"dog"|"both"|"shared"; shortDescription: string;
-  description: string; material: string; careInstructions: string; seoTitle: string; seoDescription: string; status: "draft"|"active"|"archived"; categoryId?: string;
+  description: string; material: string; careInstructions: string; seoTitle: string; seoDescription: string;
+  status: "draft"|"active"|"archived"; categoryIds: string[]; primaryCategoryId: string;
 }) {
   const supabase = await requireCatalogManager();
   const name = values.name.trim();
   const slug = slugify(name);
   if (!name || !slug) return { error: "Product name is required." };
+
+  const categoryIds = [...new Set(values.categoryIds.filter(Boolean))];
+  if (!categoryIds.length) return { error: "Select at least one product category." };
+  if (!values.primaryCategoryId || !categoryIds.includes(values.primaryCategoryId)) {
+    return { error: "Choose one of the selected categories as the primary category." };
+  }
+
+  const { data: selectedCategories, error: categoryReadError } = await supabase
+    .from("categories")
+    .select("id,parent_id,is_active")
+    .in("id", categoryIds);
+  if (categoryReadError) return { error: categoryReadError.message };
+  if ((selectedCategories ?? []).length !== categoryIds.length ||
+      (selectedCategories ?? []).some(category => !category.is_active || !category.parent_id)) {
+    return { error: "All selected categories must be active subcategories." };
+  }
+
   if (values.status === "active") {
-    const [{ data: images }, { data: variants }, { data: categoryLinks }] = await Promise.all([
+    const [{ data: images }, { data: variants }] = await Promise.all([
       supabase.from("product_images").select("alt_text,is_primary").eq("product_id", productId),
       supabase.from("product_variants").select("sku,price,is_active").eq("product_id", productId),
-      supabase.from("product_categories").select("is_primary,category_id,categories(parent_id,is_active)").eq("product_id", productId),
     ]);
-    const nextCategory = values.categoryId
-      ? (await supabase.from("categories").select("id,parent_id,is_active").eq("id", values.categoryId).maybeSingle()).data
-      : null;
-    const categoryRows = values.categoryId
-      ? [{ is_primary: true, parent_id: nextCategory?.parent_id ?? null, is_active: nextCategory?.is_active ?? false }]
-      : (categoryLinks ?? []).map((link) => {
-          const category = Array.isArray(link.categories) ? link.categories[0] : link.categories;
-          return { is_primary: link.is_primary, parent_id: category?.parent_id ?? null, is_active: category?.is_active ?? false };
-        });
+    const categoryRows = (selectedCategories ?? []).map(category => ({
+      is_primary: category.id === values.primaryCategoryId,
+      parent_id: category.parent_id,
+      is_active: category.is_active,
+    }));
     const readiness = getProductReadiness({
       shortDescription: values.shortDescription,
       description: values.description,
@@ -192,8 +205,9 @@ export async function updateProduct(productId: string, values: {
     });
     if (!readiness.ready) return { error: "Complete the product checklist before publishing: " + readiness.missing.join(", ") + "." };
   }
+
   const { data: conflict } = await supabase.from("products").select("id").eq("slug",slug).neq("id",productId).maybeSingle();
-  const { error } = await supabase.from("products").update({
+  const { error: productError } = await supabase.from("products").update({
     name, slug: conflict ? slug + "-" + productId.slice(0,8) : slug,
     pet_type: values.petType, short_description: values.shortDescription.trim() || null,
     description: values.description.trim() || null, material: values.material.trim() || null,
@@ -203,16 +217,32 @@ export async function updateProduct(productId: string, values: {
     status: values.status,
     published_at: values.status === "active" ? new Date().toISOString() : null,
   }).eq("id",productId);
-  if (error) return { error: error.message };
-  if (values.categoryId) {
-    const { data: category } = await supabase.from("categories").select("id,parent_id,is_active").eq("id",values.categoryId).maybeSingle();
-    if (!category || !category.is_active || !category.parent_id) return { error: "Choose an active product subcategory." };
-    const { error: clearPrimaryError } = await supabase.from("product_categories").delete().eq("product_id",productId).eq("is_primary",true);
-    if (clearPrimaryError) return { error: clearPrimaryError.message };
-    const { error: assignError } = await supabase.from("product_categories").upsert({product_id:productId,category_id:values.categoryId,is_primary:true},{onConflict:"product_id,category_id"});
-    if (assignError) return { error: assignError.message };
-  }
+  if (productError) return { error: productError.message };
+
+  // Keep every selected category, remove only unchecked links, and leave exactly one primary.
+  const { error: resetPrimaryError } = await supabase.from("product_categories")
+    .update({ is_primary: false }).eq("product_id", productId);
+  if (resetPrimaryError) return { error: resetPrimaryError.message };
+
+  const { error: upsertError } = await supabase.from("product_categories").upsert(
+    categoryIds.map(categoryId => ({
+      product_id: productId,
+      category_id: categoryId,
+      is_primary: categoryId === values.primaryCategoryId,
+    })),
+    { onConflict: "product_id,category_id" }
+  );
+  if (upsertError) return { error: upsertError.message };
+
+  const { error: removeUncheckedError } = await supabase.from("product_categories")
+    .delete().eq("product_id", productId).not("category_id", "in", `(${categoryIds.join(",")})`);
+  if (removeUncheckedError) return { error: removeUncheckedError.message };
+
   revalidatePath("/admin/products"); revalidatePath("/shop"); revalidatePath("/collections");
+  for (const categoryId of categoryIds) {
+    const category = (selectedCategories ?? []).find(item => item.id === categoryId);
+    if (category) revalidatePath(`/collections/${categoryId}`);
+  }
   return { success: true };
 }
 
