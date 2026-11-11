@@ -5,6 +5,41 @@ import { usePathname } from "next/navigation";
 import styles from "./visitor-analytics.module.css";
 
 type Consent = "granted" | "denied" | null;
+
+const GA4_MEASUREMENT_ID = "G-DFTLG1SD4T";
+
+declare global {
+  interface Window {
+    dataLayer: IArguments[];
+    gtag: (...args: unknown[]) => void;
+    __jinqayaGa4Initialized?: boolean;
+  }
+}
+
+function trackGa4PageView(pathname: string) {
+  window.dataLayer = window.dataLayer || [];
+
+  if (!window.__jinqayaGa4Initialized) {
+    window.gtag = function gtag() {
+      window.dataLayer.push(arguments);
+    };
+    window.gtag("js", new Date());
+    window.gtag("config", GA4_MEASUREMENT_ID, { send_page_view: false });
+    window.__jinqayaGa4Initialized = true;
+
+    const script = document.createElement("script");
+    script.async = true;
+    script.src = `https://www.googletagmanager.com/gtag/js?id=${GA4_MEASUREMENT_ID}`;
+    script.dataset.jinqayaGa4 = "true";
+    document.head.appendChild(script);
+  }
+
+  window.gtag("event", "page_view", {
+    page_path: pathname,
+    page_location: window.location.href,
+    page_title: document.title,
+  });
+}
 type ConsentSnapshot = Consent | "loading";
 
 const consentListeners = new Set<() => void>();
@@ -68,6 +103,7 @@ export function VisitorAnalytics() {
   useEffect(() => {
     if (consent !== "granted" || !pathname || pathname.startsWith("/admin") || pathname.startsWith("/login")) return;
     try {
+      trackGa4PageView(pathname);
       const visitorId = getOrCreateId(window.localStorage, "jq-visitor-id");
       const sessionToken = getSessionToken();
       const params = new URLSearchParams(window.location.search);
