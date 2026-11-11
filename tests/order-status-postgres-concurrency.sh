@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
+container_id="$(docker ps --filter ancestor=postgres:17 --format '{{.ID}}' | head -n 1)"
+test -n "$container_id"
+psql() { docker exec -i "$container_id" psql -U postgres -d jinqaya_test "$@"; }
 psql -v ON_ERROR_STOP=1 -c "insert into public.orders (id, order_number, customer_email, status) values ('10000000-0000-4000-8000-000000000007', 'JQ-TEST-CONCURRENT', 'concurrent@example.test', 'processing')"
 psql -v ON_ERROR_STOP=1 -Atc "select public.create_order_status_email_challenge('JQ-TEST-CONCURRENT', 'concurrent@example.test', '919191')" | grep -qx t
 psql -v ON_ERROR_STOP=1 -Atc "select public.verify_order_status_email_code('JQ-TEST-CONCURRENT', 'concurrent@example.test', '919191', repeat('c',64))" > /tmp/order-status-verify-a.txt &
