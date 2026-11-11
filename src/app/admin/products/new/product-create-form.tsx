@@ -7,7 +7,7 @@ import { addProductImage, createProduct, type CreateProductInput } from "../acti
 type Category = { id: string; parent_id: string|null; name: string; slug:string; sort_order:number };
 
 const initialValues: CreateProductInput = {
-  name: "", categoryId: "", petType: "both", shortDescription: "", description: "",
+  name: "", categoryIds: [], primaryCategoryId: "", petType: "both", shortDescription: "", description: "",
   material: "", careInstructions: "", seoTitle: "", seoDescription: "", sku: "", variantName: "", color: "", size: "",
   price: "", compareAtPrice: "", status: "draft",
 };
@@ -22,6 +22,31 @@ export function ProductCreateForm({ categories }: { categories: Category[] }) {
 
   function update<K extends keyof CreateProductInput>(key: K, value: CreateProductInput[K]) {
     setValues((current) => ({ ...current, [key]: value }));
+  }
+  function toggleCategory(categoryId: string, checked: boolean) {
+    setValues(current => {
+      const categoryIds = checked
+        ? [...current.categoryIds, categoryId]
+        : current.categoryIds.filter(id => id !== categoryId);
+      return {
+        ...current,
+        categoryIds,
+        primaryCategoryId: checked
+          ? (current.primaryCategoryId || categoryId)
+          : current.primaryCategoryId === categoryId ? (categoryIds[0] || "") : current.primaryCategoryId,
+      };
+    });
+  }
+  function categoryPath(category: Category) {
+    const parts = [category.name];
+    let parentId = category.parent_id;
+    while (parentId) {
+      const parent = categories.find(item => item.id === parentId);
+      if (!parent) break;
+      parts.unshift(parent.name);
+      parentId = parent.parent_id;
+    }
+    return parts.join(" / ");
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -88,7 +113,7 @@ export function ProductCreateForm({ categories }: { categories: Category[] }) {
   return <form className="admin-form" onSubmit={submit}>
     <section className="admin-form-section"><div className="admin-form-heading"><span>01</span><div><h2>Product information</h2><p>Enter confirmed product facts only. Leave unknown details blank until they are verified; do not invent features, materials or performance claims.</p></div></div>
       <label>Product name<input required value={values.name} onChange={(e) => update("name", e.target.value)} placeholder="e.g. Everyday Travel Carrier" /></label>
-      <div className="admin-form-grid"><label>Product category<select required value={values.categoryId} onChange={(e) => update("categoryId", e.target.value)}><option value="">Choose a product type</option>{categories.filter(category => category.parent_id !== null).map((category) => { const parent = categories.find(item => item.id === category.parent_id); const grand = parent?.parent_id ? categories.find(item => item.id === parent.parent_id) : null; return <option key={category.id} value={category.id}>{grand ? grand.name + " / " : ""}{parent?.name ?? ""} / {category.name}</option>; })}</select></label>
+      <fieldset className="admin-category-picker"><legend>Product categories</legend><p className="admin-help">Choose all relevant categories and mark one as the primary category.</p><div className="admin-category-options">{categories.filter(category => category.parent_id !== null && !categories.some(child => child.parent_id === category.id)).map(category => <div className="admin-category-option" key={category.id}><label><input type="checkbox" checked={values.categoryIds.includes(category.id)} onChange={event => toggleCategory(category.id,event.target.checked)}/><span>{categoryPath(category)}</span></label><label className="admin-category-primary"><input type="radio" name="new-primary-category" checked={values.primaryCategoryId === category.id} disabled={!values.categoryIds.includes(category.id)} onChange={() => update("primaryCategoryId",category.id)}/>Primary</label></div>)}</div>{values.categoryIds.length===0&&<p className="admin-error">Select at least one category.</p>}</fieldset><div className="admin-form-grid">
       <label>Made for<select value={values.petType} onChange={(e) => update("petType", e.target.value as CreateProductInput["petType"])}><option value="both">Cats & dogs</option><option value="cat">Cats</option><option value="dog">Dogs</option><option value="shared">Shared / general</option></select></label></div>
       <label>Short description<input value={values.shortDescription} onChange={(e) => update("shortDescription", e.target.value)} placeholder="A concise product introduction" /></label>
       <label>Full description<textarea rows={5} value={values.description} onChange={(e) => update("description", e.target.value)} placeholder="Describe the product, its features and intended use." /></label>
@@ -116,7 +141,7 @@ export function ProductCreateForm({ categories }: { categories: Category[] }) {
       <p className="admin-help">New products are saved as drafts. Complete the product checklist, add specific image descriptions and a priced SKU, then publish from the product list.</p>
     </section>
     {error && <p className="admin-error" role="alert">{error}</p>}
-    <div className="admin-form-actions"><button type="button" className="admin-secondary-button" disabled={busy} onClick={() => router.push("/admin/products")}>Cancel</button><button type="submit" className="admin-primary-button" disabled={busy || categories.length === 0}>{busy ? "Saving product…" : createdProductId ? "Retry remaining image uploads" : "Save product"}</button></div>
+    <div className="admin-form-actions"><button type="button" className="admin-secondary-button" disabled={busy} onClick={() => router.push("/admin/products")}>Cancel</button><button type="submit" className="admin-primary-button" disabled={busy || categories.length === 0 || values.categoryIds.length === 0 || !values.primaryCategoryId}>{busy ? "Saving product…" : createdProductId ? "Retry remaining image uploads" : "Save product"}</button></div>
     {categories.length === 0 && <p className="admin-error">No active collections found. Add or activate a category before creating a product.</p>}
   </form>;
 }
