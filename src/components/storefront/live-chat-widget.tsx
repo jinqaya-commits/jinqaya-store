@@ -9,6 +9,8 @@ type ChatResponse = { ticket: { id: string; ticket_number: string; subject: stri
 
 const STORAGE_KEY = "jq-live-chat-session";
 const sessionListeners = new Set<() => void>();
+let cachedSessionRaw: string | null | undefined;
+let cachedSession: ChatSession | null = null;
 function subscribeSession(onChange: () => void) {
   sessionListeners.add(onChange);
   window.addEventListener("storage", onChange);
@@ -19,21 +21,42 @@ function getMountedSnapshot() { return true; }
 function getServerMountedSnapshot() { return false; }
 function notifySessionChange() { sessionListeners.forEach((listener) => listener()); }
 function saveSession(session: ChatSession) {
-  window.localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
-  notifySessionChange();
+  try {
+    const raw = JSON.stringify(session);
+    window.localStorage.setItem(STORAGE_KEY, raw);
+    cachedSessionRaw = raw;
+    cachedSession = session;
+    notifySessionChange();
+  } catch {
+    // Chat remains usable for the current page if browser storage is unavailable.
+  }
 }
 function clearSession() {
-  window.localStorage.removeItem(STORAGE_KEY);
+  try { window.localStorage.removeItem(STORAGE_KEY); } catch { /* Ignore storage restrictions. */ }
+  cachedSessionRaw = null;
+  cachedSession = null;
   notifySessionChange();
 }
 
-function readSession(): ChatSession | null {
+function parseSession(raw: string | null): ChatSession | null {
+  if (!raw) return null;
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<ChatSession>;
     if (typeof parsed.ticketId !== "string" || typeof parsed.ticketNumber !== "string" || typeof parsed.chatToken !== "string") return null;
     return { ticketId: parsed.ticketId, ticketNumber: parsed.ticketNumber, chatToken: parsed.chatToken, status: parsed.status || "open" };
+  } catch {
+    return null;
+  }
+}
+
+function getSessionSnapshot(): ChatSession | null {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (raw !== cachedSessionRaw) {
+      cachedSessionRaw = raw;
+      cachedSession = parseSession(raw);
+    }
+    return cachedSession;
   } catch {
     return null;
   }
@@ -46,7 +69,7 @@ function timeLabel(value: string) {
 export function LiveChatWidget() {
   const mounted = useSyncExternalStore(subscribeMount, getMountedSnapshot, getServerMountedSnapshot);
   const [open, setOpen] = useState(false);
-  const session = useSyncExternalStore(subscribeSession, readSession, () => null);
+  const session = useSyncExternalStore(subscribeSession, getSessionSnapshot, () => null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -63,15 +86,14 @@ export function LiveChatWidget() {
       });
       if (!response.ok) {
         if (response.status === 404) {
-          window.localStorage.removeItem(STORAGE_KEY);
-          setSession(null);
+          clearSession();
           setMessages([]);
         }
         return;
       }
       const result = await response.json() as ChatResponse;
       setMessages(result.messages || []);
-      if (session) saveSession({ ...session, status: result.ticket.status });
+      if (session && session.status !== result.ticket.status) saveSession({ ...session, status: result.ticket.status });
     } catch {
       // Keep the current conversation visible if a refresh briefly fails.
     }
