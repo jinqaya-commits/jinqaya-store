@@ -77,6 +77,10 @@ export default async function ProductPage({ params }: Props) {
             </div>)}
           </div>}
           {product.care_instructions && <div className="product-care-block"><p className="eyebrow">CARE</p><p>{product.care_instructions}</p></div>}
+          <div className="product-detail-note" role="note" aria-label="Order and availability information">
+            <p><strong>Order request</strong></p>
+            <p>Stock availability, shipping options, and the final order total are confirmed after you submit your request. No payment is collected at this stage.</p>
+          </div>
           <AddToCart product={product} />
           {product.primary_category && <Link className="back-link" href={`/collections/${product.primary_category.slug}`}>← BACK TO {product.primary_category.name.toUpperCase()}</Link>}
           <Link className="back-link" href="/shop">← BACK TO SHOP</Link>
