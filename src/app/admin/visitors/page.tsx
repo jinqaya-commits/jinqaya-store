@@ -98,7 +98,7 @@ export default async function AdminVisitorsPage() {
                         <td><strong>{source}</strong>{session.campaign ? <small>{session.campaign}</small> : null}</td>
                         <td>{session.device_type || "Unknown"}<small>{[session.browser, session.operating_system].filter(Boolean).join(" · ")}</small></td>
                         <td><span className="admin-table-path">{session.landing_page || "—"}</span></td>
-                        <td>{recentPages.length ? recentPages.map((view, index) => <small className="admin-table-path" key={view.viewed_at + view.page_path}>{view.page_path}</small>) : "—"}<small>{views.length} page views</small></td>
+                        <td>{recentPages.length ? recentPages.map((view) => <small className="admin-table-path" key={view.viewed_at + view.page_path}>{view.page_path}</small>) : "—"}<small>{views.length} page views</small></td>
                       </tr>
                     );
                   })}
