@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getRootCategories } from "@/lib/catalog";
 import { getStoreProducts } from "@/lib/products";
-import { ProductCard } from "@/components/storefront/product-card";
+import { ShopProductBrowser } from "@/components/storefront/shop-product-browser";
 import { CategoryNavigation } from "@/components/storefront/category-navigation";
 
 export const dynamic = "force-dynamic";
@@ -40,7 +40,7 @@ export default async function ShopPage() {
       <section className="store-product-section">
         <div className="store-section-heading"><p className="eyebrow">THE EDIT</p><h2>Explore the collection</h2></div>
         {products.length ? (
-          <div className="product-grid">{products.map((product) => <ProductCard key={product.id} product={product} />)}</div>
+          <ShopProductBrowser products={products} />
         ) : (
           <div className="collection-empty">
             <p className="eyebrow">A THOUGHTFUL EDIT IS IN THE MAKING</p>
@@ -49,7 +49,7 @@ export default async function ShopPage() {
           </div>
         )}
       </section>
-      <footer className="inner-footer"><Link href="/">JINQAYA</Link><span>BETTER LIVING, TOGETHER.</span></footer>
+      <footer className="inner-footer"><Link href="/">JINQAYA</Link><span><Link href="/faq">FAQ</Link> · BETTER LIVING, TOGETHER.</span></footer>
     </main>
   );
 }

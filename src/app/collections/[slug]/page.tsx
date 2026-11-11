@@ -74,7 +74,7 @@ export default async function CollectionPage({ params }: Props) {
           <Link className="button button-dark" href="/shop">EXPLORE OTHER COLLECTIONS <span aria-hidden="true">↗</span></Link>
         </section>
       )}
-      <footer className="inner-footer"><Link href="/">JINQAYA</Link><span>BETTER LIVING, TOGETHER.</span></footer>
+      <footer className="inner-footer"><Link href="/">JINQAYA</Link><span><Link href="/faq">FAQ</Link> · BETTER LIVING, TOGETHER.</span></footer>
     </main>
   );
 }

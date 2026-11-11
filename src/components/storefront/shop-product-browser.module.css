@@ -1,0 +1,14 @@
+.browser { width: 100%; }
+.controls { display: grid; grid-template-columns: minmax(220px,1.5fr) repeat(3,minmax(135px,1fr)); gap: 12px; margin: 0 0 18px; }
+.controls label { display: flex; min-width: 0; flex-direction: column; gap: 8px; }
+.controls label > span { color: #82776b; font-size: 8px; font-weight: 600; letter-spacing: 1.3px; }
+.controls input, .controls select { width: 100%; min-height: 46px; border: 1px solid #d7cfc3; border-radius: 0; padding: 0 12px; background: #fbfaf7; color: #51463a; font: 12px Arial,sans-serif; }
+.controls input:focus, .controls select:focus { outline: 2px solid #8b735e; outline-offset: 2px; }
+.resultLine { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 14px 0 22px; border-bottom: 1px solid #ded7cc; margin-bottom: 24px; }
+.resultLine p { margin: 0; color: #82776b; font: 13px Georgia,serif; }
+.resultLine button, .empty button { border: 0; padding: 6px 0; background: transparent; color: #655747; cursor: pointer; font-size: 9px; letter-spacing: 1px; text-decoration: underline; text-underline-offset: 4px; }
+.empty { padding: 72px 20px; text-align: center; background: #f0ece5; }
+.empty h3 { margin: 14px 0 8px; font: 400 32px Georgia,serif; color: #51463a; }
+.empty > p:not(.eyebrow) { color: #766b5e; font: 14px/1.7 Georgia,serif; }
+@media(max-width:850px) { .controls { grid-template-columns: repeat(2,minmax(0,1fr)); } .search { grid-column: 1/-1; } }
+@media(max-width:480px) { .controls { grid-template-columns: 1fr 1fr; gap: 10px; } .controls input,.controls select { font-size: 11px; padding: 0 9px; } }

@@ -9,6 +9,7 @@ const staticRoutes: MetadataRoute.Sitemap = [
   { url: `${siteUrl}/shop`, changeFrequency: "daily", priority: 0.9 },
   { url: `${siteUrl}/about`, changeFrequency: "monthly", priority: 0.6 },
   { url: `${siteUrl}/contact`, changeFrequency: "yearly", priority: 0.4 },
+  { url: `${siteUrl}/faq`, changeFrequency: "monthly", priority: 0.5 },
   { url: `${siteUrl}/policies/shipping`, changeFrequency: "yearly", priority: 0.3 },
   { url: `${siteUrl}/policies/returns-refunds`, changeFrequency: "yearly", priority: 0.3 },
   { url: `${siteUrl}/policies/privacy`, changeFrequency: "yearly", priority: 0.2 },
