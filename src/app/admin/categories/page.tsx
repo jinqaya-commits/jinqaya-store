@@ -14,11 +14,10 @@ export default async function AdminCategoriesPage() {
   const { data: allowed, error: permissionError } = await supabase.rpc("can_manage_catalog");
   if (permissionError || allowed !== true) redirect("/");
   const { data: categories, error } = await supabase.from("categories")
-    .select("id,parent_id,name,slug,description,image_path,is_active,sort_order")
+    .select("id,parent_id,name,slug,description,image_path,seo_title,seo_description,is_active,sort_order")
     .order("sort_order", { ascending: true });
   const all = categories ?? [];
-  const roots = all.filter(category => category.parent_id === null);
-  const rows = roots.map(category => ({
+  const rows = all.map(category => ({
     ...category,
     imageUrl: category.image_path ? resolveProductImageUrls(category.image_path).detailUrl : null,
   }));
