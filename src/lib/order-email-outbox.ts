@@ -18,12 +18,20 @@ function parsePayload(value: unknown): OrderEmailOutboxPayload | null {
     typeof row.currency !== "string" ||
     (typeof row.subtotal !== "number" && typeof row.subtotal !== "string")
   ) return null;
+  const allowedEvents = ["order_received", "quote_confirmed", "payment_received", "shipped", "delivered", "cancelled"] as const;
+  const eventType = typeof row.eventType === "string" && allowedEvents.includes(row.eventType as typeof allowedEvents[number])
+    ? row.eventType as typeof allowedEvents[number] : "order_received";
   return {
+    eventType,
     orderNumber: row.orderNumber,
     customerName: typeof row.customerName === "string" ? row.customerName : "",
     customerEmail: row.customerEmail,
     subtotal: row.subtotal,
     currency: row.currency,
+    shippingAmount: typeof row.shippingAmount === "number" || typeof row.shippingAmount === "string" ? row.shippingAmount : null,
+    shippingMethod: typeof row.shippingMethod === "string" ? row.shippingMethod : null,
+    trackingNumber: typeof row.trackingNumber === "string" ? row.trackingNumber : null,
+    trackingUrl: typeof row.trackingUrl === "string" ? row.trackingUrl : null,
   };
 }
 
