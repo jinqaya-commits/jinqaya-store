@@ -22,6 +22,12 @@ jobs:
           test -n "$migration_file"
           cp supabase/migration-drafts/reliable_order_status_email_outbox.sql "$migration_file"
           echo "Prepared deployable migration: $migration_file"
+      - name: Upload CLI-generated migration
+        uses: actions/upload-artifact@v4
+        with:
+          name: reliable-order-status-email-outbox-migration
+          path: supabase/migrations/*_reliable_order_status_email_outbox.sql
+          if-no-files-found: error
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
