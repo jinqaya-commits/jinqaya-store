@@ -9,6 +9,26 @@ create table if not exists public.product_image_cleanup_queue (
   created_at timestamptz not null default now()
 );
 
+-- Upgrade the earlier queue shape already present in some databases.
+-- Older installations used storage_path as the primary key and did not have
+-- per-row IDs or worker leases.
+alter table public.product_image_cleanup_queue
+  add column if not exists id uuid;
+update public.product_image_cleanup_queue
+set id = gen_random_uuid()
+where id is null;
+alter table public.product_image_cleanup_queue
+  alter column id set default gen_random_uuid(),
+  alter column id set not null,
+  add column if not exists locked_at timestamptz;
+
+alter table public.product_image_cleanup_queue
+  drop constraint if exists product_image_cleanup_queue_pkey;
+alter table public.product_image_cleanup_queue
+  add constraint product_image_cleanup_queue_pkey primary key (id);
+create unique index if not exists product_image_cleanup_queue_storage_path_uidx
+  on public.product_image_cleanup_queue(storage_path);
+
 alter table public.product_image_cleanup_queue enable row level security;
 revoke all on public.product_image_cleanup_queue from anon, authenticated;
 revoke all on public.product_image_cleanup_queue from public;
