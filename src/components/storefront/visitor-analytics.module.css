@@ -1,0 +1,83 @@
+.banner {
+  position: fixed;
+  z-index: 1000;
+  right: 22px;
+  bottom: 22px;
+  width: min(540px, calc(100vw - 32px));
+  padding: 22px 24px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 22px;
+  border: 1px solid #d9d0c3;
+  background: #f8f6f1;
+  color: #383129;
+  box-shadow: 0 12px 42px rgb(40 32 24 / 16%);
+}
+.banner strong {
+  display: block;
+  margin-bottom: 9px;
+  font-size: 9px;
+  letter-spacing: 1.8px;
+}
+.banner p {
+  margin: 0 0 9px;
+  color: #766b5e;
+  font: 13px/1.65 Georgia, serif;
+}
+.banner a {
+  color: #66513e;
+  font-size: 11px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 138px;
+}
+.actions button, .settings {
+  min-height: 38px;
+  padding: 0 13px;
+  border: 1px solid #4a3f35;
+  background: transparent;
+  color: #4a3f35;
+  cursor: pointer;
+  font-size: 9px;
+  letter-spacing: 1px;
+}
+.actions button:last-child {
+  background: #4a3f35;
+  color: #fff;
+}
+.settings {
+  position: fixed;
+  z-index: 999;
+  left: 16px;
+  bottom: 16px;
+  min-height: 32px;
+  border-color: #d9d0c3;
+  background: #f8f6f1;
+  box-shadow: 0 3px 14px rgb(40 32 24 / 10%);
+  font-size: 8px;
+}
+@media (max-width: 620px) {
+  .banner {
+    right: 10px;
+    bottom: 10px;
+    width: calc(100vw - 20px);
+    grid-template-columns: 1fr;
+    gap: 14px;
+    padding: 18px;
+  }
+  .actions {
+    flex-direction: row;
+    justify-content: flex-end;
+  }
+  .actions button {
+    flex: 1;
+    padding: 0 8px;
+    font-size: 8px;
+  }
+}

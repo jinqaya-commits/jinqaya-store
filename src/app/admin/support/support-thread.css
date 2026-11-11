@@ -1,0 +1,27 @@
+.admin-support-layout { display:grid; grid-template-columns:minmax(0,1.7fr) minmax(260px,.8fr); gap:18px; align-items:start; }
+.admin-support-conversation { min-width:0; }
+.admin-support-thread { display:flex; flex-direction:column; gap:13px; min-height:300px; max-height:680px; padding:18px; overflow-y:auto; background:#f8f6f1; }
+.admin-support-message { max-width:86%; padding:13px 15px; border:1px solid #e4ddd2; background:#fff; }
+.admin-support-message.is-customer { align-self:flex-start; }
+.admin-support-message.is-staff { align-self:flex-end; border-color:#d8e0d3; background:#edf1e9; }
+.admin-support-message.is-system { align-self:center; max-width:100%; border:0; background:transparent; color:#8b8174; font-style:italic; }
+.admin-support-message.is-internal { border:1px dashed #c79d68; background:#fff5e8; }
+.admin-support-message header { display:flex; justify-content:space-between; gap:16px; margin-bottom:8px; color:#776b5c; font-size:10px; }
+.admin-support-message time { color:#9b9082; white-space:nowrap; }
+.admin-support-message p { margin:0; color:#413a32; font:13px/1.65 Arial,sans-serif; white-space:pre-wrap; overflow-wrap:anywhere; }
+.admin-support-reply { padding:18px; display:flex; flex-direction:column; gap:12px; border-top:1px solid #e8e0d5; }
+.admin-support-reply textarea { width:100%; padding:12px; border:1px solid #d9d0c3; background:#fffdfa; color:#383129; font:13px/1.6 Arial,sans-serif; resize:vertical; }
+.admin-support-internal { display:flex; align-items:center; gap:8px; color:#87613c; font-size:11px; }
+.admin-support-reply > div:last-child { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.admin-support-reply small { color:#8c8174; font-size:10px; }
+.admin-support-reply button,.admin-support-closed button { min-height:38px; padding:0 16px; border:0; background:#263b31; color:#fff; cursor:pointer; font-size:9px; letter-spacing:1px; }
+.admin-support-reply button:disabled { opacity:.5; cursor:not-allowed; }
+.admin-support-context dl { margin:0; padding:4px 18px 18px; display:grid; grid-template-columns:1fr; gap:5px; }
+.admin-support-context dt { margin-top:12px; color:#958878; font-size:9px; letter-spacing:1px; text-transform:uppercase; }
+.admin-support-context dd { margin:0; color:#443c33; font-size:12px; line-height:1.5; overflow-wrap:anywhere; }
+.admin-support-context select { width:100%; max-width:220px; min-height:34px; padding:5px 8px; border:1px solid #d9d0c3; background:#fffdfa; color:#433b32; }
+.admin-support-closed { padding:18px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.admin-support-closed p { color:#766c60; font:14px Georgia,serif; }
+@media(max-width:900px) { .admin-support-layout { grid-template-columns:1fr; } .admin-support-thread { max-height:520px; } }
+.admin-support-live-indicator { display:inline-flex; align-items:center; gap:7px; margin-top:10px; color:#7b8b72; font-size:8px; letter-spacing:1.1px; }
+.admin-support-live-indicator i { width:6px; height:6px; border-radius:50%; background:#6d946d; box-shadow:0 0 0 3px #e4ecdf; }

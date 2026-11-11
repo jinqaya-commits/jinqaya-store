@@ -189,3 +189,40 @@ export async function sendAfterSalesVerificationCode(email: string, code: string
   });
   return result.ok;
 }
+
+
+export type LeadInquiryEmailData = {
+  inquiryNumber: string;
+  customerName: string;
+  customerEmail: string;
+  subject: string;
+  message: string;
+  productId: string | null;
+  source: string;
+};
+
+export async function sendLeadInquiryEmail(
+  recipientType: "customer" | "staff",
+  recipientEmail: string,
+  inquiry: LeadInquiryEmailData,
+  idempotencyKey: string
+): Promise<SendResult> {
+  const safeName = escapeHtml(inquiry.customerName || "there");
+  const safeMessage = escapeHtml(inquiry.message).replace(/\n/g, "<br />");
+  const subject = recipientType === "staff"
+    ? "New website enquiry " + inquiry.inquiryNumber + ": " + inquiry.subject
+    : "JINQAYA received your enquiry " + inquiry.inquiryNumber;
+  const title = recipientType === "staff" ? "A new website enquiry." : "Thank you for contacting JINQAYA.";
+  const body = recipientType === "staff"
+    ? "<p><strong>Reference:</strong> " + escapeHtml(inquiry.inquiryNumber) + "</p><p><strong>Customer:</strong> " + safeName + " (" + escapeHtml(inquiry.customerEmail) + ")</p><p><strong>Subject:</strong> " + escapeHtml(inquiry.subject) + "</p><p><strong>Source:</strong> " + escapeHtml(inquiry.source) + "</p><p><strong>Message:</strong></p><p>" + safeMessage + "</p><p>Please review this enquiry in the JINQAYA admin dashboard.</p>"
+    : "<p>Hello " + safeName + ",</p><p>We have received your message and our team will review it.</p><p><strong>Reference:</strong> " + escapeHtml(inquiry.inquiryNumber) + "</p><p><strong>Subject:</strong> " + escapeHtml(inquiry.subject) + "</p><p>We will reply to this email address as soon as we can.</p>";
+  const text = recipientType === "staff"
+    ? "New website enquiry " + inquiry.inquiryNumber + "\nCustomer: " + inquiry.customerName + " (" + inquiry.customerEmail + ")\nSubject: " + inquiry.subject + "\nSource: " + inquiry.source + "\n\n" + inquiry.message + "\n\nReview in the JINQAYA admin dashboard."
+    : "Hello " + (inquiry.customerName || "there") + ",\n\nWe have received your enquiry " + inquiry.inquiryNumber + " about \"" + inquiry.subject + "\". Our team will reply to this email address.\n\nJINQAYA";
+  return send({
+    to: recipientEmail,
+    subject,
+    html: shell(title, body),
+    text,
+  }, idempotencyKey);
+}
