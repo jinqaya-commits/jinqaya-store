@@ -26,6 +26,13 @@ BEGIN
             AND r.expires_at IS NOT NULL
             AND r.expires_at <= v_now
        )
+       AND NOT EXISTS (
+         SELECT 1
+           FROM public.stock_reservations r
+          WHERE r.order_id = o.id
+            AND r.status = 'active'
+            AND (r.expires_at IS NULL OR r.expires_at > v_now)
+       )
      ORDER BY o.created_at
      LIMIT LEAST(GREATEST(COALESCE(p_limit, 100), 1), 500)
      FOR UPDATE OF o SKIP LOCKED
@@ -93,6 +100,22 @@ BEGIN
         v_order_id, 'pending_payment', 'on_hold',
         'Stock reservation expired automatically; order requires a new shipping quote.',
         NULL
+      );
+
+      INSERT INTO public.activity_logs(
+        actor_user_id, action, entity_type, entity_id, old_values, new_values
+      )
+      VALUES (
+        NULL,
+        'order.reservation_expired',
+        'order',
+        v_order_id,
+        pg_catalog.jsonb_build_object('status', 'pending_payment'),
+        pg_catalog.jsonb_build_object(
+          'status', 'on_hold',
+          'released_units', v_released_units,
+          'reason', 'stock_reservation_expired'
+        )
       );
       v_released_orders := v_released_orders + 1;
     END IF;
