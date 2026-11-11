@@ -18,7 +18,7 @@ function safeReferrer(input: unknown): string | null {
   try {
     const url = new URL(raw);
     if (url.protocol !== "http:" && url.protocol !== "https:") return null;
-    return url.origin + url.pathname.slice(0, 500);
+    return url.origin;
   } catch {
     return null;
   }
@@ -57,7 +57,9 @@ export async function POST(request: NextRequest) {
   try {
     const raw = await request.text();
     if (raw.length > 8000) return NextResponse.json({ error: "Request too large." }, { status: 413 });
-    body = JSON.parse(raw) as Record<string, unknown>;
+    const parsed: unknown = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return NextResponse.json({ error: "Invalid request." }, { status: 400 });
+    body = parsed as Record<string, unknown>;
   } catch {
     return NextResponse.json({ error: "Invalid request." }, { status: 400 });
   }
@@ -84,7 +86,7 @@ export async function POST(request: NextRequest) {
   const gclid = value(body.gclid, 240);
   const fbclid = value(body.fbclid, 240);
   const countryCode = headerValue(request, "x-vercel-ip-country", 2)?.toUpperCase() || null;
-  const country = countryCode;
+  const country = countryCode ? new Intl.DisplayNames(["en"], { type: "region" }).of(countryCode) || countryCode : null;
   const region = headerValue(request, "x-vercel-ip-country-region");
   const city = headerValue(request, "x-vercel-ip-city");
 
