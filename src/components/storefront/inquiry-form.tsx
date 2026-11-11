@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import styles from "./inquiry-form.module.css";
 
 type Props = { productId?: string | null; productName?: string | null };
 
@@ -65,7 +66,7 @@ export function InquiryForm({ productId, productName }: Props) {
   }
 
   return (
-    <form className="jq-inquiry-form" onSubmit={submit}>
+    <form className={styles.form} onSubmit={submit}>
       {productName && <div className="jq-inquiry-product"><span>ENQUIRY ABOUT</span><strong>{productName}</strong></div>}
       <div className="jq-inquiry-grid">
         <label>Full name<input required maxLength={160} autoComplete="name" value={values.fullName} onChange={(event) => update("fullName", event.target.value)} /></label>
