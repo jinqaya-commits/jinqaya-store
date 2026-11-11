@@ -1,10 +1,44 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { usePathname } from "next/navigation";
 import styles from "./visitor-analytics.module.css";
 
 type Consent = "granted" | "denied" | null;
+type ConsentSnapshot = Consent | "loading";
+
+const consentListeners = new Set<() => void>();
+
+function subscribeConsent(onChange: () => void) {
+  consentListeners.add(onChange);
+  window.addEventListener("storage", onChange);
+  return () => {
+    consentListeners.delete(onChange);
+    window.removeEventListener("storage", onChange);
+  };
+}
+
+function getConsentSnapshot(): Consent {
+  try {
+    const saved = window.localStorage.getItem("jq-analytics-consent");
+    return saved === "granted" || saved === "denied" ? saved : null;
+  } catch {
+    return null;
+  }
+}
+
+function getServerConsentSnapshot(): ConsentSnapshot {
+  return "loading";
+}
+
+function saveConsent(next: Exclude<Consent, null>) {
+  try {
+    window.localStorage.setItem("jq-analytics-consent", next);
+  } catch {
+    // Keep the storefront usable when browser storage is unavailable.
+  }
+  consentListeners.forEach((listener) => listener());
+}
 
 function getOrCreateId(storage: Storage, key: string) {
   let value = storage.getItem(key);
@@ -28,18 +62,11 @@ function getSessionToken() {
 
 export function VisitorAnalytics() {
   const pathname = usePathname();
-  const [consent, setConsent] = useState<Consent>(null);
-  const [ready, setReady] = useState(false);
+  const consent = useSyncExternalStore(subscribeConsent, getConsentSnapshot, getServerConsentSnapshot);
   const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
-    const saved = window.localStorage.getItem("jq-analytics-consent");
-    setConsent(saved === "granted" || saved === "denied" ? saved : null);
-    setReady(true);
-  }, []);
-
-  useEffect(() => {
-    if (consent !== "granted" || !pathname) return;
+    if (consent !== "granted" || !pathname || pathname.startsWith("/admin") || pathname.startsWith("/login")) return;
     try {
       const visitorId = getOrCreateId(window.localStorage, "jq-visitor-id");
       const sessionToken = getSessionToken();
@@ -72,36 +99,31 @@ export function VisitorAnalytics() {
   }, [consent, pathname]);
 
   function chooseConsent(next: Exclude<Consent, null>) {
-    try {
-      window.localStorage.setItem("jq-analytics-consent", next);
-    } catch {
-      // Keep the storefront usable when browser storage is unavailable.
-    }
-    setConsent(next);
+    saveConsent(next);
     setShowSettings(false);
   }
 
-  if (!ready) return null;
+  if (consent === "loading") return null;
 
   return (
     <>
       {(consent === null || showSettings) && (
-    <aside
-      aria-label="Privacy preferences"
-      className={styles.banner}
-      role="dialog"
-      aria-modal="false"
-    >
-      <div>
-        <strong>YOUR PRIVACY MATTERS</strong>
-        <p>We use optional analytics to understand which pages are useful and where visits come from. You can continue with essential site functions only.</p>
-        <a href="/policies/privacy">Read our Privacy Policy</a>
-      </div>
-      <div className={styles.actions}>
-        <button type="button" onClick={() => chooseConsent("denied")}>ESSENTIAL ONLY</button>
-        <button type="button" onClick={() => chooseConsent("granted")}>ALLOW ANALYTICS</button>
-      </div>
-      </aside>
+        <aside
+          aria-label="Privacy preferences"
+          className={styles.banner}
+          role="dialog"
+          aria-modal="false"
+        >
+          <div>
+            <strong>YOUR PRIVACY MATTERS</strong>
+            <p>We use optional analytics to understand which pages are useful and where visits come from. You can continue with essential site functions only.</p>
+            <a href="/policies/privacy">Read our Privacy Policy</a>
+          </div>
+          <div className={styles.actions}>
+            <button type="button" onClick={() => chooseConsent("denied")}>ESSENTIAL ONLY</button>
+            <button type="button" onClick={() => chooseConsent("granted")}>ALLOW ANALYTICS</button>
+          </div>
+        </aside>
       )}
       {consent !== null && !showSettings && (
         <button type="button" className={styles.settings} onClick={() => setShowSettings(true)}>PRIVACY SETTINGS</button>
