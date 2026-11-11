@@ -1,4 +1,5 @@
 {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
   "crons": [
     {
       "path": "/api/cron/after-sales-cleanup",
@@ -6,11 +7,7 @@
     },
     {
       "path": "/api/cron/order-email-outbox",
-      "schedule": "10 4 * * *"
-    },
-    {
-      "path": "/api/cron/order-email-outbox-secondary",
-      "schedule": "10 16 * * *"
+      "schedule": "30 4 * * *"
     }
   ]
 }

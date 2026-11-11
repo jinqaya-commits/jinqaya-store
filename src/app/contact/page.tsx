@@ -5,7 +5,7 @@ import { CategoryNavigation } from "@/components/storefront/category-navigation"
 
 export const metadata: Metadata = {
   alternates: { canonical: "/contact" },
-  openGraph: { type: "website", url: "https://jinqaya.com/contact", title: "Contact JINQAYA", description: "Contact JINQAYA for product, order and customer care questions." },
+  openGraph: { type: "website", url: "https://www.jinqaya.com/contact", title: "Contact JINQAYA", description: "Contact JINQAYA for product, order and customer care questions." },
 
   title: "Contact JINQAYA",
   description: "Get in touch with JINQAYA for product, order and customer care questions.",

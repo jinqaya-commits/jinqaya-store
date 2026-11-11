@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
   openGraph: {
     type: "website",
-    url: "https://jinqaya.com/",
+    url: "https://www.jinqaya.com/",
     title: "JINQAYA | Premium Pet Lifestyle",
     description: "Considered everyday essentials for the life you share with cats and dogs.",
   },
@@ -52,6 +52,8 @@ export default async function HomePage() {
   const homepageMediaRows: HomepageMediaRow[] = await (async () => {
     try {
       const supabase = await createClient();
+      // The homepage media table is not yet represented in the generated database types.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error } = await (supabase as any).from("homepage_media").select("media_key,image_path");
       if (error) { console.error("Unable to load homepage media:", error.message); return []; }
       return (data ?? []) as HomepageMediaRow[];

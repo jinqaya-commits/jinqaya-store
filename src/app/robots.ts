@@ -29,7 +29,7 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/admin/", "/login", "/api/"],
       },
     ],
-    sitemap: "https://jinqaya.com/sitemap.xml",
-    host: "https://jinqaya.com",
+    sitemap: "https://www.jinqaya.com/sitemap.xml",
+    host: "https://www.jinqaya.com",
   };
 }

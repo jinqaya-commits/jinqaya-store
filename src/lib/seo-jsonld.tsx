@@ -1,6 +1,6 @@
 import type { StoreProduct } from "@/lib/products";
 
-const SITE_URL = "https://jinqaya.com";
+const SITE_URL = "https://www.jinqaya.com";
 
 function clean(value: string | null | undefined): string | undefined {
   const normalized = value?.replace(/\s+/g, " ").trim();

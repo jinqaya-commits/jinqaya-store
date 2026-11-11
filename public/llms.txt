@@ -2,7 +2,7 @@
 
 > A pet lifestyle brand offering considered everyday essentials for cats and dogs.
 
-- Website: https://jinqaya.com/
+- Website: https://www.jinqaya.com/
 - Brand: JINQAYA
 - Positioning: Premium Pet Lifestyle
 - Brand line: Life is better in good company.
@@ -11,17 +11,17 @@
 - Customer contact: info@jinqaya.com
 
 ## Browse
-- Shop: https://jinqaya.com/shop
-- About: https://jinqaya.com/about
-- Contact: https://jinqaya.com/contact
-- Sitemap: https://jinqaya.com/sitemap.xml
-- Robots: https://jinqaya.com/robots.txt
+- Shop: https://www.jinqaya.com/shop
+- About: https://www.jinqaya.com/about
+- Contact: https://www.jinqaya.com/contact
+- Sitemap: https://www.jinqaya.com/sitemap.xml
+- Robots: https://www.jinqaya.com/robots.txt
 
 ## Policies
-- Shipping: https://jinqaya.com/policies/shipping
-- Returns: https://jinqaya.com/policies/returns-refunds
-- Privacy: https://jinqaya.com/policies/privacy
-- Terms: https://jinqaya.com/policies/terms
+- Shipping: https://www.jinqaya.com/policies/shipping
+- Returns: https://www.jinqaya.com/policies/returns-refunds
+- Privacy: https://www.jinqaya.com/policies/privacy
+- Terms: https://www.jinqaya.com/policies/terms
 
 ## Accuracy
 Use each live product page as the source of truth for product materials, dimensions, options, prices and availability. Do not infer certifications, safety testing, sustainability claims, warranties, reviews or stock status that are not explicitly stated. Shipping methods, costs and delivery estimates depend on destination and are confirmed before payment. Quality-related return requests must be made within 7 days of delivery, subject to applicable consumer rights. Non-quality-related returns are not offered except where required by law.
