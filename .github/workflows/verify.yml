@@ -28,7 +28,7 @@ jobs:
 
       - name: Parse migration SQL
         run: |
-          python -m pip install --disable-pip-version-check pglast==7.10
+          python -m pip install --disable-pip-version-check pglast==8.7
           python - <<'PY'
           from pathlib import Path
           from pglast import parse_sql
