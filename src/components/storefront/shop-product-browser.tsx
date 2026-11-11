@@ -21,6 +21,9 @@ export function ShopProductBrowser({ products }: { products: StoreProduct[] }) {
     return [...unique.entries()].sort((a, b) => a[1].localeCompare(b[1]));
   }, [products]);
 
+  const currencies = new Set(products.flatMap((product) => product.variants.filter((variant) => variant.is_active && variant.price !== null).map((variant) => variant.currency || "USD")));
+  const canSortByPrice = currencies.size <= 1;
+
   const filtered = useMemo(() => {
     const term = search.trim().toLocaleLowerCase();
     const result = products.filter((product) => {
@@ -38,8 +41,6 @@ export function ShopProductBrowser({ products }: { products: StoreProduct[] }) {
     });
   }, [products, search, pet, category, sort]);
 
-  const currencies = new Set(products.flatMap((product) => product.variants.filter((variant) => variant.is_active && variant.price !== null).map((variant) => variant.currency || "USD")));
-  const canSortByPrice = currencies.size <= 1;
   const hasFilters = search.trim() !== "" || pet !== "all" || category !== "all" || sort !== "featured";
   function reset() { setSearch(""); setPet("all"); setCategory("all"); setSort("featured"); }
 
