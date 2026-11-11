@@ -3,7 +3,7 @@ import { OrganizationJsonLd, WebsiteJsonLd } from "@/lib/seo-jsonld";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://jinqaya.com"),
+  metadataBase: new URL("https://www.jinqaya.com"),
   title: {
     default: "JINQAYA | Premium Pet Lifestyle for Cats & Dogs",
     template: "%s | JINQAYA",
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
     siteName: "JINQAYA",
     title: "JINQAYA | Premium Pet Lifestyle for Cats & Dogs",
     description: "Considered everyday essentials for the life you share with cats and dogs.",
-    url: "https://jinqaya.com/",
+    url: "https://www.jinqaya.com/",
     locale: "en_US",
   },
   twitter: {
