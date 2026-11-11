@@ -43,7 +43,17 @@ export function InquiryForm({ productId, productName }: Props) {
     setStatus("sending");
     setMessage("");
     try {
-      const sessionToken = window.sessionStorage.getItem("jq-session-token");
+      const consent = window.localStorage.getItem("jq-analytics-consent");
+      const visitorId = consent === "granted" ? window.localStorage.getItem("jq-visitor-id") : null;
+      const sessionToken = consent === "granted" ? window.sessionStorage.getItem("jq-session-token") : null;
+      if (visitorId && sessionToken) {
+        const params = new URLSearchParams(window.location.search);
+        await fetch("/api/analytics/track", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ consent, visitorId, sessionToken, pagePath: window.location.pathname, pageTitle: document.title, referrerUrl: document.referrer, source: params.get("utm_source"), medium: params.get("utm_medium"), campaign: params.get("utm_campaign") }),
+        }).catch(() => undefined);
+      }
       const response = await fetch("/api/inquiries", {
         method: "POST",
         headers: { "content-type": "application/json" },
