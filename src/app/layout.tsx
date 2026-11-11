@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { OrganizationJsonLd, WebsiteJsonLd } from "@/lib/seo-jsonld";
+import { VisitorAnalytics } from "@/components/storefront/visitor-analytics";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -41,6 +42,7 @@ export default function RootLayout({
       <body>
         <OrganizationJsonLd />
         <WebsiteJsonLd />
+        <VisitorAnalytics />
         {children}
       </body>
     </html>
