@@ -7,6 +7,8 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 type CleanupItem = { id: string; storage_path: string };
+type RpcError = { message: string };
+type RpcResult<T> = { data: T | null; error: RpcError | null };
 
 export async function GET(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
@@ -16,7 +18,8 @@ export async function GET(request: NextRequest) {
 
   try {
     const supabase = createAdminClient();
-    const { data, error } = await supabase.rpc("claim_product_image_cleanup", { p_limit: 50 });
+    const callCleanupRpc = supabase.rpc as unknown as <T>(name: string, args: Record<string, unknown>) => Promise<RpcResult<T>>;
+    const { data, error } = await callCleanupRpc<CleanupItem[]>("claim_product_image_cleanup", { p_limit: 50 });
     if (error) throw error;
 
     const items = (data ?? []) as CleanupItem[];
@@ -38,14 +41,14 @@ export async function GET(request: NextRequest) {
           if (storageError) throw storageError;
         }
 
-        const { error: completeError } = await supabase.rpc("complete_product_image_cleanup", { p_id: item.id });
+        const { error: completeError } = await callCleanupRpc<null>("complete_product_image_cleanup", { p_id: item.id });
         if (completeError) throw completeError;
         deleted++;
       } catch (itemError) {
         failed++;
         const message = itemError instanceof Error ? itemError.message : "Unknown cleanup error";
         console.error("[product-image-cleanup] item failed", { id: item.id, message });
-        const { error: failError } = await supabase.rpc("fail_product_image_cleanup", {
+        const { error: failError } = await callCleanupRpc<null>("fail_product_image_cleanup", {
           p_id: item.id,
           p_error: message,
         });
