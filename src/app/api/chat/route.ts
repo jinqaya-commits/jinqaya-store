@@ -63,6 +63,7 @@ export async function POST(request: NextRequest) {
     return jsonError("Invalid request.", 400);
   }
 
+  if (value(body.website, 200)) return NextResponse.json({ ok: true }, { status: 201 });
   const action = value(body.action, 20);
   const message = value(body.message, 2000);
   if (!message || message.length < 1) return jsonError("Please enter a message.", 400);
@@ -74,6 +75,15 @@ export async function POST(request: NextRequest) {
     const name = value(body.name, 120);
     const email = value(body.email, 254)?.toLowerCase() || null;
     if (email && !EMAIL.test(email)) return jsonError("Please enter a valid email address.", 400);
+    if (email) {
+      const hourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+      const { count, error: rateError } = await admin.from("support_tickets")
+        .select("id", { count: "exact", head: true })
+        .ilike("customer_email", email)
+        .gte("created_at", hourAgo);
+      if (rateError) return jsonError("Unable to start chat. Please try again.", 500);
+      if ((count || 0) >= 3) return jsonError("Please wait before starting another chat.", 429);
+    }
     const subject = value(body.subject, 160) || "Website live chat";
     const pageUrl = value(body.pageUrl, 500);
     let customerId: string | null = null;
