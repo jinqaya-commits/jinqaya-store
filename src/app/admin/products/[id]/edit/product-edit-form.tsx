@@ -24,7 +24,7 @@ export function ProductEditForm({product,categoryId,categories,variants: initial
  async function moveImage(i:number,delta:-1|1){const next=[...images];const j=i+delta;if(j<0||j>=next.length)return;[next[i],next[j]]=[next[j],next[i]];await persistImageOrder(next);}
  async function moveImageToMain(imageId:string){const index=images.findIndex(image=>image.id===imageId);if(index<=0)return;const next=[...images];const [selected]=next.splice(index,1);next.unshift(selected);await persistImageOrder(next);}
  async function dropImageOn(targetId:string){if(!draggedImageId||draggedImageId===targetId)return;const next=[...images];const from=next.findIndex(image=>image.id===draggedImageId);const to=next.findIndex(image=>image.id===targetId);if(from<0||to<0)return;const [moved]=next.splice(from,1);next.splice(to,0,moved);setDraggedImageId(null);await persistImageOrder(next);}
- async function dropImage(img:Image){const ok=await run(()=>removeImage(product.id,img.id,img.storage_path));if(ok)setImages(current=>current.filter(x=>x.id!==img.id));}
+ async function dropImage(img:Image){const ok=await run(()=>removeImage(product.id,img.id,img.storage_path));if(ok){const next=images.filter(x=>x.id!==img.id);setImages(next);if(selectedImageId===img.id)setSelectedImageId(next[0]?.id??null);}}
  async function saveImageAlt(img:Image){const ok=await run(()=>updateProductImageAlt(product.id,img.id,img.alt_text??""));if(ok)router.refresh();}
  function previewUrlFor(storagePath:string){const key=storagePath.startsWith("r2://")?storagePath.slice(5):storagePath;return "https://images.jinqaya.com/"+key.split("/").map(encodeURIComponent).join("/");}
  async function replaceImage(img:Image,file?:File){
