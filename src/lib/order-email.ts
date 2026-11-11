@@ -138,7 +138,7 @@ export async function sendOrderOutboxEmail(
     return send({
       to: recipientEmail, subject: detail.subject,
       html: shell(detail.title, `<p>Hello ${safeName},</p><p>${escapeHtml(detail.copy)}</p><p><strong>Order:</strong> ${escapeHtml(order.orderNumber)}</p>`),
-      text: `Hello ${order.customerName || "there"},\\n\\n${detail.copy}\\nOrder: ${order.orderNumber}\\n\\nJINQAYA`,
+      text: `Hello ${order.customerName || "there"},\n\n${detail.copy}\nOrder: ${order.orderNumber}\n\nJINQAYA`,
     }, idempotencyKey);
   }
   const subtotal = money(order.subtotal, order.currency);
@@ -150,7 +150,7 @@ export async function sendOrderOutboxEmail(
         <p><strong>Estimated item subtotal:</strong> ${escapeHtml(subtotal)}</p>
         <p>We’ll review availability and confirm shipping options, delivery cost and the final total before requesting payment. This request is not paid and does not mean your order has been dispatched.</p>
         <p>We’ll be in touch soon.</p>`),
-      text: `Hello ${order.customerName || "there"},\\n\\nWe received order request ${order.orderNumber}. Estimated item subtotal: ${subtotal}. We’ll confirm availability, shipping and the final total before requesting payment. This request is not paid or dispatched.\\n\\nJINQAYA`,
+      text: `Hello ${order.customerName || "there"},\n\nWe received order request ${order.orderNumber}. Estimated item subtotal: ${subtotal}. We’ll confirm availability, shipping and the final total before requesting payment. This request is not paid or dispatched.\n\nJINQAYA`,
     }, idempotencyKey);
   }
   return send({
