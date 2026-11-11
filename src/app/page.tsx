@@ -201,11 +201,35 @@ export default async function HomePage() {
 
       <footer className="jq-footer">
         <div className="jq-footer-main">
-          <div><Link className="jq-wordmark" href="/">JINQAYA<span>®</span></Link><p>Life is better in good company.</p></div>
-          <div className="jq-footer-links"><Link href="/shop">THE SHOP</Link><Link href="#collections">COLLECTIONS</Link><Link href="#point-of-view">OUR POINT OF VIEW</Link><Link href="/policies/shipping">SHIPPING POLICY</Link><Link href="/policies/returns-refunds">RETURNS &amp; REFUNDS</Link><Link href="/policies/privacy">PRIVACY POLICY</Link><Link href="/policies/terms">TERMS OF SERVICE</Link><Link href="/contact">CONTACT</Link><a href="mailto:info@jinqaya.com">INFO@JINQAYA.COM</a></div>
-          <span className="jq-footer-note">FOR CATS, DOGS<br />AND THE LIFE BETWEEN.</span>
+          <div className="jq-footer-brand">
+            <Link className="jq-wordmark" href="/" aria-label="JINQAYA home">JINQAYA<span>®</span></Link>
+            <p>Thoughtful essentials for the life we share with cats and dogs.</p>
+            <a className="jq-footer-email" href="mailto:info@jinqaya.com">INFO@JINQAYA.COM <span>↗</span></a>
+          </div>
+          <nav className="jq-footer-group" aria-label="Explore">
+            <h2>EXPLORE</h2>
+            <Link href="/shop">The shop</Link>
+            <Link href="#collections">Collections</Link>
+            <Link href="#point-of-view">Our point of view</Link>
+          </nav>
+          <nav className="jq-footer-group" aria-label="Customer care">
+            <h2>CUSTOMER CARE</h2>
+            <Link href="/policies/shipping">Shipping</Link>
+            <Link href="/policies/returns-refunds">Returns &amp; refunds</Link>
+            <Link href="/contact">Contact us</Link>
+          </nav>
+          <nav className="jq-footer-group" aria-label="Information">
+            <h2>INFORMATION</h2>
+            <Link href="/policies/privacy">Privacy policy</Link>
+            <Link href="/policies/terms">Terms of service</Link>
+            <Link href="/about">About JINQAYA</Link>
+          </nav>
         </div>
-        <div className="jq-footer-bottom"><span>© {new Date().getFullYear()} JINQAYA. ALL RIGHTS RESERVED.</span><span>DESIGNED FOR LIFE, SHARED.</span></div>
+        <div className="jq-footer-bottom">
+          <span>© {new Date().getFullYear()} JINQAYA. ALL RIGHTS RESERVED.</span>
+          <span>FOR CATS, DOGS &amp; THE LIFE BETWEEN.</span>
+          <Link href="/">BACK TO TOP ↑</Link>
+        </div>
       </footer>
     </main>
   );
