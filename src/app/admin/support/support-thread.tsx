@@ -13,6 +13,9 @@ type Ticket = {
   last_message_at: string | null;
   unread_by_staff: number;
   unread_by_customer: number;
+  visitor_id: string | null;
+  page_url: string | null;
+  source: string | null;
 };
 type Message = { id: string; sender_type: string; message: string; is_internal: boolean; created_at: string };
 type Visitor = { ip_country: string | null; ip_region: string | null; ip_city: string | null; source: string | null; medium: string | null; campaign: string | null; landing_page: string | null; device_type: string | null; browser: string | null; operating_system: string | null; started_at: string; last_seen_at: string } | null;
