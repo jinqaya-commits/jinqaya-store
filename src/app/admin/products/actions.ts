@@ -219,11 +219,7 @@ export async function updateProduct(productId: string, values: {
   }).eq("id",productId);
   if (productError) return { error: productError.message };
 
-  // Keep every selected category, remove only unchecked links, and leave exactly one primary.
-  const { error: resetPrimaryError } = await supabase.from("product_categories")
-    .update({ is_primary: false }).eq("product_id", productId);
-  if (resetPrimaryError) return { error: resetPrimaryError.message };
-
+  // Upsert the selected links first so the product always has its chosen primary category.
   const { error: upsertError } = await supabase.from("product_categories").upsert(
     categoryIds.map(categoryId => ({
       product_id: productId,
@@ -233,6 +229,12 @@ export async function updateProduct(productId: string, values: {
     { onConflict: "product_id,category_id" }
   );
   if (upsertError) return { error: upsertError.message };
+
+  const { error: clearOtherPrimaryError } = await supabase.from("product_categories")
+    .update({ is_primary: false })
+    .eq("product_id", productId)
+    .neq("category_id", values.primaryCategoryId);
+  if (clearOtherPrimaryError) return { error: clearOtherPrimaryError.message };
 
   const { error: removeUncheckedError } = await supabase.from("product_categories")
     .delete().eq("product_id", productId).not("category_id", "in", `(${categoryIds.join(",")})`);
