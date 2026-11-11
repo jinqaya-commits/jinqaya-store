@@ -19,6 +19,15 @@ async function requireCatalogManager() {
   return supabase;
 }
 
+async function enqueueProductImageCleanup(supabase: Awaited<ReturnType<typeof createClient>>, storagePath: string, reason: string) {
+  if (!storagePath || /^https?:\/\//i.test(storagePath)) return;
+  const { error } = await supabase.rpc("enqueue_product_image_cleanup", {
+    p_storage_path: storagePath,
+    p_error_message: reason.slice(0, 1000),
+  });
+  if (error) console.error("Unable to queue product image cleanup:", { storagePath, error: error.message });
+}
+
 function slugify(value: string) {
   return value
     .normalize("NFKD")
@@ -280,10 +289,12 @@ export async function removeImage(productId: string, imageId: string, _path: str
       }));
     } else if (path && !(path.startsWith("https://") || path.startsWith("http://"))) {
       const { error: storageError } = await supabase.storage.from("product-images").remove([path]);
-      if (storageError) console.error("Product image row deleted but storage cleanup failed:", storageError.message);
+      if (storageError) throw storageError;
     }
   } catch (cleanupError) {
-    console.error("Product image row deleted but storage cleanup failed:", cleanupError);
+    const reason = cleanupError instanceof Error ? cleanupError.message : "Unknown storage cleanup error";
+    console.error("Product image row deleted; queuing storage cleanup retry:", reason);
+    await enqueueProductImageCleanup(supabase, path, reason);
   }
 
   revalidatePath("/admin/products");
@@ -315,7 +326,9 @@ export async function addProductImage(productId: string, storagePath: string, al
         await supabase.storage.from("product-images").remove([storagePath]);
       }
     } catch (cleanupError) {
-      console.error("Unable to clean up unlinked product image:", cleanupError);
+      const reason = cleanupError instanceof Error ? cleanupError.message : "Unknown storage cleanup error";
+      console.error("Unable to clean up unlinked product image; queuing retry:", reason);
+      await enqueueProductImageCleanup(supabase, storagePath, reason);
     }
     return { error: error?.message || "Unable to save product image." };
   }
@@ -360,10 +373,12 @@ export async function replaceProductImage(productId: string, imageId: string, st
       }));
     } else if (oldPath && !(oldPath.startsWith("https://") || oldPath.startsWith("http://"))) {
       const { error: cleanupError } = await supabase.storage.from("product-images").remove([oldPath]);
-      if (cleanupError) console.error("Replacement saved but old product image cleanup failed:", cleanupError.message);
+      if (cleanupError) throw cleanupError;
     }
   } catch (cleanupError) {
-    console.error("Replacement saved but old product image cleanup failed:", cleanupError);
+    const reason = cleanupError instanceof Error ? cleanupError.message : "Unknown storage cleanup error";
+    console.error("Replacement saved; queuing old image cleanup retry:", reason);
+    await enqueueProductImageCleanup(supabase, oldPath, reason);
   }
 
   const { data: product } = await supabase.from("products").select("slug").eq("id", productId).maybeSingle();
