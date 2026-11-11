@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
+import styles from "./visitor-analytics.module.css";
 
 type Consent = "granted" | "denied" | null;
 
@@ -72,7 +73,7 @@ export function VisitorAnalytics() {
       {(consent === null || showSettings) && (
     <aside
       aria-label="Privacy preferences"
-      className="jq-consent-banner"
+      className={styles.banner}
       role="dialog"
       aria-modal="false"
     >
@@ -81,14 +82,14 @@ export function VisitorAnalytics() {
         <p>We use optional analytics to understand which pages are useful and where visits come from. You can continue with essential site functions only.</p>
         <a href="/policies/privacy">Read our Privacy Policy</a>
       </div>
-      <div className="jq-consent-actions">
+      <div className={styles.actions}>
         <button type="button" onClick={() => chooseConsent("denied")}>ESSENTIAL ONLY</button>
         <button type="button" onClick={() => chooseConsent("granted")}>ALLOW ANALYTICS</button>
       </div>
       </aside>
       )}
       {consent !== null && !showSettings && (
-        <button type="button" className="jq-privacy-settings" onClick={() => setShowSettings(true)}>PRIVACY SETTINGS</button>
+        <button type="button" className={styles.settings} onClick={() => setShowSettings(true)}>PRIVACY SETTINGS</button>
       )}
     </>
   );
