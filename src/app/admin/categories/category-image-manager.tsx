@@ -23,6 +23,7 @@ export function CategoryImageManager({categories}:{categories:Category[]}) {
   const [busyId,setBusyId]=useState<string|null>(null);
   const [error,setError]=useState("");
   const [savedId,setSavedId]=useState<string|null>(null);
+  const [filter,setFilter]=useState("");
   const [drafts,setDrafts]=useState<Record<string,Draft>>({});
   const router=useRouter();
 
@@ -65,12 +66,20 @@ export function CategoryImageManager({categories}:{categories:Category[]}) {
     } finally {setBusyId(null);}
   }
 
+  const filteredCategories=categories.filter(category=>
+    `${category.name} ${category.slug}`.toLowerCase().includes(filter.trim().toLowerCase())
+  );
+
   return <section className="admin-panel jq-category-admin">
     <div className="admin-panel-heading"><div><p className="admin-kicker">CATEGORY CONTENT & SEO</p><h2>Category images and search previews</h2></div><span>{categories.length} CATEGORIES</span></div>
     <p className="admin-help">Each category has its own image, SEO title and search description. Keep titles concise and write a genuinely relevant description for that category. Images: JPG, PNG, WebP or AVIF, up to 20 MB.</p>
     {error&&<p className="admin-error" role="alert">{error}</p>}
+    <label>Find a category
+      <input type="search" value={filter} onChange={event=>setFilter(event.target.value)} placeholder="Search by category name or URL slug" />
+    </label>
+    <p className="admin-help">Showing {filteredCategories.length} of {categories.length} categories.</p>
     <div className="jq-category-admin-grid">
-      {categories.map(category=>{
+      {filteredCategories.map(category=>{
         const draft=draftFor(category);
         return <article className="jq-category-admin-card" key={category.id}>
           <div className="jq-category-admin-preview">
