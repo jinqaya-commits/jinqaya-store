@@ -1,0 +1,17 @@
+.section {
+  max-width: 1500px;
+  margin: 0 auto;
+  padding: 0 7% 90px;
+}
+.heading { margin-bottom: 24px; }
+.heading h2 { margin: 12px 0 0; color: #51463a; font: 400 clamp(30px, 3.5vw, 42px)/1.1 Georgia, serif; }
+.grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px; }
+.card { display: flex; min-width: 0; flex-direction: column; gap: 8px; color: #51463a; }
+.card img, .placeholder { width: 100%; aspect-ratio: 1 / 1; object-fit: contain; background: #eee9e0; }
+.placeholder { display: grid; place-items: center; color: #8b735e; font: 13px Georgia, serif; letter-spacing: 3px; }
+.name { font-size: 12px; line-height: 1.5; }
+.price { color: #766b5e; font: 12px Georgia, serif; }
+@media (max-width: 760px) {
+  .section { padding: 0 6% 70px; }
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 14px; }
+}

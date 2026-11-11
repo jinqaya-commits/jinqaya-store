@@ -8,6 +8,8 @@ import { ProductCard } from "@/components/storefront/product-card";
 import { CartLink } from "@/components/storefront/cart-link";
 import { CategoryNavigation } from "@/components/storefront/category-navigation";
 import { BreadcrumbJsonLd, ProductJsonLd } from "@/lib/seo-jsonld";
+import { RecentlyViewed } from "@/components/storefront/recently-viewed";
+import styles from "./product-experience.module.css";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -99,23 +101,37 @@ export default async function ProductPage({ params }: Props) {
             <Link href="/policies/returns-refunds">Returns & refunds <span aria-hidden="true">↗</span></Link>
           </div>
 
-          <div className="product-specifications">
-            <p className="eyebrow">AT A GLANCE</p>
-            <dl className="product-specification-grid">
-              {product.material && <div><dt>Material</dt><dd>{product.material}</dd></div>}
-              {suitableFor && <div><dt>Designed for</dt><dd>{suitableFor}</dd></div>}
-              {product.primary_category && <div><dt>Collection</dt><dd>{product.primary_category.name}</dd></div>}
-              {colors.length > 0 && <div><dt>Color options</dt><dd>{colors.join(", ")}</dd></div>}
-              {sizes.length > 0 && <div><dt>Size options</dt><dd>{sizes.join(", ")}</dd></div>}
-            </dl>
-          </div>
+          <details className={styles.accordion} open>
+            <summary>PRODUCT DETAILS</summary>
+            <div className="product-specifications">
+              <dl className="product-specification-grid">
+                {product.material && <div><dt>Material</dt><dd>{product.material}</dd></div>}
+                {suitableFor && <div><dt>Designed for</dt><dd>{suitableFor}</dd></div>}
+                {product.primary_category && <div><dt>Collection</dt><dd>{product.primary_category.name}</dd></div>}
+                {colors.length > 0 && <div><dt>Color options</dt><dd>{colors.join(", ")}</dd></div>}
+                {sizes.length > 0 && <div><dt>Size options</dt><dd>{sizes.join(", ")}</dd></div>}
+              </dl>
+            </div>
+          </details>
 
           {product.care_instructions && (
-            <div className="product-care-block">
-              <p className="eyebrow">CARE & MAINTENANCE</p>
+            <details className={styles.accordion}>
+              <summary>CARE & MAINTENANCE</summary>
               <p>{product.care_instructions}</p>
-            </div>
+            </details>
           )}
+
+          <details className={styles.accordion}>
+            <summary>SHIPPING & DELIVERY</summary>
+            <p>Shipping options and the estimated delivery window are confirmed with you before your order is finalized.</p>
+            <Link href="/policies/shipping">Read our shipping information ↗</Link>
+          </details>
+
+          <details className={styles.accordion}>
+            <summary>RETURNS & REFUNDS</summary>
+            <p>Please review our returns and refunds policy before submitting an order request.</p>
+            <Link href="/policies/returns-refunds">Read our returns & refunds policy ↗</Link>
+          </details>
 
           <Link className="product-question-link" href={`/contact?product=${encodeURIComponent(product.slug)}`}>
             NEED A LITTLE MORE DETAIL? ASK US ABOUT THIS PIECE <span aria-hidden="true">↗</span>
@@ -145,6 +161,12 @@ export default async function ProductPage({ params }: Props) {
         </section>
       )}
 
+      <RecentlyViewed product={{
+        slug: product.slug,
+        name: product.name,
+        imageUrl: product.images.find((image) => image.is_primary)?.detail_url ?? product.images[0]?.detail_url ?? null,
+        priceLabel: price,
+      }} />
       <footer className="inner-footer"><Link href="/">JINQAYA</Link><span>FOR CATS, DOGS & THE LIFE BETWEEN.</span></footer>
     </main>
   );

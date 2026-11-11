@@ -15,6 +15,22 @@ export function AddToCart({ product }: { product: StoreProduct }) {
   const [quantity, setQuantity] = useState(1);
   const [message, setMessage] = useState("");
   const selected = available.find((variant) => variant.id === variantId);
+  const colors = [...new Set(available.map((variant) => variant.color).filter((value): value is string => Boolean(value)))];
+  const sizes = [...new Set(available.map((variant) => variant.size).filter((value): value is string => Boolean(value)))];
+
+  function chooseColor(color: string) {
+    const match = available.find((variant) => variant.color === color && (!selected?.size || variant.size === selected.size))
+      ?? available.find((variant) => variant.color === color);
+    if (match) setVariantId(match.id);
+    setMessage("");
+  }
+
+  function chooseSize(size: string) {
+    const match = available.find((variant) => variant.size === size && (!selected?.color || variant.color === selected.color))
+      ?? available.find((variant) => variant.size === size);
+    if (match) setVariantId(match.id);
+    setMessage("");
+  }
 
   function add() {
     if (!selected || selected.price === null) return;
@@ -44,7 +60,38 @@ export function AddToCart({ product }: { product: StoreProduct }) {
 
   return (
     <div className="add-to-cart">
-      {available.length > 1 && (
+      <p className="cart-selected-price">{formatPrice(selected)}</p>
+
+      {colors.length > 0 && (
+        <fieldset className="cart-option-group">
+          <legend>COLOR</legend>
+          <div className="cart-option-buttons">
+            {colors.map((color) => (
+              <button key={color} type="button" className="cart-option-button" aria-pressed={selected?.color === color} onClick={() => chooseColor(color)}>
+                {color}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+      )}
+
+      {sizes.length > 0 && (
+        <fieldset className="cart-option-group">
+          <legend>SIZE</legend>
+          <div className="cart-option-buttons">
+            {sizes.map((size) => {
+              const enabled = available.some((variant) => variant.size === size && (!selected?.color || !variant.color || variant.color === selected.color));
+              return (
+                <button key={size} type="button" className="cart-option-button" aria-pressed={selected?.size === size} disabled={!enabled} onClick={() => chooseSize(size)}>
+                  {size}
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
+      )}
+
+      {available.length > 1 && colors.length === 0 && sizes.length === 0 && (
         <label className="cart-field">
           <span>SELECT YOUR OPTION</span>
           <select value={variantId} onChange={(event) => { setVariantId(event.target.value); setMessage(""); }}>
@@ -56,6 +103,7 @@ export function AddToCart({ product }: { product: StoreProduct }) {
           </select>
         </label>
       )}
+
       <div className="cart-add-row">
         <label className="cart-field">
           <span>QUANTITY</span>
