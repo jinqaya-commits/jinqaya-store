@@ -99,7 +99,7 @@ export function ProductEditForm({product,categoryIds,primaryCategoryId,categorie
     <legend>Product categories</legend>
     <p className="admin-help">Choose every category where this product should appear, then mark one as the primary category.</p>
     <div className="admin-category-options">
-     {categories.filter(category=>category.parent_id!==null&&(selectedCategoryIds.includes(category.id)||(category.is_active&&!categories.some(child=>child.parent_id===category.id&&child.is_active))).map(category=><div className="admin-category-option" key={category.id}>
+     {categories.filter(category=>category.parent_id!==null&&(selectedCategoryIds.includes(category.id)||(category.is_active&&!categories.some(child=>child.parent_id===category.id&&child.is_active)))).map(category=><div className="admin-category-option" key={category.id}>
       <label><input type="checkbox" checked={selectedCategoryIds.includes(category.id)} disabled={!category.is_active&&!selectedCategoryIds.includes(category.id)} onChange={event=>toggleCategory(category.id,event.target.checked)}/><span>{categoryPath(category,categories)}{!category.is_active&&<small className="admin-category-inactive">Inactive — remove before saving</small>}</span></label>
       <label className="admin-category-primary"><input type="radio" name="primary-category" checked={selectedPrimaryCategoryId===category.id} disabled={!category.is_active||!selectedCategoryIds.includes(category.id)} onChange={()=>setSelectedPrimaryCategoryId(category.id)}/>Primary</label>
      </div>)}
