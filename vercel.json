@@ -8,6 +8,10 @@
     {
       "path": "/api/cron/order-email-outbox",
       "schedule": "30 4 * * *"
+    },
+    {
+      "path": "/api/cron/product-image-cleanup",
+      "schedule": "15 4 * * *"
     }
   ]
 }
