@@ -15,6 +15,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Generate migration filename with Supabase CLI
+        run: |
+          npx --yes supabase@latest migration new reliable_order_status_email_outbox
+          find supabase/migrations -maxdepth 1 -type f -name '*_reliable_order_status_email_outbox.sql' -print
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
