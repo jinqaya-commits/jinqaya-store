@@ -28,7 +28,7 @@ export default async function AdminInventoryPage() {
 
   const incomingByVariant = new Map<string, number>();
   const nextArrivalByVariant = new Map<string, string>();
-  (incomingItems || []).forEach((item: any) => {
+  (incomingItems || []).forEach((item) => {
     const purchaseOrder = Array.isArray(item.purchase_orders) ? item.purchase_orders[0] : item.purchase_orders;
     if (!warehouse || purchaseOrder?.warehouse_id !== warehouse.id) return;
     const remaining = Math.max(0, Number(item.quantity_ordered) - Number(item.quantity_received));
@@ -43,7 +43,7 @@ export default async function AdminInventoryPage() {
 
   const rows = (variants || []).map((variant) => {
     const inventoryRows = Array.isArray(variant.inventory) ? variant.inventory : [];
-    const stock = inventoryRows.find((item: any) => item.warehouse_id === warehouse?.id) || null;
+    const stock = inventoryRows.find((item) => item.warehouse_id === warehouse?.id) || null;
     const onHand = Number(stock?.on_hand || 0);
     const reserved = Number(stock?.reserved || 0);
     const damaged = Number(stock?.damaged || 0);
@@ -127,7 +127,7 @@ export default async function AdminInventoryPage() {
                   <th>INCOMING</th><th>REPLENISHMENT GAP</th><th>STOCKTAKE / REORDER</th><th>STOCK MOVEMENT</th>
                 </tr></thead>
                 <tbody>
-                  {rows.map(({ variant, stock, onHand, reserved, damaged, available, reorderPoint, incoming, replenishmentGap, nextArrival }) => (
+                  {rows.map(({ variant, onHand, reserved, damaged, available, reorderPoint, incoming, replenishmentGap, nextArrival }) => (
                     <tr key={variant.id}>
                       <td>
                         <strong>{(variant.products as { name?: string } | null)?.name || "Product"}</strong>
@@ -149,7 +149,7 @@ export default async function AdminInventoryPage() {
           <p className="admin-help" style={{ marginTop: 16 }}>
             Available stock = on hand − reserved − damaged. Incoming units are unreceived quantities on submitted or partially received purchase orders for this warehouse.
             Replenishment gap is the minimum quantity needed to reach the SKU reorder point after current incoming stock. It is a planning figure only; no purchase order is created automatically.
-            Set each SKU's reorder point using your own sales pace and supplier lead time.
+            Set each SKU&apos;s reorder point using your own sales pace and supplier lead time.
           </p>
         </section>
 
