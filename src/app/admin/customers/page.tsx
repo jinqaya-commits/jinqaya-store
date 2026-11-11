@@ -30,7 +30,7 @@ export default async function AdminCustomersPage({ searchParams }: { searchParam
   ]);
 
   return <main className="admin-shell">
-    <aside className="admin-sidebar"><Link href="/" className="admin-brand">JINQAYA<span>ADMIN</span></Link><nav><Link href="/admin/products">Products</Link><Link href="/admin/orders">Orders</Link><Link className="active" href="/admin/customers">Customers</Link><Link href="/admin/visitors">Visitors</Link><Link href="/admin/follow-ups">Follow-ups</Link><Link href="/admin/inventory">Inventory</Link><Link href="/shop">View storefront ↗</Link></nav><p className="admin-sidebar-note">COMMERCE MANAGEMENT</p></aside>
+    <aside className="admin-sidebar"><Link href="/" className="admin-brand">JINQAYA<span>ADMIN</span></Link><nav><Link href="/admin/products">Products</Link><Link href="/admin/orders">Orders</Link><Link className="active" href="/admin/customers">Customers</Link><Link href="/admin/inquiries">Enquiries</Link><Link href="/admin/visitors">Visitors</Link><Link href="/admin/follow-ups">Follow-ups</Link><Link href="/admin/inventory">Inventory</Link><Link href="/shop">View storefront ↗</Link></nav><p className="admin-sidebar-note">COMMERCE MANAGEMENT</p></aside>
     <section className="admin-main">
       <header className="admin-topbar"><div><p className="admin-kicker">JINQAYA / RELATIONSHIPS</p><h1>Customers</h1></div><Link className="admin-back-link" href="/admin/orders">← ORDERS</Link></header>
       <div className="admin-summary"><div><span>ALL CUSTOMERS</span><strong>{total ?? 0}</strong></div><div><span>MARKETING OPT-IN</span><strong>{optedIn ?? 0}</strong></div><div><span>IN THIS VIEW</span><strong>{customers?.length ?? 0}</strong></div></div>
