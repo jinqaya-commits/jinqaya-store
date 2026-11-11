@@ -3710,6 +3710,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      release_expired_stock_reservations: {
+        Args: { p_limit?: number }
+        Returns: Json
+      }
       claim_order_email_outbox: {
         Args: { p_limit?: number; p_order_id?: string | null }
         Returns: Database["public"]["Tables"]["order_email_outbox"]["Row"][]
