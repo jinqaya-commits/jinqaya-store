@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import SupportInboxRefresh from "./inbox-refresh";
 
 export const dynamic = "force-dynamic";
 const statuses = [["all","All chats"],["open","Open"],["in_progress","In progress"],["waiting_customer","Waiting for customer"],["resolved","Resolved"],["closed","Closed"]] as const;
@@ -38,7 +39,7 @@ export default async function AdminSupportPage({ searchParams }: { searchParams:
         <Link className="active" href="/admin/support">Live chat</Link><Link href="/admin/follow-ups">Follow-ups</Link><Link href="/admin/inventory">Inventory</Link><Link href="/shop">View storefront ↗</Link>
       </nav><p className="admin-sidebar-note">CUSTOMER CARE</p></aside>
       <section className="admin-main">
-        <header className="admin-topbar"><div><p className="admin-kicker">JINQAYA / CUSTOMER CARE</p><h1>Live chat</h1><p className="admin-help">Website conversations and visitor context. This inbox refreshes automatically.</p></div><Link className="admin-back-link" href="/admin">← OVERVIEW</Link></header>
+        <header className="admin-topbar"><div><p className="admin-kicker">JINQAYA / CUSTOMER CARE</p><h1>Live chat</h1><p className="admin-help">Website conversations and visitor context.</p><SupportInboxRefresh /></div><Link className="admin-back-link" href="/admin">← OVERVIEW</Link></header>
         <div className="admin-summary">
           <div><span>OPEN / IN PROGRESS</span><strong>{open ?? 0}</strong><small>Needs staff attention</small></div>
           <div><span>WAITING FOR CUSTOMER</span><strong>{waiting ?? 0}</strong><small>Staff has replied</small></div>
