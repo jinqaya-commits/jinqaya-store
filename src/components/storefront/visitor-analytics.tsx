@@ -15,6 +15,17 @@ function getOrCreateId(storage: Storage, key: string) {
   return value;
 }
 
+function getSessionToken() {
+  const lastSeen = Number(window.sessionStorage.getItem("jq-session-last-seen") || 0);
+  let token = window.sessionStorage.getItem("jq-session-token");
+  if (!token || !lastSeen || Date.now() - lastSeen > 30 * 60 * 1000) {
+    token = crypto.randomUUID();
+    window.sessionStorage.setItem("jq-session-token", token);
+  }
+  window.sessionStorage.setItem("jq-session-last-seen", String(Date.now()));
+  return token;
+}
+
 export function VisitorAnalytics() {
   const pathname = usePathname();
   const [consent, setConsent] = useState<Consent>(null);
@@ -31,7 +42,7 @@ export function VisitorAnalytics() {
     if (consent !== "granted" || !pathname) return;
     try {
       const visitorId = getOrCreateId(window.localStorage, "jq-visitor-id");
-      const sessionToken = getOrCreateId(window.sessionStorage, "jq-session-token");
+      const sessionToken = getSessionToken();
       const params = new URLSearchParams(window.location.search);
       const payload = {
         consent,
@@ -61,7 +72,11 @@ export function VisitorAnalytics() {
   }, [consent, pathname]);
 
   function chooseConsent(next: Exclude<Consent, null>) {
-    window.localStorage.setItem("jq-analytics-consent", next);
+    try {
+      window.localStorage.setItem("jq-analytics-consent", next);
+    } catch {
+      // Keep the storefront usable when browser storage is unavailable.
+    }
     setConsent(next);
     setShowSettings(false);
   }
