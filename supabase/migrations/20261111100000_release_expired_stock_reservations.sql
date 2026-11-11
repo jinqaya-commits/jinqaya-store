@@ -12,6 +12,7 @@ DECLARE
   v_released_orders integer := 0;
   v_released_lines integer := 0;
   v_released_units integer := 0;
+  v_order_released_units integer := 0;
   v_now timestamptz := pg_catalog.now();
 BEGIN
   FOR v_order_id IN
@@ -37,6 +38,8 @@ BEGIN
      LIMIT LEAST(GREATEST(COALESCE(p_limit, 100), 1), 500)
      FOR UPDATE OF o SKIP LOCKED
   LOOP
+    v_order_released_units := 0;
+
     FOR v_reservation IN
       SELECT *
         FROM public.stock_reservations
@@ -76,6 +79,7 @@ BEGIN
 
       v_released_lines := v_released_lines + 1;
       v_released_units := v_released_units + v_reservation.quantity;
+      v_order_released_units := v_order_released_units + v_reservation.quantity;
     END LOOP;
 
     UPDATE public.orders
@@ -113,7 +117,7 @@ BEGIN
         pg_catalog.jsonb_build_object('status', 'pending_payment'),
         pg_catalog.jsonb_build_object(
           'status', 'on_hold',
-          'released_units', v_released_units,
+          'released_units', v_order_released_units,
           'reason', 'stock_reservation_expired'
         )
       );
