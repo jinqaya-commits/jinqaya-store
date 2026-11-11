@@ -18,7 +18,10 @@ jobs:
       - name: Generate migration filename with Supabase CLI
         run: |
           npx --yes supabase@latest migration new reliable_order_status_email_outbox
-          find supabase/migrations -maxdepth 1 -type f -name '*_reliable_order_status_email_outbox.sql' -print
+          migration_file="$(find supabase/migrations -maxdepth 1 -type f -name '*_reliable_order_status_email_outbox.sql' -print -quit)"
+          test -n "$migration_file"
+          cp supabase/migration-drafts/reliable_order_status_email_outbox.sql "$migration_file"
+          echo "Prepared deployable migration: $migration_file"
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
