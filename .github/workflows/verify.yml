@@ -147,12 +147,12 @@ jobs:
           migration = Path("supabase/migrations/202611120001_product_image_cleanup_queue.sql").read_text()
           lines = sql.splitlines()
           for i, line in enumerate(lines):
-              if line.strip().startswith("\\\\ir "):
+              if "202611120001_product_image_cleanup_queue.sql" in line:
                   lines[i] = migration
                   break
           else:
-              raise SystemExit("Migration include directive not found")
-          print("\\n".join(lines))
+              raise SystemExit("Migration filename reference not found")
+          print("\n".join(lines))
           PY
           docker exec -i "$container_id" psql -U postgres -d jinqaya_test -v ON_ERROR_STOP=1 < /tmp/product-image-cleanup-migration.sql
       - name: Test concurrent order status verification
