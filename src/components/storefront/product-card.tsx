@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { StoreProduct } from "@/lib/products";
-import { formatProductPrice } from "@/lib/products";
+import { formatProductPrice } from "@/lib/product-pricing";
 
 export function ProductCard({ product }: { product: StoreProduct }) {
   const image = product.images.find((item) => item.is_primary && item.thumbnail_url)
