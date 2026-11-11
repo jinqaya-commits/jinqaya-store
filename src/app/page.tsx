@@ -217,6 +217,7 @@ export default async function HomePage() {
             <Link href="/policies/shipping">Shipping</Link>
             <Link href="/policies/returns-refunds">Returns &amp; refunds</Link>
             <Link href="/contact">Contact us</Link>
+            <Link href="/faq">Frequently asked questions</Link>
           </nav>
           <nav className="jq-footer-group" aria-label="Information">
             <h2>INFORMATION</h2>

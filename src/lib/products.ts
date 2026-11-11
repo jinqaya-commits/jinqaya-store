@@ -181,7 +181,32 @@ export async function getStoreProducts(categorySlug?: string): Promise<StoreProd
     return [];
   }
 
-  return attachProductData((data ?? []) as ProductRow[]);
+  const productRows = (data ?? []) as ProductRow[];
+  const [products, categoryResult] = await Promise.all([
+    attachProductData(productRows),
+    supabase
+      .from("product_categories")
+      .select("product_id,is_primary,categories(name,slug)")
+      .in("product_id", productRows.map((product) => product.id))
+      .eq("is_primary", true),
+  ]);
+
+  if (categoryResult.error) {
+    console.error("Unable to load primary product categories:", categoryResult.error.message);
+    return products;
+  }
+
+  const primaryCategories = new Map(
+    (categoryResult.data ?? []).map((item) => [
+      item.product_id,
+      item.categories as unknown as { name: string; slug: string } | null,
+    ]),
+  );
+
+  return products.map((product) => ({
+    ...product,
+    primary_category: primaryCategories.get(product.id) ?? null,
+  }));
 }
 
 export async function getStoreProductBySlug(slug: string): Promise<StoreProduct | null> {
@@ -210,18 +235,4 @@ export async function getStoreProductBySlug(slug: string): Promise<StoreProduct 
   return products[0] ? { ...products[0], primary_category: linked ?? null } : null;
 }
 
-export function formatProductPrice(variants: StoreProductVariant[]): string | null {
-  const prices = variants
-    .map((variant) => variant.price)
-    .filter((price): price is number => price !== null && Number.isFinite(price));
-
-  if (prices.length === 0) return null;
-  const min = Math.min(...prices);
-  const max = Math.max(...prices);
-  const currency = variants.find((variant) => variant.price !== null)?.currency ?? "USD";
-
-  const format = (value: number) =>
-    new Intl.NumberFormat("en-US", { style: "currency", currency }).format(value);
-
-  return min === max ? format(min) : `From ${format(min)}`;
-}
+export { formatProductPrice } from "@/lib/product-pricing";
