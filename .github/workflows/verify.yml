@@ -65,4 +65,8 @@ jobs:
       - name: Production build
         id: build
         if: always() && steps.install.outcome == 'success' && steps.typecheck.outcome == 'success'
+        env:
+          # CI uses inert placeholders so storefront pages can prerender without production credentials.
+          NEXT_PUBLIC_SUPABASE_URL: https://127.0.0.1:54321
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-build-placeholder-key
         run: npm run build
