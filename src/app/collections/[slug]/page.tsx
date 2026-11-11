@@ -30,7 +30,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     alternates: { canonical: `/collections/${slug}` },
     openGraph: {
       type: "website",
-      url: `https://jinqaya.com/collections/${slug}`,
+      url: `https://www.jinqaya.com/collections/${slug}`,
       title,
       description,
       ...(imageUrl ? { images: [{ url: imageUrl, alt: category.name }] } : {}),
