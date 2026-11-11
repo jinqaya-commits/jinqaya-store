@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { setProductStatus } from "./actions";
 import { getProductReadiness } from "@/lib/product-readiness";
+import { resolveProductImageUrls } from "@/lib/product-images";
 
 export const dynamic = "force-dynamic";
 
@@ -15,8 +16,27 @@ export default async function AdminProductsPage() {
 
   const { data: products, error } = await supabase
     .from("products")
-    .select("id, name, slug, status, pet_type, created_at, short_description, description, material, seo_title, seo_description, product_variants(price, currency, sku, is_active), product_images(alt_text, is_primary), product_categories(is_primary, categories(parent_id, is_active))")
+    .select("id, name, slug, status, pet_type, created_at, short_description, description, material, seo_title, seo_description, product_variants(price, currency, sku, is_active), product_images(storage_path, alt_text, is_primary), product_categories(is_primary, categories(name, parent_id, is_active))")
     .order("created_at", { ascending: false });
+
+  const needsContentCount = (products ?? []).filter((product) => {
+    const imageRows = Array.isArray(product.product_images) ? product.product_images : [];
+    const categoryRows = Array.isArray(product.product_categories) ? product.product_categories : [];
+    const readiness = getProductReadiness({
+      shortDescription: product.short_description,
+      description: product.description,
+      material: product.material,
+      seoTitle: product.seo_title,
+      seoDescription: product.seo_description,
+      images: imageRows,
+      variants: Array.isArray(product.product_variants) ? product.product_variants : [],
+      categories: categoryRows.map((row: { is_primary: boolean; categories: { parent_id: string | null; is_active: boolean } | { parent_id: string | null; is_active: boolean }[] | null }) => {
+        const category = Array.isArray(row.categories) ? row.categories[0] : row.categories;
+        return { is_primary: row.is_primary, parent_id: category?.parent_id ?? null, is_active: category?.is_active ?? false };
+      }),
+    });
+    return !readiness.ready;
+  }).length;
 
   return (
     <main className="admin-shell">
@@ -27,7 +47,7 @@ export default async function AdminProductsPage() {
       </aside>
       <section className="admin-main">
         <header className="admin-topbar"><div><p className="admin-kicker">JINQAYA / CATALOG</p><h1>Products</h1></div><Link className="admin-primary-button" href="/admin/products/new">＋ Add product</Link></header>
-        <div className="admin-summary"><div><span>ALL PRODUCTS</span><strong>{products?.length ?? 0}</strong></div><div><span>ACTIVE</span><strong>{products?.filter((p) => p.status === "active").length ?? 0}</strong></div><div><span>DRAFTS</span><strong>{products?.filter((p) => p.status === "draft").length ?? 0}</strong></div></div>
+        <div className="admin-summary"><div><span>ALL PRODUCTS</span><strong>{products?.length ?? 0}</strong></div><div><span>ACTIVE</span><strong>{products?.filter((p) => p.status === "active").length ?? 0}</strong></div><div><span>DRAFTS</span><strong>{products?.filter((p) => p.status === "draft").length ?? 0}</strong></div><div><span>NEEDS CONTENT</span><strong>{needsContentCount}</strong></div></div>
         <div className="admin-panel" style={{ marginBottom: 24 }}>
           <div className="admin-panel-heading"><div><p className="admin-kicker">PUBLISHING READINESS</p><h2>Product publishing checklist</h2></div><span>CONTENT QUALITY</span></div>
           <p className="admin-help">Checks are based on product-specific information entered by your team. Generic placeholders do not count as useful image descriptions. A complete checklist helps review the catalog; it does not guarantee search rankings.</p>
@@ -57,7 +77,7 @@ export default async function AdminProductsPage() {
                   }),
                 });
                 const seoReady = readiness.ready;
-                return <tr key={product.id}><td><strong>{product.name}</strong><small>/{product.slug}</small><small><Link href={`/admin/products/${product.id}/edit`}>Edit product →</Link></small></td><td>{variant?.sku ?? "—"}</td><td>{product.pet_type}</td><td>{price}</td><td><span className={`admin-status ${seoReady ? "status-active" : "status-draft"}`}>{seoReady ? "Complete" : `${readiness.missing.length} missing`}</span>{!seoReady && <small>{readiness.missing.join(" · ")}</small>}</td><td><span className={`admin-status status-${product.status}`}>{product.status}</span></td><td><form action={async () => { "use server"; await setProductStatus(product.id, product.status === "active" ? "draft" : "active"); }}><button className="admin-table-action" type="submit" disabled={product.status !== "active" && !seoReady}>{product.status === "active" ? "Unpublish" : "Publish"}</button></form></td></tr>;
+                return <tr key={product.id}><td><div className="admin-product-cell">{(() => { const mainImage = imageRows.find((image) => image.is_primary) ?? imageRows[0]; const imageUrl = mainImage?.storage_path ? resolveProductImageUrls(mainImage.storage_path).thumbnailUrl : null; return imageUrl ? <img className="admin-product-thumb" src={imageUrl} alt="" /> : <span className="admin-product-thumb admin-product-thumb-empty">JQ</span>; })()}<div><strong>{product.name}</strong><small>/{product.slug}</small><small><Link href={`/admin/products/${product.id}/edit`}>Edit product →</Link></small></div></div></td><td>{variant?.sku ?? "—"}</td><td>{product.pet_type}</td><td>{price}</td><td><span className={`admin-status ${seoReady ? "status-active" : "status-draft"}`}>{seoReady ? "Complete" : `${readiness.missing.length} missing`}</span>{!seoReady && <small>{readiness.missing.join(" · ")}</small>}</td><td><span className={`admin-status status-${product.status}`}>{product.status}</span></td><td><form action={async () => { "use server"; await setProductStatus(product.id, product.status === "active" ? "draft" : "active"); }}><button className="admin-table-action" type="submit" disabled={product.status !== "active" && !seoReady}>{product.status === "active" ? "Unpublish" : "Publish"}</button></form></td></tr>;
               })}
             </tbody></table></div>
           )}
