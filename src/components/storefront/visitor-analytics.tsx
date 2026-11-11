@@ -18,6 +18,7 @@ export function VisitorAnalytics() {
   const pathname = usePathname();
   const [consent, setConsent] = useState<Consent>(null);
   const [ready, setReady] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   useEffect(() => {
     const saved = window.localStorage.getItem("jq-analytics-consent");
@@ -61,11 +62,14 @@ export function VisitorAnalytics() {
   function chooseConsent(next: Exclude<Consent, null>) {
     window.localStorage.setItem("jq-analytics-consent", next);
     setConsent(next);
+    setShowSettings(false);
   }
 
-  if (!ready || consent !== null) return null;
+  if (!ready) return null;
 
   return (
+    <>
+      {(consent === null || showSettings) && (
     <aside
       aria-label="Privacy preferences"
       className="jq-consent-banner"
@@ -81,6 +85,11 @@ export function VisitorAnalytics() {
         <button type="button" onClick={() => chooseConsent("denied")}>ESSENTIAL ONLY</button>
         <button type="button" onClick={() => chooseConsent("granted")}>ALLOW ANALYTICS</button>
       </div>
-    </aside>
+      </aside>
+      )}
+      {consent !== null && !showSettings && (
+        <button type="button" className="jq-privacy-settings" onClick={() => setShowSettings(true)}>PRIVACY SETTINGS</button>
+      )}
+    </>
   );
 }
