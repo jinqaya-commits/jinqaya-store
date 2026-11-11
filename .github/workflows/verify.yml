@@ -120,23 +120,11 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Install PostgreSQL client
-        run: sudo apt-get update && sudo apt-get install -y postgresql-client
-
       - name: Execute order status migration and integration tests
-        env:
-          PGHOST: localhost
-          PGPORT: 5432
-          PGUSER: postgres
-          PGPASSWORD: postgres
-          PGDATABASE: jinqaya_test
-        run: psql -v ON_ERROR_STOP=1 -f tests/order-status-postgres-integration.sql
+        run: |
+          container_id="$(docker ps --filter ancestor=postgres:17 --format '{{.ID}}' | head -n 1)"
+          test -n "$container_id"
+          docker exec -i "$container_id" psql -U postgres -d jinqaya_test -v ON_ERROR_STOP=1 < tests/order-status-postgres-integration.sql
 
       - name: Test concurrent order status verification
-        env:
-          PGHOST: localhost
-          PGPORT: 5432
-          PGUSER: postgres
-          PGPASSWORD: postgres
-          PGDATABASE: jinqaya_test
         run: bash tests/order-status-postgres-concurrency.sh
