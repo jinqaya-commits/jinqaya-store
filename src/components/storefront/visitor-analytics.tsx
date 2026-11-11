@@ -10,7 +10,7 @@ const GA4_MEASUREMENT_ID = "G-DFTLG1SD4T";
 
 declare global {
   interface Window {
-    dataLayer: IArguments[];
+    dataLayer: unknown[][];
     gtag: (...args: unknown[]) => void;
     __jinqayaGa4Initialized?: boolean;
   }
@@ -20,8 +20,8 @@ function trackGa4PageView(pathname: string) {
   window.dataLayer = window.dataLayer || [];
 
   if (!window.__jinqayaGa4Initialized) {
-    window.gtag = function gtag() {
-      window.dataLayer.push(arguments);
+    window.gtag = (...args: unknown[]) => {
+      window.dataLayer.push(args);
     };
     window.gtag("js", new Date());
     window.gtag("config", GA4_MEASUREMENT_ID, { send_page_view: false });
