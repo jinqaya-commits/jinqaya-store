@@ -42,7 +42,7 @@ export default async function ContactPage({ searchParams }: { searchParams: Prom
           <p>Please include your order number if your message relates to an existing order. For a product quality issue, include clear photos or videos and contact us within 7 days of receiving your order.</p>
         </div>
         <h2>Before contacting us</h2>
-        <p>You may also find the information you need in our <Link href="/policies/shipping">Shipping Policy</Link>, <Link href="/policies/returns-refunds">Returns &amp; Refunds Policy</Link>, <Link href="/policies/privacy">Privacy Policy</Link> and <Link href="/policies/terms">Terms of Service</Link>.</p>
+        <p>You may also find the information you need in our <Link href="/faq">Frequently Asked Questions</Link>, <Link href="/policies/shipping">Shipping Policy</Link>, <Link href="/policies/returns-refunds">Returns &amp; Refunds Policy</Link>, <Link href="/policies/privacy">Privacy Policy</Link> and <Link href="/policies/terms">Terms of Service</Link>.</p>
         <p className="jq-policy-back"><Link href="/shop">CONTINUE SHOPPING ↗</Link></p>
       </article>
       <footer className="jq-footer">
