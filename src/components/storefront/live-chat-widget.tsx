@@ -78,37 +78,59 @@ export function LiveChatWidget() {
   const [error, setError] = useState("");
   const [website, setWebsite] = useState("");
 
-  const loadMessages = useCallback(async (current: ChatSession) => {
+  const fetchMessages = useCallback(async (current: ChatSession): Promise<ChatResponse | null> => {
     try {
       const response = await fetch("/api/chat?ticketId=" + encodeURIComponent(current.ticketId), {
         headers: { "x-chat-token": current.chatToken },
         cache: "no-store",
       });
       if (!response.ok) {
-        if (response.status === 404) {
-          clearSession();
-          setMessages([]);
-        }
-        return;
+        if (response.status === 404) clearSession();
+        return null;
       }
-      const result = await response.json() as ChatResponse;
-      setMessages(result.messages || []);
-      if (session && session.status !== result.ticket.status) saveSession({ ...session, status: result.ticket.status });
+      return await response.json() as ChatResponse;
     } catch {
-      // Keep the current conversation visible if a refresh briefly fails.
+      return null;
     }
-  }, [session]);
+  }, []);
 
   useEffect(() => {
-    if (session) void loadMessages(session);
-  }, [session?.ticketId, loadMessages]);
+    if (!session) return;
+    let active = true;
+    const refresh = async () => {
+      const result = await fetchMessages(session);
+      if (!active) return;
+      if (!result) {
+        if (!getSessionSnapshot()) setMessages([]);
+        return;
+      }
+      setMessages(result.messages || []);
+      if (session.status !== result.ticket.status) saveSession({ ...session, status: result.ticket.status });
+    };
+    void refresh();
+    return () => { active = false; };
+  }, [session, fetchMessages]);
 
   useEffect(() => {
     if (!open || !session || session.status === "closed" || session.status === "resolved") return;
-    void loadMessages(session);
-    const timer = window.setInterval(() => { void loadMessages(session); }, 5000);
-    return () => window.clearInterval(timer);
-  }, [open, session, loadMessages]);
+    let active = true;
+    const refresh = async () => {
+      const result = await fetchMessages(session);
+      if (!active) return;
+      if (!result) {
+        if (!getSessionSnapshot()) setMessages([]);
+        return;
+      }
+      setMessages(result.messages || []);
+      if (session.status !== result.ticket.status) saveSession({ ...session, status: result.ticket.status });
+    };
+    void refresh();
+    const timer = window.setInterval(() => { void refresh(); }, 5000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [open, session, fetchMessages]);
 
   async function send(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -126,7 +148,8 @@ export function LiveChatWidget() {
         const result = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(typeof result.error === "string" ? result.error : "Message could not be sent.");
         setDraft("");
-        await loadMessages(session);
+        const refreshed = await fetchMessages(session);
+        if (refreshed) setMessages(refreshed.messages || []);
       } else {
         const consent = window.localStorage.getItem("jq-analytics-consent");
         const params = new URLSearchParams(window.location.search);
@@ -159,7 +182,8 @@ export function LiveChatWidget() {
         window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
         saveSession(next);
         setDraft("");
-        await loadMessages(next);
+        const refreshed = await fetchMessages(next);
+        if (refreshed) setMessages(refreshed.messages || []);
       }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Something went wrong. Please try again.");
