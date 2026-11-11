@@ -31,7 +31,8 @@ function slugify(value: string) {
 
 export type CreateProductInput = {
   name: string;
-  categoryId: string;
+  categoryIds: string[];
+  primaryCategoryId: string;
   petType: "cat" | "dog" | "both" | "shared";
   shortDescription: string;
   description: string;
@@ -53,7 +54,16 @@ export async function createProduct(input: CreateProductInput) {
   const name = input.name.trim();
   const slug = slugify(name);
   if (!name || !slug) return { error: "Please enter a product name." };
-  if (!input.categoryId) return { error: "Please choose a category." };
+  const categoryIds = [...new Set(input.categoryIds.filter(Boolean))];
+  if (!categoryIds.length) return { error: "Please choose at least one category." };
+  if (!input.primaryCategoryId || !categoryIds.includes(input.primaryCategoryId)) return { error: "Choose one selected category as the primary category." };
+  const { data: selectedCategories, error: categoryReadError } = await supabase
+    .from("categories").select("id,parent_id,is_active").in("id",categoryIds);
+  if (categoryReadError) return { error: categoryReadError.message };
+  if ((selectedCategories ?? []).length !== categoryIds.length ||
+      (selectedCategories ?? []).some(category => !category.is_active || !category.parent_id)) {
+    return { error: "All selected categories must be active subcategories." };
+  }
   if (input.status === "active") return { error: "New products are created as drafts. Complete the product information, add images and a priced SKU, then publish from the product list." };
 
   const { data: existing } = await supabase
@@ -83,11 +93,13 @@ export async function createProduct(input: CreateProductInput) {
     return { error: productError?.message || "Unable to create product." };
   }
 
-  const { error: categoryError } = await supabase.from("product_categories").insert({
-    product_id: product.id,
-    category_id: input.categoryId,
-    is_primary: true,
-  });
+  const { error: categoryError } = await supabase.from("product_categories").insert(
+    categoryIds.map(categoryId => ({
+      product_id: product.id,
+      category_id: categoryId,
+      is_primary: categoryId === input.primaryCategoryId,
+    }))
+  );
 
   if (categoryError) {
     await supabase.from("products").delete().eq("id", product.id);
