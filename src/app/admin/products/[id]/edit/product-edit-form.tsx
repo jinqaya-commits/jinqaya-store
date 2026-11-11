@@ -4,7 +4,7 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { updateProduct, updateVariant, removeVariant, reorderImages, removeImage, addProductImage, updateProductImageAlt, replaceProductImage } from "../../actions";
 
-type Category = {id:string;parent_id:string|null;name:string;slug:string;sort_order:number};
+type Category = {id:string;parent_id:string|null;name:string;slug:string;sort_order:number;is_active:boolean};
 type Product = { id:string; name:string; pet_type:"cat"|"dog"|"both"|"shared"; short_description:string|null; description:string|null; material:string|null; care_instructions:string|null; seo_title:string|null; seo_description:string|null; status:"draft"|"active"|"archived" };
 type Variant = { id?:string; sku:string; variantName:string; color:string; size:string; price:string; compareAtPrice:string };
 type Image = { id:string; storage_path:string; alt_text:string|null; sort_order:number; previewUrl:string };
@@ -99,9 +99,9 @@ export function ProductEditForm({product,categoryIds,primaryCategoryId,categorie
     <legend>Product categories</legend>
     <p className="admin-help">Choose every category where this product should appear, then mark one as the primary category.</p>
     <div className="admin-category-options">
-     {categories.filter(category=>category.parent_id!==null&&!categories.some(child=>child.parent_id===category.id)).map(category=><div className="admin-category-option" key={category.id}>
-      <label><input type="checkbox" checked={selectedCategoryIds.includes(category.id)} onChange={event=>toggleCategory(category.id,event.target.checked)}/><span>{categoryPath(category,categories)}</span></label>
-      <label className="admin-category-primary"><input type="radio" name="primary-category" checked={selectedPrimaryCategoryId===category.id} disabled={!selectedCategoryIds.includes(category.id)} onChange={()=>setSelectedPrimaryCategoryId(category.id)}/>Primary</label>
+     {categories.filter(category=>category.parent_id!==null&&(selectedCategoryIds.includes(category.id)||(category.is_active&&!categories.some(child=>child.parent_id===category.id&&child.is_active))).map(category=><div className="admin-category-option" key={category.id}>
+      <label><input type="checkbox" checked={selectedCategoryIds.includes(category.id)} disabled={!category.is_active&&!selectedCategoryIds.includes(category.id)} onChange={event=>toggleCategory(category.id,event.target.checked)}/><span>{categoryPath(category,categories)}{!category.is_active&&<small className="admin-category-inactive">Inactive — remove before saving</small>}</span></label>
+      <label className="admin-category-primary"><input type="radio" name="primary-category" checked={selectedPrimaryCategoryId===category.id} disabled={!category.is_active||!selectedCategoryIds.includes(category.id)} onChange={()=>setSelectedPrimaryCategoryId(category.id)}/>Primary</label>
      </div>)}
     </div>
     {selectedCategoryIds.length===0&&<p className="admin-error">Select at least one category.</p>}
