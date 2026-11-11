@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { getStoreProducts } from "@/lib/products";
 
-const siteUrl = "https://jinqaya.com";
+const siteUrl = "https://www.jinqaya.com";
 
 const staticRoutes: MetadataRoute.Sitemap = [
   { url: siteUrl, changeFrequency: "weekly", priority: 1 },
