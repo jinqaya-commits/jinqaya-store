@@ -23,3 +23,5 @@
 .admin-support-closed { padding:18px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
 .admin-support-closed p { color:#766c60; font:14px Georgia,serif; }
 @media(max-width:900px) { .admin-support-layout { grid-template-columns:1fr; } .admin-support-thread { max-height:520px; } }
+.admin-support-live-indicator { display:inline-flex; align-items:center; gap:7px; margin-top:10px; color:#7b8b72; font-size:8px; letter-spacing:1.1px; }
+.admin-support-live-indicator i { width:6px; height:6px; border-radius:50%; background:#6d946d; box-shadow:0 0 0 3px #e4ecdf; }
