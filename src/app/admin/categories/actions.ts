@@ -48,7 +48,7 @@ export async function saveCategorySeo(categoryId:string,input:{seoTitle:string;s
   if(seoTitle.length>70)return {error:"SEO title must be 70 characters or fewer."};
   if(seoDescription.length>160)return {error:"SEO description must be 160 characters or fewer."};
 
-  const {data:category,error:readError}=await supabase.from("categories").select("id").eq("id",categoryId).maybeSingle();
+  const {data:category,error:readError}=await supabase.from("categories").select("id,slug").eq("id",categoryId).maybeSingle();
   if(readError||!category)return {error:readError?.message||"Category not found."};
 
   const {error:updateError}=await supabase.from("categories").update({
@@ -60,7 +60,7 @@ export async function saveCategorySeo(categoryId:string,input:{seoTitle:string;s
   revalidatePath("/");
   revalidatePath("/shop");
   revalidatePath("/collections");
-  revalidatePath(`/collections/${categoryId}`);
+  revalidatePath(`/collections/${category.slug}`);
   revalidatePath("/admin/categories");
   return {success:true};
 }
