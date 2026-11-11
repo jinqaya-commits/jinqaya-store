@@ -45,6 +45,7 @@ export default async function AdminVisitorsPage() {
           <Link href="/admin/products">Products</Link>
           <Link href="/admin/orders">Orders</Link>
           <Link href="/admin/customers">Customers</Link>
+          <Link href="/admin/inquiries">Enquiries</Link>
           <Link className="active" href="/admin/visitors">Visitors</Link>
           <Link href="/admin/follow-ups">Follow-ups</Link>
           <Link href="/admin/after-sales">After-sales</Link>
