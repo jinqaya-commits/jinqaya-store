@@ -323,6 +323,54 @@ export async function addProductImage(productId: string, storagePath: string, al
 }
 
 
+export async function replaceProductImage(productId: string, imageId: string, storagePath: string) {
+  const supabase = await requireCatalogManager();
+  const isR2 = storagePath.startsWith("r2://");
+  const objectKey = isR2 ? storagePath.slice("r2://".length) : storagePath;
+  if (!objectKey.startsWith(`${productId}/`) || objectKey.includes("..")) {
+    return { error: "Invalid image storage path." };
+  }
+
+  const { data: current, error: readError } = await supabase
+    .from("product_images")
+    .select("storage_path")
+    .eq("id", imageId)
+    .eq("product_id", productId)
+    .maybeSingle();
+  if (readError) return { error: readError.message };
+  if (!current) return { error: "Product image not found." };
+
+  const { error: updateError } = await supabase.from("product_images")
+    .update({ storage_path: storagePath })
+    .eq("id", imageId)
+    .eq("product_id", productId);
+  if (updateError) return { error: updateError.message };
+
+  const oldPath = current.storage_path;
+  try {
+    if (oldPath && oldPath.startsWith("r2://")) {
+      const config = getR2Config();
+      await getR2Client().send(new DeleteObjectCommand({
+        Bucket: config.bucket,
+        Key: oldPath.slice("r2://".length),
+      }));
+    } else if (oldPath && !(oldPath.startsWith("https://") || oldPath.startsWith("http://"))) {
+      const { error: cleanupError } = await supabase.storage.from("product-images").remove([oldPath]);
+      if (cleanupError) console.error("Replacement saved but old product image cleanup failed:", cleanupError.message);
+    }
+  } catch (cleanupError) {
+    console.error("Replacement saved but old product image cleanup failed:", cleanupError);
+  }
+
+  const { data: product } = await supabase.from("products").select("slug").eq("id", productId).maybeSingle();
+  revalidatePath("/admin/products");
+  revalidatePath("/shop");
+  revalidatePath("/products");
+  if (product?.slug) revalidatePath(`/products/${product.slug}`);
+  return { success: true };
+}
+
+
 export async function updateProductImageAlt(productId: string, imageId: string, altText: string) {
   const supabase = await requireCatalogManager();
   const cleanAlt = altText.trim();
