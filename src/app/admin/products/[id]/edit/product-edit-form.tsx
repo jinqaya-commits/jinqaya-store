@@ -33,12 +33,12 @@ export function ProductEditForm({product,categoryIds,primaryCategoryId,categorie
  async function run(action:()=>Promise<{error?:string;success?:boolean}>) {setBusy(true);setError("");try{const result=await action();if(result.error){setError(result.error);setBusy(false);return false;}setBusy(false);router.refresh();return true;}catch(e){setError(e instanceof Error?e.message:"Unable to save.");setBusy(false);return false;}}
  async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();await run(()=>updateProduct(product.id,{...fields,categoryIds:selectedCategoryIds,primaryCategoryId:selectedPrimaryCategoryId}));}
  function toggleCategory(categoryId:string,checked:boolean) {
-  setSelectedCategoryIds(current=>{
-   const next=checked?[...current,categoryId]:current.filter(id=>id!==categoryId);
-   if(!checked&&selectedPrimaryCategoryId===categoryId)setSelectedPrimaryCategoryId(next[0]??"");
-   if(checked&&!selectedPrimaryCategoryId)setSelectedPrimaryCategoryId(categoryId);
-   return next;
-  });
+  const next=checked
+   ? Array.from(new Set([...selectedCategoryIds,categoryId]))
+   : selectedCategoryIds.filter(id=>id!==categoryId);
+  setSelectedCategoryIds(next);
+  if(!checked&&selectedPrimaryCategoryId===categoryId)setSelectedPrimaryCategoryId(next[0]??"");
+  if(checked&&!selectedPrimaryCategoryId)setSelectedPrimaryCategoryId(categoryId);
  }
  async function saveVariant(v:Variant,index:number){setBusy(true);setError("");try{const result=await updateVariant(product.id,v);if(result.error){setError(result.error);setBusy(false);return;}if(result.variantId)setVariants(current=>current.map((x,i)=>i===index?{...x,id:result.variantId}:x));setBusy(false);router.refresh();}catch(e){setError(e instanceof Error?e.message:"Unable to save variant.");setBusy(false);}}
  async function dropVariant(v:Variant,index:number){if(v.id){const ok=await run(()=>removeVariant(product.id,v.id!));if(!ok)return;}setVariants(current=>current.filter((_,i)=>i!==index));setBusy(false);}
