@@ -4,20 +4,42 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { updateProduct, updateVariant, removeVariant, reorderImages, removeImage, addProductImage, updateProductImageAlt, replaceProductImage } from "../../actions";
 
-type Category = {id:string;parent_id:string|null;name:string;slug:string;sort_order:number};
+type Category = {id:string;parent_id:string|null;name:string;slug:string;sort_order:number;is_active:boolean};
 type Product = { id:string; name:string; pet_type:"cat"|"dog"|"both"|"shared"; short_description:string|null; description:string|null; material:string|null; care_instructions:string|null; seo_title:string|null; seo_description:string|null; status:"draft"|"active"|"archived" };
 type Variant = { id?:string; sku:string; variantName:string; color:string; size:string; price:string; compareAtPrice:string };
 type Image = { id:string; storage_path:string; alt_text:string|null; sort_order:number; previewUrl:string };
 
-export function ProductEditForm({product,categoryId,categories,variants: initialVariants,images: initialImages}:{product:Product;categoryId:string;categories:Category[];variants:Variant[];images:Image[]}) {
- const [fields,setFields]=useState({name:product.name,categoryId,petType:product.pet_type,shortDescription:product.short_description??"",description:product.description??"",material:product.material??"",careInstructions:product.care_instructions??"",seoTitle:product.seo_title??"",seoDescription:product.seo_description??"",status:product.status});
+function categoryPath(category:Category,categories:Category[]) {
+ const parts=[category.name];
+ let parentId=category.parent_id;
+ while(parentId) {
+  const parent=categories.find(item=>item.id===parentId);
+  if(!parent)break;
+  parts.unshift(parent.name);
+  parentId=parent.parent_id;
+ }
+ return parts.join(" / ");
+}
+
+export function ProductEditForm({product,categoryIds,primaryCategoryId,categories,variants: initialVariants,images: initialImages}:{product:Product;categoryIds:string[];primaryCategoryId:string;categories:Category[];variants:Variant[];images:Image[]}) {
+ const [fields,setFields]=useState({name:product.name,petType:product.pet_type,shortDescription:product.short_description??"",description:product.description??"",material:product.material??"",careInstructions:product.care_instructions??"",seoTitle:product.seo_title??"",seoDescription:product.seo_description??"",status:product.status});
+ const [selectedCategoryIds,setSelectedCategoryIds]=useState(categoryIds);
+ const [selectedPrimaryCategoryId,setSelectedPrimaryCategoryId]=useState(primaryCategoryId);
  const [variants,setVariants]=useState(initialVariants);
  const [images,setImages]=useState([...initialImages].sort((a,b)=>a.sort_order-b.sort_order));
  const [draggedImageId,setDraggedImageId]=useState<string|null>(null);
  const [selectedImageId,setSelectedImageId]=useState<string|null>(initialImages[0]?.id??null);
  const [error,setError]=useState(""); const [busy,setBusy]=useState(false); const [uploadBusy,setUploadBusy]=useState(false); const [draggingFiles,setDraggingFiles]=useState(false); const router=useRouter();
  async function run(action:()=>Promise<{error?:string;success?:boolean}>) {setBusy(true);setError("");try{const result=await action();if(result.error){setError(result.error);setBusy(false);return false;}setBusy(false);router.refresh();return true;}catch(e){setError(e instanceof Error?e.message:"Unable to save.");setBusy(false);return false;}}
- async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();await run(()=>updateProduct(product.id,fields));}
+ async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();await run(()=>updateProduct(product.id,{...fields,categoryIds:selectedCategoryIds,primaryCategoryId:selectedPrimaryCategoryId}));}
+ function toggleCategory(categoryId:string,checked:boolean) {
+  const next=checked
+   ? Array.from(new Set([...selectedCategoryIds,categoryId]))
+   : selectedCategoryIds.filter(id=>id!==categoryId);
+  setSelectedCategoryIds(next);
+  if(!checked&&selectedPrimaryCategoryId===categoryId)setSelectedPrimaryCategoryId(next[0]??"");
+  if(checked&&!selectedPrimaryCategoryId)setSelectedPrimaryCategoryId(categoryId);
+ }
  async function saveVariant(v:Variant,index:number){setBusy(true);setError("");try{const result=await updateVariant(product.id,v);if(result.error){setError(result.error);setBusy(false);return;}if(result.variantId)setVariants(current=>current.map((x,i)=>i===index?{...x,id:result.variantId}:x));setBusy(false);router.refresh();}catch(e){setError(e instanceof Error?e.message:"Unable to save variant.");setBusy(false);}}
  async function dropVariant(v:Variant,index:number){if(v.id){const ok=await run(()=>removeVariant(product.id,v.id!));if(!ok)return;}setVariants(current=>current.filter((_,i)=>i!==index));setBusy(false);}
  async function persistImageOrder(next:Image[]){const ok=await run(()=>reorderImages(product.id,next.map(x=>x.id)));if(ok)setImages(next);return ok;}
@@ -73,7 +95,17 @@ export function ProductEditForm({product,categoryId,categories,variants: initial
   <form onSubmit={submit} className="admin-form-section">
    <div className="admin-form-heading"><span>01</span><div><h2>Product details</h2><p>Use confirmed product facts only. Leave unknown details blank until verified; do not add assumed features or performance claims.</p></div></div>
    <label>Product name<input required value={fields.name} onChange={e=>setFields({...fields,name:e.target.value})}/></label>
-   <label>Product category<select required value={fields.categoryId} onChange={e=>setFields({...fields,categoryId:e.target.value})}><option value="">Choose a product type</option>{categories.filter(category=>category.parent_id!==null).map(category=>{const parent=categories.find(item=>item.id===category.parent_id);const grand=parent?.parent_id?categories.find(item=>item.id===parent.parent_id):null;return <option key={category.id} value={category.id}>{grand?grand.name+" / ":""}{parent?.name??""} / {category.name}</option>;})}</select></label>
+   <fieldset className="admin-category-picker">
+    <legend>Product categories</legend>
+    <p className="admin-help">Choose every category where this product should appear, then mark one as the primary category.</p>
+    <div className="admin-category-options">
+     {categories.filter(category=>category.parent_id!==null&&(selectedCategoryIds.includes(category.id)||(category.is_active&&!categories.some(child=>child.parent_id===category.id&&child.is_active)))).map(category=><div className="admin-category-option" key={category.id}>
+      <label><input type="checkbox" checked={selectedCategoryIds.includes(category.id)} disabled={!category.is_active&&!selectedCategoryIds.includes(category.id)} onChange={event=>toggleCategory(category.id,event.target.checked)}/><span>{categoryPath(category,categories)}{!category.is_active&&<small className="admin-category-inactive">Inactive — remove before saving</small>}</span></label>
+      <label className="admin-category-primary"><input type="radio" name="primary-category" checked={selectedPrimaryCategoryId===category.id} disabled={!category.is_active||!selectedCategoryIds.includes(category.id)} onChange={()=>setSelectedPrimaryCategoryId(category.id)}/>Primary</label>
+     </div>)}
+    </div>
+    {selectedCategoryIds.length===0&&<p className="admin-error">Select at least one category.</p>}
+   </fieldset>
    <label>Pet type<select value={fields.petType} onChange={e=>setFields({...fields,petType:e.target.value as Product["pet_type"]})}><option value="both">Cats & dogs</option><option value="cat">Cats</option><option value="dog">Dogs</option><option value="shared">Shared / general</option></select></label>
    <label>Short description<input value={fields.shortDescription} onChange={e=>setFields({...fields,shortDescription:e.target.value})}/></label>
    <label>Full description<textarea rows={5} value={fields.description} onChange={e=>setFields({...fields,description:e.target.value})}/></label>

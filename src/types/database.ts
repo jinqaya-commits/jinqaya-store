@@ -3723,6 +3723,16 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_save_product_catalog: {
+        Args: {
+          p_category_ids: string[]
+          p_primary_category_id: string
+          p_product: Json
+          p_product_id: string | null
+          p_variant?: Json | null
+        }
+        Returns: string
+      }
       admin_add_product_image: {
         Args: {
           p_alt_text: string

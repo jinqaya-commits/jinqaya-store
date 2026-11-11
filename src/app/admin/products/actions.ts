@@ -31,7 +31,8 @@ function slugify(value: string) {
 
 export type CreateProductInput = {
   name: string;
-  categoryId: string;
+  categoryIds: string[];
+  primaryCategoryId: string;
   petType: "cat" | "dog" | "both" | "shared";
   shortDescription: string;
   description: string;
@@ -53,79 +54,60 @@ export async function createProduct(input: CreateProductInput) {
   const name = input.name.trim();
   const slug = slugify(name);
   if (!name || !slug) return { error: "Please enter a product name." };
-  if (!input.categoryId) return { error: "Please choose a category." };
+  const categoryIds = [...new Set(input.categoryIds.filter(Boolean))];
+  if (!categoryIds.length) return { error: "Please choose at least one category." };
+  if (!input.primaryCategoryId || !categoryIds.includes(input.primaryCategoryId)) return { error: "Choose one selected category as the primary category." };
+  const { data: selectedCategories, error: categoryReadError } = await supabase
+    .from("categories").select("id,parent_id,is_active").in("id",categoryIds);
+  if (categoryReadError) return { error: categoryReadError.message };
+  if ((selectedCategories ?? []).length !== categoryIds.length ||
+      (selectedCategories ?? []).some(category => !category.is_active || !category.parent_id)) {
+    return { error: "All selected categories must be active subcategories." };
+  }
   if (input.status === "active") return { error: "New products are created as drafts. Complete the product information, add images and a priced SKU, then publish from the product list." };
 
-  const { data: existing } = await supabase
+  const price = input.sku.trim() && input.price.trim() ? Number(input.price) : null;
+  const compareAtPrice = input.sku.trim() && input.compareAtPrice.trim() ? Number(input.compareAtPrice) : null;
+  if ((price !== null && (!Number.isFinite(price) || price < 0)) ||
+      (compareAtPrice !== null && (!Number.isFinite(compareAtPrice) || compareAtPrice < 0))) {
+    return { error: "Enter valid non-negative prices." };
+  }
+
+  const { data: existing, error: slugReadError } = await supabase
     .from("products").select("id").eq("slug", slug).maybeSingle();
+  if (slugReadError) return { error: slugReadError.message };
   const uniqueSlug = existing ? `${slug}-${Date.now().toString(36)}` : slug;
 
-  const { data: product, error: productError } = await supabase
-    .from("products")
-    .insert({
-      name,
-      slug: uniqueSlug,
-      pet_type: input.petType,
+  const { data: productId, error } = await supabase.rpc("admin_save_product_catalog", {
+    p_product_id: null,
+    p_product: {
+      name, slug: uniqueSlug, pet_type: input.petType,
       short_description: input.shortDescription.trim() || null,
       description: input.description.trim() || null,
       material: input.material.trim() || null,
       care_instructions: input.careInstructions.trim() || null,
       seo_title: input.seoTitle.trim() || null,
       seo_description: input.seoDescription.trim() || null,
-      status: input.status,
-      brand_name: "JINQAYA",
-      published_at: null,
-    })
-    .select("id")
-    .single();
-
-  if (productError || !product) {
-    return { error: productError?.message || "Unable to create product." };
-  }
-
-  const { error: categoryError } = await supabase.from("product_categories").insert({
-    product_id: product.id,
-    category_id: input.categoryId,
-    is_primary: true,
-  });
-
-  if (categoryError) {
-    await supabase.from("products").delete().eq("id", product.id);
-    return { error: categoryError.message };
-  }
-
-  if (input.sku.trim()) {
-    const price = input.price.trim() ? Number(input.price) : null;
-    const compareAtPrice = input.compareAtPrice.trim() ? Number(input.compareAtPrice) : null;
-    if ((price !== null && (!Number.isFinite(price) || price < 0)) ||
-        (compareAtPrice !== null && (!Number.isFinite(compareAtPrice) || compareAtPrice < 0))) {
-      await supabase.from("products").delete().eq("id", product.id);
-      return { error: "Enter valid non-negative prices." };
-    }
-
-    const { error: variantError } = await supabase.from("product_variants").insert({
-      product_id: product.id,
+      status: "draft",
+    },
+    p_category_ids: categoryIds,
+    p_primary_category_id: input.primaryCategoryId,
+    p_variant: input.sku.trim() ? {
       sku: input.sku.trim(),
       variant_name: input.variantName.trim() || null,
       color: input.color.trim() || null,
       size: input.size.trim() || null,
       price,
       compare_at_price: compareAtPrice,
-      currency: "USD",
-    });
-
-    if (variantError) {
-      await supabase.from("products").delete().eq("id", product.id);
-      return { error: variantError.message };
-    }
-  }
+    } : null,
+  });
+  if (error || !productId) return { error: error?.message || "Unable to create product." };
 
   revalidatePath("/admin/products");
   revalidatePath("/shop");
-  revalidatePath(`/collections`);
-  return { productId: product.id };
+  revalidatePath("/collections");
+  return { productId };
 }
-
 export async function setProductStatus(productId: string, status: "draft" | "active" | "archived") {
   const supabase = await requireCatalogManager();
   if (status === "active") {
@@ -159,27 +141,40 @@ export async function setProductStatus(productId: string, status: "draft" | "act
 
 export async function updateProduct(productId: string, values: {
   name: string; petType: "cat"|"dog"|"both"|"shared"; shortDescription: string;
-  description: string; material: string; careInstructions: string; seoTitle: string; seoDescription: string; status: "draft"|"active"|"archived"; categoryId?: string;
+  description: string; material: string; careInstructions: string; seoTitle: string; seoDescription: string;
+  status: "draft"|"active"|"archived"; categoryIds: string[]; primaryCategoryId: string;
 }) {
   const supabase = await requireCatalogManager();
   const name = values.name.trim();
   const slug = slugify(name);
   if (!name || !slug) return { error: "Product name is required." };
+
+  const categoryIds = [...new Set(values.categoryIds.filter(Boolean))];
+  if (!categoryIds.length) return { error: "Select at least one product category." };
+  if (!values.primaryCategoryId || !categoryIds.includes(values.primaryCategoryId)) {
+    return { error: "Choose one of the selected categories as the primary category." };
+  }
+
+  const { data: selectedCategories, error: categoryReadError } = await supabase
+    .from("categories")
+    .select("id,parent_id,is_active")
+    .in("id", categoryIds);
+  if (categoryReadError) return { error: categoryReadError.message };
+  if ((selectedCategories ?? []).length !== categoryIds.length ||
+      (selectedCategories ?? []).some(category => !category.is_active || !category.parent_id)) {
+    return { error: "All selected categories must be active subcategories." };
+  }
+
   if (values.status === "active") {
-    const [{ data: images }, { data: variants }, { data: categoryLinks }] = await Promise.all([
+    const [{ data: images }, { data: variants }] = await Promise.all([
       supabase.from("product_images").select("alt_text,is_primary").eq("product_id", productId),
       supabase.from("product_variants").select("sku,price,is_active").eq("product_id", productId),
-      supabase.from("product_categories").select("is_primary,category_id,categories(parent_id,is_active)").eq("product_id", productId),
     ]);
-    const nextCategory = values.categoryId
-      ? (await supabase.from("categories").select("id,parent_id,is_active").eq("id", values.categoryId).maybeSingle()).data
-      : null;
-    const categoryRows = values.categoryId
-      ? [{ is_primary: true, parent_id: nextCategory?.parent_id ?? null, is_active: nextCategory?.is_active ?? false }]
-      : (categoryLinks ?? []).map((link) => {
-          const category = Array.isArray(link.categories) ? link.categories[0] : link.categories;
-          return { is_primary: link.is_primary, parent_id: category?.parent_id ?? null, is_active: category?.is_active ?? false };
-        });
+    const categoryRows = (selectedCategories ?? []).map(category => ({
+      is_primary: category.id === values.primaryCategoryId,
+      parent_id: category.parent_id,
+      is_active: category.is_active,
+    }));
     const readiness = getProductReadiness({
       shortDescription: values.shortDescription,
       description: values.description,
@@ -192,27 +187,36 @@ export async function updateProduct(productId: string, values: {
     });
     if (!readiness.ready) return { error: "Complete the product checklist before publishing: " + readiness.missing.join(", ") + "." };
   }
-  const { data: conflict } = await supabase.from("products").select("id").eq("slug",slug).neq("id",productId).maybeSingle();
-  const { error } = await supabase.from("products").update({
-    name, slug: conflict ? slug + "-" + productId.slice(0,8) : slug,
-    pet_type: values.petType, short_description: values.shortDescription.trim() || null,
-    description: values.description.trim() || null, material: values.material.trim() || null,
-    care_instructions: values.careInstructions.trim() || null,
-    seo_title: values.seoTitle.trim() || null,
-    seo_description: values.seoDescription.trim() || null,
-    status: values.status,
-    published_at: values.status === "active" ? new Date().toISOString() : null,
-  }).eq("id",productId);
-  if (error) return { error: error.message };
-  if (values.categoryId) {
-    const { data: category } = await supabase.from("categories").select("id,parent_id,is_active").eq("id",values.categoryId).maybeSingle();
-    if (!category || !category.is_active || !category.parent_id) return { error: "Choose an active product subcategory." };
-    const { error: clearPrimaryError } = await supabase.from("product_categories").delete().eq("product_id",productId).eq("is_primary",true);
-    if (clearPrimaryError) return { error: clearPrimaryError.message };
-    const { error: assignError } = await supabase.from("product_categories").upsert({product_id:productId,category_id:values.categoryId,is_primary:true},{onConflict:"product_id,category_id"});
-    if (assignError) return { error: assignError.message };
-  }
+
+  const { data: conflict, error: conflictError } = await supabase.from("products")
+    .select("id").eq("slug", slug).neq("id", productId).maybeSingle();
+  if (conflictError) return { error: conflictError.message };
+
+  const { error: saveError } = await supabase.rpc("admin_save_product_catalog", {
+    p_product_id: productId,
+    p_product: {
+      name,
+      slug: conflict ? `${slug}-${productId.slice(0, 8)}` : slug,
+      pet_type: values.petType,
+      short_description: values.shortDescription.trim() || null,
+      description: values.description.trim() || null,
+      material: values.material.trim() || null,
+      care_instructions: values.careInstructions.trim() || null,
+      seo_title: values.seoTitle.trim() || null,
+      seo_description: values.seoDescription.trim() || null,
+      status: values.status,
+    },
+    p_category_ids: categoryIds,
+    p_primary_category_id: values.primaryCategoryId,
+    p_variant: null,
+  });
+  if (saveError) return { error: saveError.message };
+
   revalidatePath("/admin/products"); revalidatePath("/shop"); revalidatePath("/collections");
+  for (const categoryId of categoryIds) {
+    const category = (selectedCategories ?? []).find(item => item.id === categoryId);
+    if (category) revalidatePath(`/collections/${categoryId}`);
+  }
   return { success: true };
 }
 
