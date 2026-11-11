@@ -19,7 +19,7 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
     supabase.from("product_variants").select("id,sku,variant_name,color,size,price,compare_at_price").eq("product_id", id).order("created_at"),
     supabase.from("product_images").select("id,storage_path,alt_text,sort_order").eq("product_id", id).order("sort_order"),
     supabase.from("product_categories").select("category_id,is_primary").eq("product_id",id),
-    supabase.from("categories").select("id,parent_id,name,slug,sort_order").eq("is_active",true).order("sort_order"),
+    supabase.from("categories").select("id,parent_id,name,slug,sort_order,is_active").order("sort_order"),
   ]);
   if (!product) notFound();
   const validPetTypes = ["cat", "dog", "both", "shared"] as const;
