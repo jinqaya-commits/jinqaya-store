@@ -141,7 +141,16 @@ jobs:
         run: |
           container_id="$(docker ps --filter ancestor=postgres:17 --format '{{.ID}}' | head -n 1)"
           test -n "$container_id"
-          docker exec -i "$container_id" psql -U postgres -d jinqaya_test -v ON_ERROR_STOP=1 < tests/product-image-cleanup-migration.sql
+          python3 - <<'PY' > /tmp/product-image-cleanup-migration.sql
+          from pathlib import Path
+          sql = Path("tests/product-image-cleanup-migration.sql").read_text()
+          marker = "\\\\ir ../supabase/migrations/202611120001_product_image_cleanup_queue.sql"
+          migration = Path("supabase/migrations/202611120001_product_image_cleanup_queue.sql").read_text()
+          if marker not in sql:
+              raise SystemExit("Migration include marker not found")
+          print(sql.replace(marker, migration))
+          PY
+          docker exec -i "$container_id" psql -U postgres -d jinqaya_test -v ON_ERROR_STOP=1 < /tmp/product-image-cleanup-migration.sql
 
       - name: Test concurrent order status verification
         run: bash tests/order-status-postgres-concurrency.sh
