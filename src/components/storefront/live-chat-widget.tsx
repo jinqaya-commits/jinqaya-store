@@ -36,6 +36,7 @@ export function LiveChatWidget() {
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
+  const [website, setWebsite] = useState("");
 
   const loadMessages = useCallback(async (current: ChatSession) => {
     try {
@@ -101,6 +102,7 @@ export function LiveChatWidget() {
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
             action: "start",
+            website,
             name: name.trim() || null,
             email: email.trim() || null,
             message,
@@ -162,6 +164,9 @@ export function LiveChatWidget() {
             <div className={styles.closed}><p>This conversation has been closed.</p><button type="button" onClick={startNewChat}>START A NEW CHAT</button></div>
           ) : (
             <form className={styles.form} onSubmit={send}>
+              {!session && (
+                <label className={styles.honeypot} aria-hidden="true">Leave this field empty<input tabIndex={-1} autoComplete="off" value={website} onChange={(event) => setWebsite(event.target.value)} /></label>
+              )}
               {!session && (
                 <div className={styles.identity}>
                   <label>Your name <span>OPTIONAL</span><input value={name} onChange={(event) => setName(event.target.value)} maxLength={120} placeholder="Name" /></label>
