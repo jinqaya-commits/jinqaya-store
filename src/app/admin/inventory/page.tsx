@@ -67,8 +67,18 @@ export default async function AdminInventoryPage() {
   const totalOnHand = rows.reduce((sum, row) => sum + row.onHand, 0);
   const totalReserved = rows.reduce((sum, row) => sum + row.reserved, 0);
   const totalIncoming = rows.reduce((sum, row) => sum + row.incoming, 0);
-  const lowStockCount = rows.filter((row) => row.stock && row.available <= row.reorderPoint).length;
-  const replenishmentCount = rows.filter((row) => row.stock && row.replenishmentGap > 0).length;
+  const isActiveSellableVariant = (row: (typeof rows)[number]) => {
+    const product = row.variant.products as { status?: string } | null;
+    return row.variant.is_active && product?.status === "active";
+  };
+  // Missing inventory records represent zero available stock, not an exemption
+  // from the low-stock count. Only active, published variants affect the KPI.
+  const lowStockCount = rows.filter(
+    (row) => isActiveSellableVariant(row) && row.available <= row.reorderPoint,
+  ).length;
+  const replenishmentCount = rows.filter(
+    (row) => isActiveSellableVariant(row) && row.stock && row.replenishmentGap > 0,
+  ).length;
 
   return (
     <main className="admin-shell">
