@@ -3985,6 +3985,22 @@ export type Database = {
             Args: { p_code: string; p_email: string; p_order_number: string }
             Returns: boolean
           }
+      create_order_status_email_challenge: {
+        Args: { p_code: string; p_email: string; p_order_number: string }
+        Returns: boolean
+      }
+      mark_order_status_email_challenge_delivery_failed: {
+        Args: { p_email: string; p_order_number: string }
+        Returns: boolean
+      }
+      verify_order_status_email_code: {
+        Args: { p_code: string; p_email: string; p_order_number: string; p_token_hash: string }
+        Returns: boolean
+      }
+      get_customer_order_status: {
+        Args: { p_token_hash: string }
+        Returns: Json
+      }
       create_guest_order_request: {
         Args: {
           p_address: Json
