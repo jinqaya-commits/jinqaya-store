@@ -1,24 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <defs>
-    <linearGradient id="forest" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#173d2a"/>
-      <stop offset="1" stop-color="#082719"/>
-    </linearGradient>
-    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#e6c27a"/>
-      <stop offset=".55" stop-color="#c49a4a"/>
-      <stop offset="1" stop-color="#9d702d"/>
-    </linearGradient>
-  </defs>
-  <rect width="512" height="512" rx="82" fill="#fbf8ef"/>
-  <path d="M67 190 C125 55 387 32 458 177" fill="none" stroke="url(#gold)" stroke-width="10" stroke-linecap="round"/>
-  <path fill="url(#forest)" fill-rule="evenodd" d="M256 92c-99 0-174 75-174 174s75 174 174 174c38 0 72-11 100-31l82 47c12 7 27-1 27-15v-8c0-5-3-10-8-13l-68-39c26-31 41-70 41-115 0-99-75-174-174-174zm0 45c73 0 128 56 128 129s-55 129-128 129-128-56-128-129 55-129 128-129z"/>
-  <g fill="url(#gold)">
-    <ellipse cx="207" cy="217" rx="21" ry="29" transform="rotate(-25 207 217)"/>
-    <ellipse cx="256" cy="196" rx="21" ry="29"/>
-    <ellipse cx="305" cy="217" rx="21" ry="29" transform="rotate(25 305 217)"/>
-    <ellipse cx="179" cy="269" rx="21" ry="29" transform="rotate(-45 179 269)"/>
-    <path d="M256 250c-16 0-28 17-42 31-13 13-23 23-23 39 0 19 17 31 37 26 10-3 19-8 28-8s18 5 28 8c20 5 37-7 37-26 0-16-10-26-23-39-14-14-26-31-42-31z"/>
-  </g>
-  <path d="M236 397c28-23 65-24 93-7" fill="none" stroke="#fbf8ef" stroke-width="9" stroke-linecap="round"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <title>JINQAYA official favicon</title>
+  <image href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAMAAACdt4HsAAABIFBMVEW6k1HPqmXt2a6nr6DEjzPJr4Tf4NT8+Or+/fUWNRwcOiELKhIkQSj169YGJg0gPSXm1rfn5tqJloVVaVVneGb16Mp4h3XV18rGmEf12ZTVqVbjumYQLhY5Ujyss6W3hjS0uavFybvGo2gySzVLYUyndiXt0pj48N2apZXcyafrxnVEW0blypXo28P004MtSDHWpkvbw5qmr6DO0cTWuYXc3dLqwWzpyonn0qvt7ePz3af147oAHQK7lVbJoVvesVjWtHbVvZPt4snwy3ZdcV6hbhy0gi29w7fGlT7Cm1nMrXjbtGnjzaTx7uM9VkBOZVGRnYykcByrfTKtgTilrp6xfSfLsYPMzsDcwIve0LX74ZsPMBVugG6Ajn2eaxiUnpDMIylaAAAEFklEQVR42u2WZ1vjRhDHDZdEs7vqkiVZsi1344ILvRz94OCA6/1Svv+3yGwxGJDhSPIqD/tCj2RrfjvlP9rJaf9y5Z4A/38A4PqHAGlq8NUWj48CoLGxsTIXx6PRXrJ2VChsb+fbGvwsAK0PztKTaPd8pd9vtVoFuba221l+5O6a27U0t39xKMNQoeS3CkdH3ZYBDwLAPsutHGq3kscf861kFPfvBHITAMars47KmNodJpXAyPrRL7uLcA8Ave+orQF+Kwfe63q95AUfQ7Uv8k/SDswEwHhl8qa25FGTNgLX/b3H8GbBUV6M0+YBZANAG9uT3RdKxKyjkVhhQFhx6Eo22B+ObxCmPLhQOYbwDaEkuJzkEeDlkFDWW5aExfdNG7IAdlvZP9OJTtzpXWB1iD+RsvKh+WGqnFeA/MS+TKhOgpuZgi+UWqSoCAd/1iAzB+JaJZZOSnfk5TKLElKVhJ3j6yBuCQmcIdV1UpEvqryJf+qEUlLflGk4rs0E+ATtX8v7fGFDg3Zr/coFasrQoNa8ysItJVaJbulMZbA12NuA9bVojI+wjB5QQoUewP40ngHwOUCGCu1uN55rn8fpZ/FyCWtLTcWOapkAcHRqWVR38L5twH58WjOiqNmBPP73glGuBhnDfpTdCxV0wBI1MJK4b6fNb1B7lzPWk68aBAggxJIxbIwmSbgJcDGFFmnwKOP4k+3Y+e1FW2utJbsavBWAogwvH+czAbwGOmlg/bjrr2BrcJTYWrJ2+hn7QwBYRQKSbIAnAD1+23nf7MwXvg+SOXs/3bnUbgKMrjELMNEhLC5uDb4PukkUYRTAhXAN0Ix1Q5sRAlVVQDfXBmgfRyc7YlNf5mBZhlDIroL7Q+dykZI/T7rdZC+O0ib/CEGDoT3RL7X7AChEbDv2VgDi0d4oOk3T9N08RuBY3N70pA625rOViHKzsG89qdfd2krn27i286uQiIjAXFIqn9ULLuMx0BBkM6oPsyaEyFNYV23Wn9GNqGXeM0w0HZp+qZQrIb+BkIgIPsoI+tsz23mJd61wAV56lDFWJKUgBPB4J0wykF+H2SeTb/IsNPBLGgR/+ENGaNEkwTMMgJrye6LBVwPuOVw9JIggePybC3WGdWU8AWZdHQ4X2V/lq+WbMg3y7U2fb84T4Cl7ewMeON5dwlAMjWV1Ni4J+2JJEQ9teGjAgGVP+PxiKXScsOwTJhA9UVzjEH5mQqn6etF8/hwxeCVvdK4iRtzNqVMf7p2RAJyK63u9XsN3K6uwWjKFDofu6mTqgDB8YEqD64W7+SbjB4NJPbcSOqtV1y8/bk6EcomJcjCTFZlJ/BAeOWiCVvZ0NEVtWo2/HIDHT6qYl2p5YaFcdaYnqMeNuldj29O4/wR4AvzngL8BshG5As9p0fgAAAAASUVORK5CYII=" width="512" height="512" preserveAspectRatio="xMidYMid meet"/>
 </svg>
