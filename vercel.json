@@ -1,16 +1,15 @@
 {
-  "crons": [
-    {
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "schedules": {
+    "after-sales-cleanup": {
+      "schedule": "0 4 * * *",
       "path": "/api/cron/after-sales-cleanup",
-      "schedule": "0 4 * * *"
+      "requestMethod": "GET"
     },
-    {
+    "order-email-outbox": {
+      "schedule": "*/15 * * * *",
       "path": "/api/cron/order-email-outbox",
-      "schedule": "10 4 * * *"
-    },
-    {
-      "path": "/api/cron/order-email-outbox-secondary",
-      "schedule": "10 16 * * *"
+      "requestMethod": "GET"
     }
-  ]
+  }
 }
