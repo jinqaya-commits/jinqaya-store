@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import Link from "next/link";
 import styles from "./recently-viewed.module.css";
 
@@ -13,22 +13,54 @@ type ViewedProduct = {
 
 const STORAGE_KEY = "jinqaya-recently-viewed";
 
+function subscribe(onStoreChange: () => void) {
+  window.addEventListener("storage", onStoreChange);
+  return () => window.removeEventListener("storage", onStoreChange);
+}
+
+function getSnapshot() {
+  try {
+    return window.localStorage.getItem(STORAGE_KEY) || "[]";
+  } catch {
+    return "[]";
+  }
+}
+
+function getServerSnapshot() {
+  return "[]";
+}
+
+function parseViewedProducts(snapshot: string): ViewedProduct[] {
+  try {
+    const stored: unknown = JSON.parse(snapshot);
+    if (!Array.isArray(stored)) return [];
+    return stored.filter((item): item is ViewedProduct =>
+      item !== null &&
+      typeof item === "object" &&
+      "slug" in item &&
+      typeof item.slug === "string" &&
+      "name" in item &&
+      typeof item.name === "string"
+    );
+  } catch {
+    return [];
+  }
+}
+
 export function RecentlyViewed({ product }: { product: ViewedProduct }) {
-  const [items, setItems] = useState<ViewedProduct[]>([]);
+  const snapshot = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+  const items = parseViewedProducts(snapshot)
+    .filter((item) => item.slug !== product.slug)
+    .slice(0, 4);
 
   useEffect(() => {
-    let previous: ViewedProduct[] = [];
-    try {
-      const stored = JSON.parse(window.localStorage.getItem(STORAGE_KEY) || "[]");
-      if (Array.isArray(stored)) previous = stored.filter((item): item is ViewedProduct =>
-        item && typeof item.slug === "string" && typeof item.name === "string"
-      );
-    } catch {
-      previous = [];
-    }
+    const previous = parseViewedProducts(getSnapshot());
     const unique = previous.filter((item) => item.slug !== product.slug);
-    setItems(unique.slice(0, 4));
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify([product, ...unique].slice(0, 8)));
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify([product, ...unique].slice(0, 8)));
+    } catch {
+      // Recently viewed is optional; the product page remains fully usable without storage.
+    }
   }, [product.slug, product.name, product.imageUrl, product.priceLabel]);
 
   if (items.length === 0) return null;
