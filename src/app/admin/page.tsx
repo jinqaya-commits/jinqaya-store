@@ -69,7 +69,7 @@ export default async function AdminDashboardPage() {
 
   return <main className="admin-shell">
     <aside className="admin-sidebar"><Link href="/" className="admin-brand">JINQAYA<span>ADMIN</span></Link><nav>
-      <Link className="active" href="/admin">Overview</Link><Link href="/admin/products">Products</Link><Link href="/admin/homepage-media">Homepage images</Link><Link href="/admin/orders">Orders</Link><Link href="/admin/customers">Customers</Link><Link href="/admin/follow-ups">Follow-ups</Link><Link href="/admin/after-sales">After-sales</Link><Link href="/admin/inventory">Inventory</Link><Link href="/shop">View storefront ↗</Link>
+      <Link className="active" href="/admin">Overview</Link><Link href="/admin/products">Products</Link><Link href="/admin/orders">Orders</Link><Link href="/admin/customers">Customers</Link><Link href="/admin/follow-ups">Follow-ups</Link><Link href="/admin/after-sales">After-sales</Link><Link href="/admin/inventory">Inventory</Link><Link href="/shop">View storefront ↗</Link>
     </nav><p className="admin-sidebar-note">COMMERCE MANAGEMENT</p></aside>
     <section className="admin-main">
       <header className="admin-topbar"><div><p className="admin-kicker">JINQAYA / OVERVIEW</p><h1>Good day.</h1><p className="admin-help">A clear view of what needs your attention.</p></div><Link className="admin-back-link" href="/admin/orders">VIEW ORDERS →</Link></header>
