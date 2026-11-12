@@ -6,8 +6,16 @@ const routeRoot = new URL("../src/app/api/paypal/", import.meta.url);
 const createOrder = await readFile(new URL("create-order/route.ts", routeRoot), "utf8");
 const captureOrder = await readFile(new URL("capture-order/route.ts", routeRoot), "utf8");
 const webhook = await readFile(new URL("webhook/route.ts", routeRoot), "utf8");
+const verifyOrderStatus = await readFile(new URL("../src/app/api/order-status/verify/route.ts", import.meta.url), "utf8");
 const paypal = await readFile(new URL("../src/lib/paypal.ts", import.meta.url), "utf8");
 const paymentSql = await readFile(new URL("../supabase/migrations/202611120003_paypal_order_payments.sql", import.meta.url), "utf8");
+
+test("verified order session cookie is scoped to API routes used by PayPal", () => {
+  assert.match(verifyOrderStatus, /path:\s*"\/api"/);
+  assert.doesNotMatch(verifyOrderStatus, /path:\s*"\/api\/order-status"/);
+  assert.match(createOrder, /const COOKIE = "jq_order_status_session"/);
+  assert.match(captureOrder, /const COOKIE = "jq_order_status_session"/);
+});
 
 test("PayPal create-order requires same-origin and a verified order email session", () => {
   assert.ok(createOrder.indexOf("if (!isSameOriginRequest(request))") < createOrder.indexOf("(await cookies()).get(COOKIE)"));
