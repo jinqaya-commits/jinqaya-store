@@ -88,7 +88,7 @@ $old$;
   'total_amount',v_subtotal+round(v_subtotal*0.50,2),
   'shipping_status','estimated','payment_status','not_started','currency',coalesce(v_currency,'USD')
  );
-$ new$;
+$new$;
   if position(v_old in v_definition)=0 then
     raise exception 'Could not locate guest checkout shipping calculation block; migration stopped.';
   end if;
