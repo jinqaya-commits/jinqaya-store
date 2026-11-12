@@ -173,16 +173,17 @@ begin
     update public.order_email_outbox
       set payload=payload || pg_catalog.jsonb_build_object('stockReviewRequired',true)
       where order_id=p_order_id and event_type='payment_received' and recipient_type='customer';
-    v_customer_name:=coalesce(v_order.shipping_address_snapshot->>'recipient_name','');
-    v_payload:=pg_catalog.jsonb_build_object('eventType','payment_received',
-      'orderNumber',v_order.order_number,'customerName',v_customer_name,
-      'customerEmail',v_order.customer_email,'subtotal',v_order.subtotal,'currency',v_order.currency,
-      'shippingAmount',v_order.shipping_amount,'shippingMethod',v_order.shipping_method_name,
-      'stockReviewRequired',true);
-    insert into public.order_email_outbox(order_id,event_type,recipient_type,recipient_email,payload)
-    values(p_order_id,'payment_received','staff','info@jinqaya.com',v_payload)
-    on conflict(order_id,event_type,recipient_type) do nothing;
   end if;
+
+  v_customer_name:=coalesce(v_order.shipping_address_snapshot->>'recipient_name','');
+  v_payload:=pg_catalog.jsonb_build_object('eventType','payment_received',
+    'orderNumber',v_order.order_number,'customerName',v_customer_name,
+    'customerEmail',v_order.customer_email,'subtotal',v_order.subtotal,'currency',v_order.currency,
+    'shippingAmount',v_order.shipping_amount,'shippingMethod',v_order.shipping_method_name,
+    'stockReviewRequired',v_stock_review);
+  insert into public.order_email_outbox(order_id,event_type,recipient_type,recipient_email,payload)
+  values(p_order_id,'payment_received','staff','info@jinqaya.com',v_payload)
+  on conflict(order_id,event_type,recipient_type) do nothing;
 
   return jsonb_build_object('order_id',p_order_id,'status',v_new_status,
     'already_recorded',false,'stock_review_required',v_stock_review);
