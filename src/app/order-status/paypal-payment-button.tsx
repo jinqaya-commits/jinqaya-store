@@ -77,7 +77,8 @@ export function PayPalPaymentButton({ currency, onPaid }: Props) {
         });
 
         button = document.createElement("paypal-button");
-        button.setAttribute("type", "pay");\n        button.removeAttribute("hidden");
+        button.setAttribute("type", "pay");
+        button.removeAttribute("hidden");
         clickHandler = () => {
           const orderPromise = fetch("/api/paypal/create-order", {
             method: "POST",
