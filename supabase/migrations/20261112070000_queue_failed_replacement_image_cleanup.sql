@@ -72,3 +72,64 @@ drop trigger if exists product_images_prevent_pending_cleanup_reuse on public.pr
 create trigger product_images_prevent_pending_cleanup_reuse
 before insert or update of storage_path on public.product_images
 for each row execute function public.prevent_product_image_reuse_while_cleanup_pending();
+
+
+-- Serialize row deletion + queue insertion with image-row reuse for the same path.
+create or replace function public.admin_delete_product_image(
+  p_product_id uuid,
+  p_image_id uuid
+)
+returns text
+language plpgsql
+security definer
+set search_path to 'public', 'pg_temp'
+as $function$
+declare
+  v_storage_path text;
+begin
+  if auth.uid() is null or not public.can_manage_catalog() then
+    raise exception 'Not authorized to manage product images';
+  end if;
+
+  perform 1 from public.products where id = p_product_id for update;
+  if not found then raise exception 'Product not found'; end if;
+
+  select storage_path into v_storage_path
+  from public.product_images
+  where id = p_image_id and product_id = p_product_id
+  for update;
+
+  if not found then raise exception 'Image not found'; end if;
+
+  if v_storage_path is not null and v_storage_path <> '' then
+    perform pg_advisory_xact_lock(hashtextextended(v_storage_path, 0));
+  end if;
+
+  delete from public.product_images
+  where id = p_image_id and product_id = p_product_id;
+
+  with ranked as (
+    select id, row_number() over (order by sort_order asc, id asc) - 1 as new_order
+    from public.product_images where product_id = p_product_id
+  )
+  update public.product_images pi
+  set sort_order = ranked.new_order,
+      is_primary = ranked.new_order = 0,
+      image_type = (case when ranked.new_order = 0 then 'main' else 'gallery' end)::public.image_kind
+  from ranked where pi.id = ranked.id;
+
+  if v_storage_path is not null
+     and v_storage_path <> ''
+     and v_storage_path not like 'http://%'
+     and v_storage_path not like 'https://%'
+     and not exists (
+       select 1 from public.product_images where storage_path = v_storage_path
+     ) then
+    insert into public.product_image_cleanup_queue(storage_path)
+    values (v_storage_path)
+    on conflict (storage_path) do nothing;
+  end if;
+
+  return v_storage_path;
+end;
+$function$;
