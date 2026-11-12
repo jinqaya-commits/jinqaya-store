@@ -70,8 +70,15 @@ export async function POST(request: NextRequest) {
       action: "get-order",
       tokenHash: sha256(sessionToken),
     });
-    if (!order?.order_id || !["pending_payment", "paid", "on_hold"].includes(String(order.status))) {
+    if (!order?.order_id) {
       return NextResponse.json({ error: "This order is not available for payment." }, { status: 409 });
+    }
+    const alreadyPaid = (order.status === "paid" || order.status === "on_hold") && order.payment_status === "paid";
+    if (order.status !== "pending_payment" && !alreadyPaid) {
+      return NextResponse.json({ error: "This order is not available for payment." }, { status: 409 });
+    }
+    if (order.status === "pending_payment" && order.payment_ready !== true) {
+      return NextResponse.json({ error: "The stock reservation has expired. Please contact JINQAYA to reconfirm your order." }, { status: 409 });
     }
     const currency = String(order.currency || "").trim().toUpperCase();
     const amount = Number(order.total_amount);
