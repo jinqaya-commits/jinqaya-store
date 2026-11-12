@@ -14,6 +14,8 @@ type OrderSnapshot = {
   order_id?: string;
   order_number?: string;
   status?: string;
+  payment_status?: string | null;
+  payment_ready?: boolean;
   currency?: string;
   total_amount?: number | string;
 };
