@@ -9,9 +9,9 @@ begin
   if not exists (select 1 from pg_roles where rolname = 'service_role') then create role service_role nologin; end if;
 end
 $$;
-create or replace function auth.uid() returns uuid language sql stable as $ select '00000000-0000-0000-0000-000000000001'::uuid $;
-create or replace function auth.jwt() returns json language sql stable as $ select '{"role":"service_role"}'::json $;
-create or replace function public.can_manage_catalog() returns boolean language sql stable as $ select true $;
+create or replace function auth.uid() returns uuid language sql stable as $$ select '00000000-0000-0000-0000-000000000001'::uuid $$;
+create or replace function auth.jwt() returns json language sql stable as $$ select '{"role":"service_role"}'::json $$;
+create or replace function public.can_manage_catalog() returns boolean language sql stable as $$ select true $$;
 
 create type public.image_kind as enum ('main', 'gallery');
 create table public.products (id uuid primary key);
