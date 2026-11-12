@@ -16,18 +16,28 @@ export async function getPayPalPublicConfig() {
   const configured = Boolean(process.env.PAYPAL_CLIENT_ID?.trim() && process.env.PAYPAL_CLIENT_SECRET);
   if (!configured) return { enabled: false, clientToken: null, sdkUrl: getPayPalSdkUrl() };
 
-  const token = await accessToken();
-  const response = await fetch(apiBase() + "/v1/identity/generate-token", {
+  const clientId = process.env.PAYPAL_CLIENT_ID!.trim();
+  const clientSecret = process.env.PAYPAL_CLIENT_SECRET!;
+  const credentials = Buffer.from(clientId + ":" + clientSecret).toString("base64");
+  const body = new URLSearchParams();
+  body.set("grant_type", "client_credentials");
+  body.append("domains[]", "www.jinqaya.com");
+  body.set("response_type", "client_token");
+  const response = await fetch(apiBase() + "/v1/oauth2/token", {
     method: "POST",
-    headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
+    headers: {
+      Authorization: "Basic " + credentials,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: body.toString(),
     cache: "no-store",
     signal: AbortSignal.timeout(12_000),
   });
-  const result = await response.json().catch(() => null) as { client_token?: unknown } | null;
-  if (!response.ok || typeof result?.client_token !== "string") {
+  const result = await response.json().catch(() => null) as { access_token?: unknown } | null;
+  if (!response.ok || typeof result?.access_token !== "string") {
     throw new Error("Unable to initialize PayPal checkout.");
   }
-  return { enabled: true, clientToken: result.client_token, sdkUrl: getPayPalSdkUrl() };
+  return { enabled: true, clientToken: result.access_token, sdkUrl: getPayPalSdkUrl() };
 }
 
 function apiBase() {
