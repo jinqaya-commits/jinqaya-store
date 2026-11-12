@@ -23,3 +23,10 @@ test("checkout estimates shipping at 50 percent but explains the server rechecks
   assert.match(checkout, /estimate \* 1\.5/);
   assert.match(checkout, /The server rechecks product prices, destination restrictions and stock/);
 });
+
+test("checkout copy matches the actual reservation and PayPal verification flow", () => {
+  assert.match(checkout, /Shipping is estimated at 50% of the item subtotal/);
+  assert.match(checkout, /verify your email and continue to PayPal/);
+  assert.match(checkout, /payment remains unavailable/);
+  assert.doesNotMatch(checkout, /We’ll confirm availability, shipping and the final total with you before payment/);
+});
