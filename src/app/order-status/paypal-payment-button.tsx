@@ -24,7 +24,7 @@ type Props = { currency: string; onPaid: () => void | Promise<void> };
 
 export function PayPalPaymentButton({ currency, onPaid }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [message, setMessage] = useState("Loading secure PayPal checkout…");
+  const onPaidRef = useRef(onPaid);\n  onPaidRef.current = onPaid;\n  const [message, setMessage] = useState("Loading secure PayPal checkout…");
   const [state, setState] = useState<"loading" | "ready" | "error" | "paid">("loading");
 
   useEffect(() => {
@@ -67,7 +67,7 @@ export function PayPalPaymentButton({ currency, onPaid }: Props) {
             setMessage(result.stockReviewRequired
               ? "Payment received. Our team is checking stock before preparing your order."
               : "Payment confirmed. Thank you for your order.");
-            await onPaid();
+            await onPaidRef.current();
           },
           onCancel: () => {
             if (active) setMessage("Payment was cancelled. Your order is still awaiting payment.");
@@ -122,11 +122,11 @@ export function PayPalPaymentButton({ currency, onPaid }: Props) {
           throw new Error("PayPal checkout is being configured. Please contact info@jinqaya.com to arrange payment.");
         }
         if (window.paypal) {
-          await initialize();
+          await initialize(config.clientId);
           return;
         }
         let script = document.getElementById("jinqaya-paypal-sdk") as HTMLScriptElement | null;
-        const onLoad = () => { void initialize(); };
+        const onLoad = () => { void initialize(config.clientId); };
         if (!script) {
           script = document.createElement("script");
           script.id = "jinqaya-paypal-sdk";
@@ -154,7 +154,7 @@ export function PayPalPaymentButton({ currency, onPaid }: Props) {
       if (button && clickHandler) button.removeEventListener("click", clickHandler);
       button?.remove();
     };
-  }, [currency, onPaid]);
+  }, [currency]);
 
   return (
     <section className="order-paypal-panel" aria-live="polite">
