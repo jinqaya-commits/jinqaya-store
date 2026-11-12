@@ -34,3 +34,14 @@ test("idempotent checkout retries preserve the existing order's payment readines
   assert.match(migration, /'subtotal',o\.subtotal,'shipping_amount',o\.shipping_amount,'total_amount',o\.total_amount/);
   assert.match(migration, /'payment_ready',\(o\.status='pending_payment'\)/);
 });
+
+const retryMigration = await readFile(
+  new URL("../supabase/migrations/20261113120000_preserve_checkout_retry_payment_readiness.sql", import.meta.url),
+  "utf8",
+);
+
+test("idempotent checkout retries preserve payment readiness for reserved orders", () => {
+  assert.match(retryMigration, /'payment_ready',\(o\.status='pending_payment'\)/);
+  assert.match(retryMigration, /Could not locate guest checkout idempotency response block/);
+  assert.match(retryMigration, /if position\(v_new in v_definition\) > 0 then/);
+});
