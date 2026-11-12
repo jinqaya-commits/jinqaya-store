@@ -327,6 +327,13 @@ export async function addProductImage(productId: string, storagePath: string, al
 }
 
 
+async function enqueueProductImageCleanup(supabase: Awaited<ReturnType<typeof createClient>>, storagePath: string) {
+  const { error } = await supabase.rpc("admin_enqueue_product_image_cleanup", {
+    p_storage_path: storagePath,
+  });
+  if (error) console.error("Unable to queue old product image cleanup:", error.message);
+}
+
 async function cleanupUnlinkedProductImage(supabase: Awaited<ReturnType<typeof createClient>>, storagePath: string) {
   try {
     if (storagePath.startsWith("r2://")) {
@@ -379,19 +386,22 @@ export async function replaceProductImage(productId: string, imageId: string, st
   }
 
   const oldPath = current.storage_path;
-  try {
-    if (oldPath && oldPath.startsWith("r2://")) {
-      const config = getR2Config();
-      await getR2Client().send(new DeleteObjectCommand({
-        Bucket: config.bucket,
-        Key: oldPath.slice("r2://".length),
-      }));
-    } else if (oldPath && !(oldPath.startsWith("https://") || oldPath.startsWith("http://"))) {
-      const { error: cleanupError } = await supabase.storage.from("product-images").remove([oldPath]);
-      if (cleanupError) console.error("Replacement saved but old product image cleanup failed:", cleanupError.message);
+  if (oldPath && oldPath !== storagePath && !(oldPath.startsWith("https://") || oldPath.startsWith("http://"))) {
+    try {
+      if (oldPath.startsWith("r2://")) {
+        const config = getR2Config();
+        await getR2Client().send(new DeleteObjectCommand({
+          Bucket: config.bucket,
+          Key: oldPath.slice("r2://".length),
+        }));
+      } else {
+        const { error: cleanupError } = await supabase.storage.from("product-images").remove([oldPath]);
+        if (cleanupError) throw cleanupError;
+      }
+    } catch (cleanupError) {
+      console.error("Replacement saved but old product image cleanup failed; adding it to the retry queue.", cleanupError);
+      await enqueueProductImageCleanup(supabase, oldPath);
     }
-  } catch (cleanupError) {
-    console.error("Replacement saved but old product image cleanup failed:", cleanupError);
   }
 
   const { data: product } = await supabase.from("products").select("slug").eq("id", productId).maybeSingle();
