@@ -9,8 +9,10 @@ test("guest checkout locks inventory rows and only reserves when every variant i
   assert.match(migration, /FOR UPDATE OF i/);
   assert.match(migration, /on_hand-reserved-damaged >= v_stock_item\.quantity/);
   assert.match(migration, /IF v_stock_ready THEN/);
+  assert.match(migration, /v_stock_ready := false/);
+  assert.match(migration, /v_stock_plan := v_stock_plan \\|\\|/);
   assert.match(migration, /INSERT INTO public\.stock_reservations/);
-  assert.match(migration, /expires_at[\\s\\S]*?interval '48 hours'/);
+  assert.match(migration, /expires_at[\s\S]*?interval '48 hours'/);
 });
 
 test("stock reservation and order status transition are atomic and recorded in inventory history", () => {
@@ -25,4 +27,5 @@ test("stock reservation and order status transition are atomic and recorded in i
 test("checkout confirmation distinguishes reserved stock from an order awaiting review", () => {
   assert.match(checkoutForm, /order\.status === "pending_payment"/);
   assert.match(checkoutForm, /\/order-status/);
+  assert.match(checkoutForm, /Your items have been reserved for 48 hours/);
 });
