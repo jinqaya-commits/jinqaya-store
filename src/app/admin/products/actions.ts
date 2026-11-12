@@ -367,13 +367,15 @@ export async function replaceProductImage(productId: string, imageId: string, st
     return { error: "Product image not found." };
   }
 
-  const { error: updateError } = await supabase.from("product_images")
+  const { data: updatedImage, error: updateError } = await supabase.from("product_images")
     .update({ storage_path: storagePath })
     .eq("id", imageId)
-    .eq("product_id", productId);
-  if (updateError) {
+    .eq("product_id", productId)
+    .select("id")
+    .maybeSingle();
+  if (updateError || !updatedImage) {
     await cleanupUnlinkedProductImage(supabase, storagePath);
-    return { error: updateError.message };
+    return { error: updateError?.message || "Product image no longer exists. Refresh and try again." };
   }
 
   const oldPath = current.storage_path;
