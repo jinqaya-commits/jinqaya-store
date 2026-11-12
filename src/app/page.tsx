@@ -48,28 +48,10 @@ export default async function HomePage() {
       }
     })(),
   ]);
-  type HomepageMediaRow = { media_key: "hero" | "lifestyle"; image_path: string | null };
-  const homepageMediaRows: HomepageMediaRow[] = await (async () => {
-    try {
-      const supabase = await createClient();
-      // The homepage media table is not yet represented in the generated database types.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await (supabase as any).from("homepage_media").select("media_key,image_path");
-      if (error) { console.error("Unable to load homepage media:", error.message); return []; }
-      return (data ?? []) as HomepageMediaRow[];
-    } catch (error) {
-      console.error("Unable to load homepage media:", error);
-      return [];
-    }
-  })();
-  const homepageMediaMap = new Map<string, string | null>(
-    homepageMediaRows.map((item): [string, string | null] => [
-      item.media_key,
-      item.image_path ? resolveProductImageUrls(item.image_path).detailUrl : null,
-    ]),
-  );
-  const heroImage = homepageMediaMap.get("hero") || "https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=2400&q=90";
-  const lifestyleImage = homepageMediaMap.get("lifestyle") || "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=1800&q=88";
+  // Homepage hero imagery uses the approved visual defaults until a managed
+  // homepage-media editor and its database table are implemented together.
+  const heroImage = "https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=2400&q=90";
+  const lifestyleImage = "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=1800&q=88";
   const categoryImageMap = new Map(categoryImageRows.map((item) => [
     item.slug,
     item.image_path ? resolveProductImageUrls(item.image_path).detailUrl : null,
