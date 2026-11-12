@@ -95,9 +95,13 @@ begin
   end if;
 
   perform 1 from public.stock_reservations r
-    left join public.inventory i on i.warehouse_id=r.warehouse_id and i.variant_id=r.variant_id
     where r.order_id=p_order_id and r.status='active'
-    for update of r,i;
+    for update;
+  perform 1 from public.inventory i
+    join public.stock_reservations r
+      on i.warehouse_id=r.warehouse_id and i.variant_id=r.variant_id
+    where r.order_id=p_order_id and r.status='active'
+    for update of i;
 
   if not exists(select 1 from public.stock_reservations r
       where r.order_id=p_order_id and r.status='active')
