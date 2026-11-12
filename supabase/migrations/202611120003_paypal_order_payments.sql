@@ -1,4 +1,5 @@
-alter table public.payments add column if not exists provider_order_id text;\nalter table public.payments add column if not exists stock_review_required boolean not null default false;
+alter table public.payments add column if not exists provider_order_id text;
+alter table public.payments add column if not exists stock_review_required boolean not null default false;
 
 create unique index if not exists payments_paypal_order_unique_idx
   on public.payments(provider, provider_order_id)
@@ -146,7 +147,7 @@ begin
   v_new_status:='paid'::public.order_status;
   update public.orders set status=v_new_status,paid_at=v_now,
     internal_note=case when v_stock_review
-      then left(concat_ws(E'\\n',nullif(internal_note,''),'PayPal payment received. Stock reservation requires manual review before fulfilment.'),2000)
+      then left(concat_ws(' | ',nullif(internal_note,''),'PayPal payment received. Stock reservation requires manual review before fulfilment.'),2000)
       else internal_note end
   where id=p_order_id;
 
