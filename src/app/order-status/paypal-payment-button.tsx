@@ -15,7 +15,7 @@ type PayPalSdkInstance = {
 declare global {
   interface Window {
     paypal?: {
-      createInstance: (options: { clientToken: string; components: string[]; pageType: string }) => Promise<PayPalSdkInstance>;
+      createInstance: (options: { clientId: string; components: string[]; pageType: string }) => Promise<PayPalSdkInstance>;
     };
   }
 }
@@ -34,11 +34,11 @@ export function PayPalPaymentButton({ currency, onPaid }: Props) {
     let button: HTMLElement | null = null;
     let clickHandler: (() => void) | null = null;
 
-    async function initialize(clientToken: string) {
+    async function initialize(clientId: string) {
       if (!active || !window.paypal || !containerRef.current) return;
       try {
         const sdk = await window.paypal.createInstance({
-          clientToken,
+          clientId,
           components: ["paypal-payments"],
           pageType: "checkout",
         });
@@ -115,15 +115,15 @@ export function PayPalPaymentButton({ currency, onPaid }: Props) {
       try {
         const configResponse = await fetch("/api/paypal/config", { cache: "no-store" });
         const config = await configResponse.json();
-        if (!configResponse.ok || config.enabled !== true || typeof config.sdkUrl !== "string") {
+        if (!configResponse.ok || config.enabled !== true || typeof config.sdkUrl !== "string" || typeof config.clientId !== "string") {
           throw new Error("PayPal checkout is being configured. Please contact info@jinqaya.com to arrange payment.");
         }
         if (window.paypal) {
-          await initialize(config.clientToken);
+          await initialize(config.clientId);
           return;
         }
         let script = document.getElementById("jinqaya-paypal-sdk") as HTMLScriptElement | null;
-        const onLoad = () => { void initialize(config.clientToken); };
+        const onLoad = () => { void initialize(config.clientId); };
         if (!script) {
           script = document.createElement("script");
           script.id = "jinqaya-paypal-sdk";
