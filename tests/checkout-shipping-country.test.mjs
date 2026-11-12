@@ -25,7 +25,7 @@ test("South Korea and Brazil are seeded as restricted destinations and restricti
 
 test("checkout displays the estimated freight and prevents the two explicitly excluded countries", () => {
   assert.match(checkoutForm, /countryCode\.toUpperCase\(\)/);
-  assert.match(checkoutForm, /countryCode === "KR" \|\| countryCode === "BR"/);
+  assert.match(checkoutForm, /countryCode === "KR" \|\|assert.match(checkoutForm, /countryCode\.toUpperCase\(\) === "KR" \\|\\| countryCode\.toUpperCase\(\) === "BR"/);
   assert.match(checkoutForm, /shippingEstimate/);
   assert.match(checkoutRoute, /not currently ship to this destination/);
 });
