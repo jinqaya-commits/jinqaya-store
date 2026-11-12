@@ -57,7 +57,11 @@ export async function POST(request: NextRequest) {
 
   let body: unknown;
   try {
-    body = await request.json();
+    const rawBody = await request.text();
+    if (rawBody.length > 4_096) {
+      return NextResponse.json({ error: "Invalid payment request." }, { status: 413 });
+    }
+    body = JSON.parse(rawBody);
   } catch {
     return NextResponse.json({ error: "Invalid payment request." }, { status: 400 });
   }
