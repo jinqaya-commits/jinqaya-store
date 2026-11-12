@@ -24,7 +24,9 @@ type Props = { currency: string; onPaid: () => void | Promise<void> };
 
 export function PayPalPaymentButton({ currency, onPaid }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const onPaidRef = useRef(onPaid);\n  onPaidRef.current = onPaid;\n  const [message, setMessage] = useState("Loading secure PayPal checkout…");
+  const onPaidRef = useRef(onPaid);
+  onPaidRef.current = onPaid;
+  const [message, setMessage] = useState("Loading secure PayPal checkout…");
   const [state, setState] = useState<"loading" | "ready" | "error" | "paid">("loading");
 
   useEffect(() => {
@@ -32,17 +34,11 @@ export function PayPalPaymentButton({ currency, onPaid }: Props) {
     let button: HTMLElement | null = null;
     let clickHandler: (() => void) | null = null;
 
-    async function initialize() {
+    async function initialize(clientId: string) {
       if (!active || !window.paypal || !containerRef.current) return;
       try {
-        const configResponse = await fetch("/api/paypal/config", { cache: "no-store" });
-        const config = await configResponse.json();
-        if (!configResponse.ok || config.enabled !== true || typeof config.clientId !== "string") {
-          throw new Error("PayPal checkout is being configured. Please contact info@jinqaya.com to arrange payment.");
-        }
-
         const sdk = await window.paypal.createInstance({
-          clientId: config.clientId,
+          clientId,
           components: ["paypal-payments"],
           pageType: "checkout",
         });
