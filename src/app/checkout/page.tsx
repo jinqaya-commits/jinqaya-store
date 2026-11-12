@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     siteName: "JINQAYA",
     title: "Checkout | JINQAYA",
     description,
-    url: "https://jinqaya.com/checkout",
+    url: "https://www.jinqaya.com/checkout",
   },
   twitter: {
     card: "summary",
