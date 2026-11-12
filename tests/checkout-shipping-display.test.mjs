@@ -30,3 +30,15 @@ test("checkout copy matches the actual reservation and PayPal verification flow"
   assert.match(checkout, /payment remains unavailable/);
   assert.doesNotMatch(checkout, /We’ll confirm availability, shipping and the final total with you before payment/);
 });
+
+const countryRestrictionMigration = await readFile(
+  new URL("../supabase/migrations/20261113103000_seed_checkout_country_restrictions.sql", import.meta.url),
+  "utf8",
+);
+
+test("checkout destination exclusions are tracked in a repeatable migration", () => {
+  assert.match(countryRestrictionMigration, /'BR', 'Brazil'/);
+  assert.match(countryRestrictionMigration, /'KR', 'South Korea'/);
+  assert.match(countryRestrictionMigration, /on conflict \(country_code\) do update/i);
+  assert.match(countryRestrictionMigration, /is_active = true/i);
+});
