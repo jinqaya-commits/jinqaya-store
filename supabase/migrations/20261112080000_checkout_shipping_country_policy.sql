@@ -34,6 +34,24 @@ begin
   );
 
   v_old := $old$
+ SELECT jsonb_build_object('order_id',o.id,'order_number',o.order_number,'status',o.status,'total',o.total_amount,'currency',o.currency)
+ INTO v_existing FROM public.orders o WHERE o.checkout_idempotency_key=p_idempotency_key AND lower(o.customer_email)=v_email LIMIT 1;
+$old$;
+  v_new := $new$
+ SELECT jsonb_build_object(
+  'order_id',o.id,'order_number',o.order_number,'status',o.status,
+  'subtotal',o.subtotal,'shipping_amount',o.shipping_amount,'total_amount',o.total_amount,
+  'total',o.total_amount,'shipping_status',coalesce(o.shipping_quote_snapshot->>'status','unknown'),
+  'payment_status','not_started','currency',o.currency
+ )
+ INTO v_existing FROM public.orders o WHERE o.checkout_idempotency_key=p_idempotency_key AND lower(o.customer_email)=v_email LIMIT 1;
+$new$;
+  if position(v_old in v_definition)=0 then
+    raise exception 'Could not locate guest checkout idempotency response block; migration stopped.';
+  end if;
+  v_definition := replace(v_definition,v_old,v_new);
+
+  v_old := $old$
  IF length(v_address->>'country_code')<>2 OR length(v_address->>'country')<2 OR length(v_address->>'country')>100
  OR length(v_address->>'city')<1 OR length(v_address->>'city')>100 OR length(v_address->>'address_line1')<3
  OR length(v_address->>'address_line1')>200 OR length(coalesce(v_address->>'address_line2',''))>200
