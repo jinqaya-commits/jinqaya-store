@@ -21,7 +21,7 @@ export async function getPayPalPublicConfig() {
   const credentials = Buffer.from(clientId + ":" + clientSecret).toString("base64");
   const body = new URLSearchParams();
   body.set("grant_type", "client_credentials");
-  body.append("domains[]", "www.jinqaya.com");
+  body.append("domains[]", "https://www.jinqaya.com");
   body.set("response_type", "client_token");
   const response = await fetch(apiBase() + "/v1/oauth2/token", {
     method: "POST",
