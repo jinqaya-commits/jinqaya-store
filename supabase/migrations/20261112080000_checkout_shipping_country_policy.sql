@@ -42,7 +42,7 @@ $old$;
   'order_id',o.id,'order_number',o.order_number,'status',o.status,
   'subtotal',o.subtotal,'shipping_amount',o.shipping_amount,'total_amount',o.total_amount,
   'total',o.total_amount,'shipping_status',coalesce(o.shipping_quote_snapshot->>'status','unknown'),
-  'payment_status','not_started','currency',o.currency
+  'payment_status','not_started','payment_ready',(o.status='pending_payment'),'currency',o.currency
  )
  INTO v_existing FROM public.orders o WHERE o.checkout_idempotency_key=p_idempotency_key AND lower(o.customer_email)=v_email LIMIT 1;
 $new$;
