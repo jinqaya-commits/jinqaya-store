@@ -139,8 +139,8 @@ export async function sendOrderOutboxEmail(
     const detail = statusDetails[event];
     return send({
       to: recipientEmail, subject: detail.subject,
-      html: shell(detail.title, `<p>Hello ${safeName},</p><p>${escapeHtml(detail.copy)}</p><p><strong>Order:</strong> ${escapeHtml(order.orderNumber)}</p>`),
-      text: `Hello ${order.customerName || "there"},\n\n${detail.copy}\nOrder: ${order.orderNumber}\n\nJINQAYA`,
+      html: shell(detail.title, `<p>Hello ${safeName},</p><p>${escapeHtml(detail.copy)}</p>${detail.cta ? `<p><a href="${escapeHtml(detail.cta.href)}" style="display:inline-block;padding:14px 20px;background:#252c25;color:#fff;text-decoration:none;letter-spacing:1px;font-size:12px">${escapeHtml(detail.cta.label)}</a></p>` : ""}<p><strong>Order:</strong> ${escapeHtml(order.orderNumber)}</p>`),
+      text: `Hello ${order.customerName || "there"},\n\n${detail.copy}${detail.cta ? `\n${detail.cta.label}: ${detail.cta.href}` : ""}\nOrder: ${order.orderNumber}\n\nJINQAYA`,
     }, idempotencyKey);
   }
   const subtotal = money(order.subtotal, order.currency);
