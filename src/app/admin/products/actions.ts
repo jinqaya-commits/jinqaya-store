@@ -262,7 +262,7 @@ export async function reorderImages(productId:string, ids:string[]) {
 
 export async function removeImage(productId: string, imageId: string, _path: string) {
   const supabase = await requireCatalogManager();
-  const { data: storagePath, error } = await supabase.rpc("admin_delete_product_image", {
+  const { error } = await supabase.rpc("admin_delete_product_image", {
     p_product_id: productId,
     p_image_id: imageId,
   });
