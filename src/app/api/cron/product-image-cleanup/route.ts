@@ -41,8 +41,13 @@ export async function GET(request: NextRequest) {
           .limit(1);
         if (referenceError) throw referenceError;
         if (references?.length) {
-          const { error: completeError } = await callCleanupRpc<null>("complete_product_image_cleanup", { p_id: item.id });
-          if (completeError) throw completeError;
+          // Keep the queue row: the last reference may be removed concurrently.
+          // Retrying later avoids losing the cleanup task in that race.
+          const { error: retryError } = await callCleanupRpc<null>("fail_product_image_cleanup", {
+            p_id: item.id,
+            p_error: "Storage path is still referenced by a product image.",
+          });
+          if (retryError) throw retryError;
           skipped++;
           continue;
         }
