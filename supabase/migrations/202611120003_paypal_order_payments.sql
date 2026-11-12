@@ -26,9 +26,13 @@ as $function$
         where r.order_id=o.id and r.status='active'
       )
       and not exists (
-        select 1 from public.stock_reservations r
+        select 1
+        from public.stock_reservations r
+        left join public.inventory i
+          on i.warehouse_id=r.warehouse_id and i.variant_id=r.variant_id
         where r.order_id=o.id and r.status='active'
-          and (r.expires_at is null or r.expires_at<=now())
+          and (r.expires_at is null or r.expires_at<=now()
+            or i.variant_id is null or i.on_hand<r.quantity or i.reserved<r.quantity)
       )
     ),
     'payment_status', (
