@@ -54,12 +54,14 @@ begin
     perform pg_advisory_xact_lock(hashtextextended(new.storage_path, 0));
 
     if exists (
-       select 1
-       from public.product_image_cleanup_queue q
-       where q.storage_path = new.storage_path
-     ) then
-    raise exception 'This image file is pending cleanup and cannot be reused. Upload it again.';
+      select 1
+      from public.product_image_cleanup_queue q
+      where q.storage_path = new.storage_path
+    ) then
+      raise exception 'This image file is pending cleanup and cannot be reused. Upload it again.';
+    end if;
   end if;
+
   return new;
 end;
 $function$;
