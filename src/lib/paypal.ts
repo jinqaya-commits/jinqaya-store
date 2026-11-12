@@ -6,17 +6,28 @@ function environment(): PayPalEnvironment {
   return process.env.PAYPAL_ENVIRONMENT === "live" ? "live" : "sandbox";
 }
 
-export function getPayPalPublicConfig() {
-  const clientId = process.env.PAYPAL_CLIENT_ID?.trim() || "";
-  const configured = Boolean(clientId && process.env.PAYPAL_CLIENT_SECRET);
-  const env = environment();
-  return {
-    enabled: configured,
-    clientId: configured ? clientId : null,
-    sdkUrl: env === "live"
-      ? "https://www.paypal.com/web-sdk/v6/core"
-      : "https://www.sandbox.paypal.com/web-sdk/v6/core",
-  };
+export function getPayPalSdkUrl() {
+  return environment() === "live"
+    ? "https://www.paypal.com/web-sdk/v6/core"
+    : "https://www.sandbox.paypal.com/web-sdk/v6/core";
+}
+
+export async function getPayPalPublicConfig() {
+  const configured = Boolean(process.env.PAYPAL_CLIENT_ID?.trim() && process.env.PAYPAL_CLIENT_SECRET);
+  if (!configured) return { enabled: false, clientToken: null, sdkUrl: getPayPalSdkUrl() };
+
+  const token = await accessToken();
+  const response = await fetch(apiBase() + "/v1/identity/generate-token", {
+    method: "POST",
+    headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
+    cache: "no-store",
+    signal: AbortSignal.timeout(12_000),
+  });
+  const result = await response.json().catch(() => null) as { client_token?: unknown } | null;
+  if (!response.ok || typeof result?.client_token !== "string") {
+    throw new Error("Unable to initialize PayPal checkout.");
+  }
+  return { enabled: true, clientToken: result.client_token, sdkUrl: getPayPalSdkUrl() };
 }
 
 function apiBase() {
