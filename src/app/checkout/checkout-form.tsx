@@ -38,7 +38,10 @@ export function CheckoutForm() {
   const currency = items[0]?.currency || "USD";
   const mixedCurrencies = items.some((item) => item.currency !== currency);
   const estimate = useMemo(() => items.reduce((sum, item) => sum + item.price * item.quantity, 0), [items]);
-  const shippingEstimate = Math.round(estimate * 50) / 100;
+  const subtotalCents = Math.round((estimate + Number.EPSILON) * 100);
+  const shippingCents = Math.round(subtotalCents / 2);
+  const shippingEstimate = shippingCents / 100;
+  const totalEstimate = (subtotalCents + shippingCents) / 100;
   const isBlockedCountry = countryCode.toUpperCase() === "KR" || countryCode.toUpperCase() === "BR";
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -166,7 +169,7 @@ export function CheckoutForm() {
                 ))}
                 <div className="checkout-total"><span>Estimated subtotal</span><strong>{mixedCurrencies ? "Multiple currencies" : formatCartMoney(estimate, currency)}</strong></div>
                 <div className="checkout-pending"><span>Estimated shipping (50%)</span><strong>{mixedCurrencies ? "—" : formatCartMoney(shippingEstimate, currency)}</strong></div>
-                <div className="checkout-total"><span>Estimated total</span><strong>{mixedCurrencies ? "Multiple currencies" : formatCartMoney(estimate + shippingEstimate, currency)}</strong></div>
+                <div className="checkout-total"><span>Estimated total</span><strong>{mixedCurrencies ? "Multiple currencies" : formatCartMoney(totalEstimate, currency)}</strong></div>
                 <p>Shipping is calculated as 50% of the merchandise subtotal. Product prices are rechecked when you submit. Taxes, if applicable, are not included.</p>
                 {mixedCurrencies && <p className="checkout-error">Your bag contains different currencies. Please check out separately.</p>}
                 <Link className="back-link" href="/cart">← RETURN TO BAG</Link>
