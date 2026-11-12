@@ -20,9 +20,15 @@ as $function$
     'total_amount', o.total_amount,
     'shipping_method', o.shipping_method_name,
     'payment_ready', (
-      o.status='pending_payment' and o.total_amount>0 and exists (
+      o.status='pending_payment' and o.total_amount>0
+      and exists (
         select 1 from public.stock_reservations r
-        where r.order_id=o.id and r.status='active' and r.expires_at>now()
+        where r.order_id=o.id and r.status='active'
+      )
+      and not exists (
+        select 1 from public.stock_reservations r
+        where r.order_id=o.id and r.status='active'
+          and (r.expires_at is null or r.expires_at<=now())
       )
     ),
     'payment_status', (
