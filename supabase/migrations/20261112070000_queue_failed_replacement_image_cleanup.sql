@@ -18,6 +18,9 @@ begin
     raise exception 'Invalid product image storage path';
   end if;
 
+  -- Serialize enqueue with image-row insert/update for this exact storage path.
+  perform pg_advisory_xact_lock(hashtextextended(p_storage_path, 0));
+
   if exists (
     select 1
     from public.product_images
@@ -45,8 +48,12 @@ security definer
 set search_path to 'public', 'pg_temp'
 as $function$
 begin
-  if new.storage_path is not null
-     and exists (
+  if new.storage_path is not null then
+    -- Use the same transaction lock as the enqueue RPC to close the race
+    -- between checking references and creating the cleanup queue row.
+    perform pg_advisory_xact_lock(hashtextextended(new.storage_path, 0));
+
+    if exists (
        select 1
        from public.product_image_cleanup_queue q
        where q.storage_path = new.storage_path
