@@ -34,3 +34,32 @@ $function$;
 
 revoke all on function public.admin_enqueue_product_image_cleanup(text) from public, anon;
 grant execute on function public.admin_enqueue_product_image_cleanup(text) to authenticated;
+
+
+-- A queued storage path must not be reattached while the cleanup worker may
+-- be deleting it. The queue row remains present until the worker completes.
+create or replace function public.prevent_product_image_reuse_while_cleanup_pending()
+returns trigger
+language plpgsql
+security definer
+set search_path to 'public', 'pg_temp'
+as $function$
+begin
+  if new.storage_path is not null
+     and exists (
+       select 1
+       from public.product_image_cleanup_queue q
+       where q.storage_path = new.storage_path
+     ) then
+    raise exception 'This image file is pending cleanup and cannot be reused. Upload it again.';
+  end if;
+  return new;
+end;
+$function$;
+
+revoke all on function public.prevent_product_image_reuse_while_cleanup_pending() from public, anon, authenticated;
+
+drop trigger if exists product_images_prevent_pending_cleanup_reuse on public.product_images;
+create trigger product_images_prevent_pending_cleanup_reuse
+before insert or update of storage_path on public.product_images
+for each row execute function public.prevent_product_image_reuse_while_cleanup_pending();
