@@ -2,13 +2,13 @@
 \set ON_ERROR_STOP on
 
 create schema if not exists auth;
-do $
+do $$
 begin
   if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon nologin; end if;
   if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated nologin; end if;
   if not exists (select 1 from pg_roles where rolname = 'service_role') then create role service_role nologin; end if;
 end
-$;
+$$;
 create or replace function auth.uid() returns uuid language sql stable as $ select '00000000-0000-0000-0000-000000000001'::uuid $;
 create or replace function auth.jwt() returns json language sql stable as $ select '{"role":"service_role"}'::json $;
 create or replace function public.can_manage_catalog() returns boolean language sql stable as $ select true $;
@@ -67,7 +67,7 @@ $$;
 
 -- The replacement cleanup migration must queue only detached paths and prevent
 -- image rows from being attached to paths already scheduled for deletion.
-do $
+do $$
 declare
   v_product uuid := '00000000-0000-0000-0000-000000000101';
   v_image uuid := '00000000-0000-0000-0000-000000000102';
@@ -121,6 +121,6 @@ begin
     if sqlerrm = 'Expected referenced path enqueue to be rejected' then raise; end if;
   end;
 end
-$;
+$$;
 
 select 'product image cleanup migration and safety tests passed' as result;
