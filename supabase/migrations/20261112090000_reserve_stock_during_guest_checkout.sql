@@ -30,7 +30,6 @@ $new$;
   v_old := $old$
  IF v_count=0 THEN RAISE EXCEPTION 'Your bag is empty.'; END IF;
  UPDATE public.orders SET currency=coalesce(v_currency,'USD'),
-$new$;
 $old$;
   v_new := $new$
  IF v_count=0 THEN RAISE EXCEPTION 'Your bag is empty.'; END IF;
@@ -126,7 +125,6 @@ $new$;
   'subtotal',v_subtotal,'shipping_amount',round(v_subtotal*0.50,2),
   'total_amount',v_subtotal+round(v_subtotal*0.50,2),
   'shipping_status','estimated','payment_status','not_started','currency',coalesce(v_currency,'USD')
-$new$;
 $old$;
   v_new := $new$
   'order_id',v_order_id,'order_number',v_order_number,
