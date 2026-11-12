@@ -29,3 +29,8 @@ test("checkout displays the estimated freight and blocks the two explicitly excl
   assert.match(checkoutForm, /shippingEstimate/);
   assert.match(checkoutRoute, /not currently ship to this destination/);
 });
+
+test("idempotent checkout retries preserve the existing order's payment readiness and totals", () => {
+  assert.match(migration, /'subtotal',o\.subtotal,'shipping_amount',o\.shipping_amount,'total_amount',o\.total_amount/);
+  assert.match(migration, /'payment_ready',\(o\.status='pending_payment'\)/);
+});
