@@ -3,8 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { DeleteObjectCommand } from "@aws-sdk/client-s3";
-import { getR2Client, getR2Config } from "@/lib/r2";
 import { getProductReadiness } from "@/lib/product-readiness";
 
 async function requireCatalogManager() {
@@ -292,15 +290,9 @@ export async function addProductImage(productId: string, storagePath: string, al
   });
 
   if (error || !imageId) {
-    try {
-      if (isR2) {
-        const config = getR2Config();
-        await getR2Client().send(new DeleteObjectCommand({ Bucket: config.bucket, Key: objectKey }));
-      } else {
-        await supabase.storage.from("product-images").remove([storagePath]);
-      }
-    } catch (cleanupError) {
-      console.error("Unable to clean up unlinked product image:", cleanupError);
+    const queued = await enqueueProductImageCleanup(supabase, storagePath);
+    if (!queued) {
+      console.error("Unlinked product image could not be queued for cleanup.", { productId, storagePath });
     }
     return { error: error?.message || "Unable to save product image." };
   }
@@ -312,29 +304,21 @@ export async function addProductImage(productId: string, storagePath: string, al
 }
 
 
-async function enqueueProductImageCleanup(supabase: Awaited<ReturnType<typeof createClient>>, storagePath: string) {
+async function enqueueProductImageCleanup(supabase: Awaited<ReturnType<typeof createClient>>, storagePath: string): Promise<boolean> {
   const { error } = await supabase.rpc("admin_enqueue_product_image_cleanup", {
     p_storage_path: storagePath,
   });
-  if (error) console.error("Unable to queue old product image cleanup:", error.message);
+  if (error) {
+    console.error("Unable to queue product image cleanup:", error.message);
+    return false;
+  }
+  return true;
 }
 
 async function cleanupUnlinkedProductImage(supabase: Awaited<ReturnType<typeof createClient>>, storagePath: string) {
-  try {
-    if (storagePath.startsWith("r2://")) {
-      const config = getR2Config();
-      await getR2Client().send(new DeleteObjectCommand({
-        Bucket: config.bucket,
-        Key: storagePath.slice("r2://".length),
-      }));
-    } else if (storagePath && !(storagePath.startsWith("https://") || storagePath.startsWith("http://"))) {
-      const { error } = await supabase.storage.from("product-images").remove([storagePath]);
-      if (error) throw error;
-    }
-  } catch (cleanupError) {
-    console.error("Unable to clean up unlinked replacement image; adding it to the retry queue.", cleanupError);
-    await enqueueProductImageCleanup(supabase, storagePath);
-  }
+  // Do not delete directly: another image row may share this path. The RPC
+  // takes the same advisory lock as image-row writes and queues only unreferenced paths.
+  return enqueueProductImageCleanup(supabase, storagePath);
 }
 
 export async function replaceProductImage(productId: string, imageId: string, storagePath: string) {
