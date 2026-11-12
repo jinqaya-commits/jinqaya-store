@@ -32,6 +32,7 @@ function parsePayload(value: unknown): OrderEmailOutboxPayload | null {
     shippingMethod: typeof row.shippingMethod === "string" ? row.shippingMethod : null,
     trackingNumber: typeof row.trackingNumber === "string" ? row.trackingNumber : null,
     trackingUrl: typeof row.trackingUrl === "string" ? row.trackingUrl : null,
+    stockReviewRequired: row.stockReviewRequired === true,
   };
 }
 

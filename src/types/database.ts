@@ -1572,7 +1572,9 @@ export type Database = {
           paid_at: string | null
           payment_method_type: string | null
           provider: string
+          provider_order_id: string | null
           provider_payment_id: string | null
+          stock_review_required: boolean
           status: Database["public"]["Enums"]["payment_status"]
           updated_at: string
         }
@@ -1590,7 +1592,9 @@ export type Database = {
           paid_at?: string | null
           payment_method_type?: string | null
           provider: string
+          provider_order_id?: string | null
           provider_payment_id?: string | null
+          stock_review_required?: boolean
           status?: Database["public"]["Enums"]["payment_status"]
           updated_at?: string
         }
@@ -1608,7 +1612,9 @@ export type Database = {
           paid_at?: string | null
           payment_method_type?: string | null
           provider?: string
+          provider_order_id?: string | null
           provider_payment_id?: string | null
+          stock_review_required?: boolean
           status?: Database["public"]["Enums"]["payment_status"]
           updated_at?: string
         }

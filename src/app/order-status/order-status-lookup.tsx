@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { PayPalPaymentButton } from "./paypal-payment-button";
 
 type OrderItem = { product_name: string; variant_name: string | null; quantity: number };
 type Shipment = {
@@ -8,6 +9,7 @@ type Shipment = {
   tracking_url: string | null; shipped_at: string | null; delivered_at: string | null;
 };
 type CustomerOrder = {
+  order_id: string; payment_ready: boolean; payment_status: string | null; payment_stock_review_required: boolean;
   order_number: string; status: string; created_at: string; updated_at: string; currency: string;
   subtotal: number | string; shipping_amount: number | string | null;
   total_amount: number | string | null; shipping_method: string | null;
@@ -193,6 +195,19 @@ export function OrderStatusLookup() {
             </ol>
           )}
           {terminal && <p className="order-status-terminal">This order is {labels[status]?.toLowerCase() || status}. Please contact info@jinqaya.com if you need help with this update.</p>}
+          {status === "pending_payment" && order.payment_ready && (
+            <PayPalPaymentButton currency={order.currency} onPaid={refresh} />
+          )}
+          {status === "pending_payment" && !order.payment_ready && (
+            <div className="order-status-terminal">
+              The payment reservation has expired or needs to be reconfirmed. Please contact <a href="mailto:info@jinqaya.com">info@jinqaya.com</a> before making a payment.
+            </div>
+          )}
+          {status === "paid" && order.payment_stock_review_required && (
+            <div className="order-status-terminal">
+              Your PayPal payment has been received. Our team is reviewing the stock reservation before fulfilment and will contact you if anything needs attention.
+            </div>
+          )}
           <div className="order-status-card">
             <h3>Order summary</h3>
             {order.items.map((item, index) => <div className="order-status-item" key={item.product_name + index}><span>{item.product_name}{item.variant_name ? " · " + item.variant_name : ""} × {item.quantity}</span></div>)}
