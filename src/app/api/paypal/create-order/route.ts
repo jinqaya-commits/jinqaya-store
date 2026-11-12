@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
 
     const result = await paypalRequest<PayPalOrder>("/v2/checkout/orders", {
       method: "POST",
-      requestId: "jinqaya-order-" + order.order_id,
+      requestId: order.order_id,
       body: {
         intent: "CAPTURE",
         purchase_units: [{
