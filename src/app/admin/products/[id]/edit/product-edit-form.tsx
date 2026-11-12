@@ -29,7 +29,7 @@ export function ProductEditForm({product,categoryIds,primaryCategoryId,categorie
  const [images,setImages]=useState([...initialImages].sort((a,b)=>a.sort_order-b.sort_order));
  const [draggedImageId,setDraggedImageId]=useState<string|null>(null);
  const [selectedImageId,setSelectedImageId]=useState<string|null>(initialImages[0]?.id??null);
- const [error,setError]=useState(""); const [busy,setBusy]=useState(false); const [uploadBusy,setUploadBusy]=useState(false); const [draggingFiles,setDraggingFiles]=useState(false); const router=useRouter();
+ const [error,setError]=useState(""); const [busy,setBusy]=useState(false); const [uploadBusy,setUploadBusy]=useState(false); const [pendingFiles,setPendingFiles]=useState<File[]>([]); const [uploadProgress,setUploadProgress]=useState<{completed:number;total:number}|null>(null); const [draggingFiles,setDraggingFiles]=useState(false); const router=useRouter();
  async function run(action:()=>Promise<{error?:string;success?:boolean}>) {setBusy(true);setError("");try{const result=await action();if(result.error){setError(result.error);setBusy(false);return false;}setBusy(false);router.refresh();return true;}catch(e){setError(e instanceof Error?e.message:"Unable to save.");setBusy(false);return false;}}
  async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();await run(()=>updateProduct(product.id,{...fields,categoryIds:selectedCategoryIds,primaryCategoryId:selectedPrimaryCategoryId}));}
  function toggleCategory(categoryId:string,checked:boolean) {
@@ -67,15 +67,18 @@ export function ProductEditForm({product,categoryIds,primaryCategoryId,categorie
   }catch(err){setError(err instanceof Error?err.message:"Image replacement failed.");}
   finally{setUploadBusy(false);}
  }
+ function imageFileKey(file:File){return file.name+"-"+file.size+"-"+file.lastModified;}
  async function uploadImages(selected:File[]){
   if(!selected.length)return;
-  for(const file of selected){
+  const queue=Array.from(new Map([...pendingFiles,...selected].map(file=>[imageFileKey(file),file])).values());
+  for(const file of queue){
    if(file.size<=0||file.size>20*1024*1024){setError(file.name+": image must be larger than 0 bytes and 20 MB or smaller.");return;}
    if(!["image/jpeg","image/png","image/webp","image/avif"].includes(file.type)){setError(file.name+": choose a JPG, PNG, WebP or AVIF image.");return;}
   }
-  setUploadBusy(true);setError("");
+  setPendingFiles(queue);setUploadBusy(true);setError("");setUploadProgress({completed:0,total:queue.length});
+  let completed=0;
   try{
-   for(const file of selected){
+   for(const file of queue){
     const prepared=await fetch("/api/admin/product-images/upload-url",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({productId:product.id,fileName:file.name,contentType:file.type,fileSize:file.size})});
     const uploadInfo=await prepared.json();
     if(!prepared.ok)throw new Error(uploadInfo.error||"Unable to prepare upload.");
@@ -83,10 +86,15 @@ export function ProductEditForm({product,categoryIds,primaryCategoryId,categorie
     if(!uploaded.ok)throw new Error("Cloudflare R2 upload failed ("+uploaded.status+").");
     const result=await addProductImage(product.id,uploadInfo.storagePath,"");
     if(result.error)throw new Error(result.error);
+    if(!result.imageId)throw new Error("The image uploaded but was not saved to the product. Please retry.");
     const imageId=result.imageId;
-    if(imageId){const added={id:imageId,storage_path:uploadInfo.storagePath,alt_text:"",sort_order:images.length,previewUrl:previewUrlFor(uploadInfo.storagePath)};setImages(current=>[...current,added]);setSelectedImageId(imageId);}
+    const added={id:imageId,storage_path:uploadInfo.storagePath,alt_text:"",sort_order:0,previewUrl:previewUrlFor(uploadInfo.storagePath)};
+    setImages(current=>[...current,{...added,sort_order:current.length}]);
+    setSelectedImageId(imageId);
+    setPendingFiles(current=>current.filter(item=>imageFileKey(item)!==imageFileKey(file)));
+    completed+=1;setUploadProgress({completed,total:queue.length});
    }
-   router.refresh();
+   setPendingFiles([]);router.refresh();
   }catch(err){setError(err instanceof Error?err.message:"Image upload failed.");}
   finally{setUploadBusy(false);}
  }
@@ -135,7 +143,8 @@ export function ProductEditForm({product,categoryIds,primaryCategoryId,categorie
     <input type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple disabled={uploadBusy||busy} onChange={event=>{const selected=Array.from(event.currentTarget.files??[]);event.currentTarget.value="";void uploadImages(selected);}}/>
     <span className="admin-help">Select multiple images or drag several files here. JPG, PNG, WebP or AVIF; max 20 MB each.</span>
    </label>
-   {uploadBusy&&<p className="admin-help">Uploading image…</p>}
+   {uploadBusy&&uploadProgress&&<p className="admin-help">Uploading images: {uploadProgress.completed} of {uploadProgress.total} complete…</p>}
+   {!uploadBusy&&pendingFiles.length>0&&<div className="admin-selected-images"><p className="admin-help">{pendingFiles.length} image(s) still waiting to upload. Successfully saved images will not be uploaded again.</p><button type="button" className="admin-secondary-button" disabled={busy} onClick={()=>void uploadImages(pendingFiles)}>Retry remaining images</button></div>}
    <div className="admin-image-summary"><strong>{images.length} {images.length===1?"image":"images"}</strong><span>Drag to reorder · Select a photo to edit</span></div>
    {images.length===0?<p className="admin-help">No images uploaded.</p>:<>
     <div className="admin-image-grid">
