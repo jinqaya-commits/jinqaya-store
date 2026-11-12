@@ -344,10 +344,11 @@ async function cleanupUnlinkedProductImage(supabase: Awaited<ReturnType<typeof c
       }));
     } else if (storagePath && !(storagePath.startsWith("https://") || storagePath.startsWith("http://"))) {
       const { error } = await supabase.storage.from("product-images").remove([storagePath]);
-      if (error) console.error("Unable to clean up unlinked replacement image:", error.message);
+      if (error) throw error;
     }
   } catch (cleanupError) {
-    console.error("Unable to clean up unlinked replacement image:", cleanupError);
+    console.error("Unable to clean up unlinked replacement image; adding it to the retry queue.", cleanupError);
+    await enqueueProductImageCleanup(supabase, storagePath);
   }
 }
 
