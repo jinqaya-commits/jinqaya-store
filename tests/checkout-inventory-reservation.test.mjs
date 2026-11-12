@@ -25,7 +25,13 @@ test("stock reservation and order status transition are atomic and recorded in i
 });
 
 test("checkout confirmation distinguishes reserved stock from an order awaiting review", () => {
-  assert.match(checkoutForm, /order\.status === "pending_payment"/);
+  assert.match(checkoutForm, /order\.payment_ready \?\? order\.status === "pending_payment"/);
   assert.match(checkoutForm, /\/order-status/);
   assert.match(checkoutForm, /Your items have been reserved for 48 hours/);
+});
+
+test("checkout copy explains the confirmed total and email-verified PayPal path", () => {
+  assert.match(checkoutForm, /your confirmed total is shown after the server checks destination restrictions, current prices and stock/);
+  assert.match(checkoutForm, /verify your email and continue to PayPal using the confirmed order total/);
+  assert.match(checkoutForm, /payment remains unavailable/);
 });
