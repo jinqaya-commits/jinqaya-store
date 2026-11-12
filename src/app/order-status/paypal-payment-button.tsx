@@ -15,7 +15,7 @@ type PayPalSdkInstance = {
 declare global {
   interface Window {
     paypal?: {
-      createInstance: (options: { clientId: string; components: string[]; pageType: string }) => Promise<PayPalSdkInstance>;
+      createInstance: (options: { clientToken: string; components: string[]; pageType: string }) => Promise<PayPalSdkInstance>;
     };
   }
 }
@@ -38,7 +38,7 @@ export function PayPalPaymentButton({ currency, onPaid }: Props) {
       if (!active || !window.paypal || !containerRef.current) return;
       try {
         const sdk = await window.paypal.createInstance({
-          clientId,
+          clientToken,
           components: ["paypal-payments"],
           pageType: "checkout",
         });
@@ -118,11 +118,11 @@ export function PayPalPaymentButton({ currency, onPaid }: Props) {
           throw new Error("PayPal checkout is being configured. Please contact info@jinqaya.com to arrange payment.");
         }
         if (window.paypal) {
-          await initialize(config.clientId);
+          await initialize(config.clientToken);
           return;
         }
         let script = document.getElementById("jinqaya-paypal-sdk") as HTMLScriptElement | null;
-        const onLoad = () => { void initialize(config.clientId); };
+        const onLoad = () => { void initialize(config.clientToken); };
         if (!script) {
           script = document.createElement("script");
           script.id = "jinqaya-paypal-sdk";
