@@ -107,12 +107,17 @@ export function CheckoutForm() {
           <p>Your order request <strong>{order.order_number}</strong> has been recorded.</p>
           <div className="checkout-notice">
             <strong>What happens next</strong>
-            <p>Shipping is estimated at 50% of the merchandise subtotal. We’ll check stock availability before payment. Your order is not paid or ready for dispatch yet.</p>
+            {order.status === "pending_payment" ? (
+              <p>Your items have been reserved for 48 hours. Your order is ready for secure payment. Open Track Order and verify your checkout email to continue with PayPal.</p>
+            ) : (
+              <p>Shipping is estimated at 50% of the merchandise subtotal. We still need to confirm stock availability, so payment is not available yet.</p>
+            )}
             <p className="checkout-total"><span>Merchandise</span><strong>{formatCartMoney(order.subtotal, order.currency)}</strong></p>
             <p className="checkout-pending"><span>Estimated shipping</span><strong>{formatCartMoney(order.shipping_amount, order.currency)}</strong></p>
             <p className="checkout-total"><span>Estimated total</span><strong>{formatCartMoney(order.total_amount, order.currency)}</strong></p>
           </div>
-          <Link className="button button-dark" href="/shop">CONTINUE EXPLORING <span>↗</span></Link>
+          {order.status === "pending_payment" && <Link className="button button-dark" href="/order-status">TRACK ORDER & PAY <span>↗</span></Link>}
+          <Link className="back-link" href="/shop">CONTINUE EXPLORING ↗</Link>
         </section>
       ) : (
         <section className="checkout-page">
