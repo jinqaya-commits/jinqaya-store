@@ -160,7 +160,7 @@ export function OrderStatusLookup() {
       {stage === "details" && (
         <section className="order-lookup-panel">
           <h2>Find your order</h2>
-          <p>Enter the order reference from your confirmation and the email address used at checkout.</p>
+          <p>Enter the order number shown in your order confirmation and the email address you used at checkout.</p>
           <label>Order number<input value={orderNumber} onChange={(event) => setOrderNumber(event.target.value)} maxLength={80} autoComplete="off" placeholder="e.g. JQ-…" /></label>
           <label>Email address<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} maxLength={254} autoComplete="email" /></label>
           <button className="button button-dark" type="button" disabled={busy || !orderNumber.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)} onClick={requestCode}>{busy ? "SENDING…" : "SEND VERIFICATION CODE"} <span>↗</span></button>
