@@ -268,23 +268,8 @@ export async function removeImage(productId: string, imageId: string, _path: str
   });
   if (error) return { error: error.message };
 
-  // The database change is committed atomically before external object cleanup.
-  // A storage failure must not restore a catalog row pointing at a deleted image.
-  const path = typeof storagePath === "string" ? storagePath : "";
-  try {
-    if (path.startsWith("r2://")) {
-      const config = getR2Config();
-      await getR2Client().send(new DeleteObjectCommand({
-        Bucket: config.bucket,
-        Key: path.slice("r2://".length),
-      }));
-    } else if (path && !(path.startsWith("https://") || path.startsWith("http://"))) {
-      const { error: storageError } = await supabase.storage.from("product-images").remove([path]);
-      if (storageError) console.error("Product image row deleted but storage cleanup failed:", storageError.message);
-    }
-  } catch (cleanupError) {
-    console.error("Product image row deleted but storage cleanup failed:", cleanupError);
-  }
+  // The database function queues the detached object. The worker checks that no
+  // product image row still references the path before deleting the stored file.
 
   revalidatePath("/admin/products");
   revalidatePath("/shop");
@@ -388,21 +373,9 @@ export async function replaceProductImage(productId: string, imageId: string, st
 
   const oldPath = current.storage_path;
   if (oldPath && oldPath !== storagePath && !(oldPath.startsWith("https://") || oldPath.startsWith("http://"))) {
-    try {
-      if (oldPath.startsWith("r2://")) {
-        const config = getR2Config();
-        await getR2Client().send(new DeleteObjectCommand({
-          Bucket: config.bucket,
-          Key: oldPath.slice("r2://".length),
-        }));
-      } else {
-        const { error: cleanupError } = await supabase.storage.from("product-images").remove([oldPath]);
-        if (cleanupError) throw cleanupError;
-      }
-    } catch (cleanupError) {
-      console.error("Replacement saved but old product image cleanup failed; adding it to the retry queue.", cleanupError);
-      await enqueueProductImageCleanup(supabase, oldPath);
-    }
+    // Always queue detached objects. The worker rechecks references immediately
+    // before deletion so a path shared by another image is not removed.
+    await enqueueProductImageCleanup(supabase, oldPath);
   }
 
   const { data: product } = await supabase.from("products").select("slug").eq("id", productId).maybeSingle();
