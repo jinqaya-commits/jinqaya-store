@@ -25,7 +25,7 @@ type Props = { currency: string; onPaid: () => void | Promise<void> };
 export function PayPalPaymentButton({ currency, onPaid }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const onPaidRef = useRef(onPaid);
-  onPaidRef.current = onPaid;
+  useEffect(() => { onPaidRef.current = onPaid; }, [onPaid]);
   const [message, setMessage] = useState("Loading secure PayPal checkout…");
   const [state, setState] = useState<"loading" | "ready" | "error" | "paid">("loading");
 
