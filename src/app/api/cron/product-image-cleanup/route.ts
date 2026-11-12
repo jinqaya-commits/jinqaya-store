@@ -18,7 +18,8 @@ export async function GET(request: NextRequest) {
 
   try {
     const supabase = createAdminClient();
-    const callCleanupRpc = supabase.rpc as unknown as <T>(name: string, args: Record<string, unknown>) => Promise<RpcResult<T>>;
+    // Supabase RPC methods use the client instance as `this`; keep the method bound.
+    const callCleanupRpc = supabase.rpc.bind(supabase) as unknown as <T>(name: string, args: Record<string, unknown>) => Promise<RpcResult<T>>;
     const { data, error } = await callCleanupRpc<CleanupItem[]>("claim_product_image_cleanup", { p_limit: 50 });
     if (error) throw error;
 
