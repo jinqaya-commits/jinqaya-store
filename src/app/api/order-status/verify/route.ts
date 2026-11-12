@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     const response = NextResponse.json({ ok: true }, { headers: NO_STORE });
     response.cookies.set(COOKIE, token, {
       httpOnly: true, secure: process.env.NODE_ENV === "production",
-      sameSite: "strict", path: "/api/order-status", maxAge: 1200,
+      sameSite: "strict", path: "/api", maxAge: 1200,
     });
     return response;
   } catch (error) {
