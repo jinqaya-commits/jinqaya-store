@@ -116,6 +116,7 @@ export type OrderEmailOutboxPayload = {
   shippingMethod?: string | null;
   trackingNumber?: string | null;
   trackingUrl?: string | null;
+  stockReviewRequired?: boolean;
 };
 
 export async function sendOrderOutboxEmail(
