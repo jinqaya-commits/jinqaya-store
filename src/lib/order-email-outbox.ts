@@ -31,7 +31,8 @@ function parsePayload(value: unknown): OrderEmailOutboxPayload | null {
     shippingAmount: typeof row.shippingAmount === "number" || typeof row.shippingAmount === "string" ? row.shippingAmount : null,
     shippingMethod: typeof row.shippingMethod === "string" ? row.shippingMethod : null,
     trackingNumber: typeof row.trackingNumber === "string" ? row.trackingNumber : null,
-    trackingUrl: typeof row.trackingUrl === "string" ? row.trackingUrl : null,\n    stockReviewRequired: row.stockReviewRequired === true,
+    trackingUrl: typeof row.trackingUrl === "string" ? row.trackingUrl : null,
+    stockReviewRequired: row.stockReviewRequired === true,
   };
 }
 
