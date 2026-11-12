@@ -9,7 +9,7 @@ type Shipment = {
   tracking_url: string | null; shipped_at: string | null; delivered_at: string | null;
 };
 type CustomerOrder = {
-  order_id: string; payment_ready: boolean; payment_status: string | null;
+  order_id: string; payment_ready: boolean; payment_status: string | null; payment_stock_review_required: boolean;
   order_number: string; status: string; created_at: string; updated_at: string; currency: string;
   subtotal: number | string; shipping_amount: number | string | null;
   total_amount: number | string | null; shipping_method: string | null;
@@ -203,7 +203,7 @@ export function OrderStatusLookup() {
               The payment reservation has expired or needs to be reconfirmed. Please contact <a href="mailto:info@jinqaya.com">info@jinqaya.com</a> before making a payment.
             </div>
           )}
-          {status === "on_hold" && order.payment_status === "paid" && (
+          {status === "paid" && order.payment_stock_review_required && (
             <div className="order-status-terminal">
               Your PayPal payment has been received. Our team is reviewing the stock reservation before fulfilment and will contact you if anything needs attention.
             </div>
