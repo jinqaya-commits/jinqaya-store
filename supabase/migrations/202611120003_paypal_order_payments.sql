@@ -1,4 +1,4 @@
-alter table public.payments add column if not exists provider_order_id text;
+alter table public.payments add column if not exists provider_order_id text;\nalter table public.payments add column if not exists stock_review_required boolean not null default false;
 
 create unique index if not exists payments_paypal_order_unique_idx
   on public.payments(provider, provider_order_id)
@@ -28,6 +28,10 @@ as $function$
       select p.status::text from public.payments p
       where p.order_id=o.id order by p.created_at desc limit 1
     ),
+    'payment_stock_review_required', coalesce((
+      select p.stock_review_required from public.payments p
+      where p.order_id=o.id order by p.created_at desc limit 1
+    ), false),
     'items', coalesce((
       select jsonb_agg(jsonb_build_object(
         'product_name',oi.product_name,'variant_name',oi.variant_name,'quantity',oi.quantity
@@ -83,7 +87,8 @@ begin
       and v_existing.status='paid'
       and round(v_existing.amount,2)=round(p_amount,2)
       and upper(trim(v_existing.currency))=upper(trim(p_currency)) then
-      return jsonb_build_object('order_id',p_order_id,'status',v_order.status,'already_recorded',true);
+      return jsonb_build_object('order_id',p_order_id,'status',v_order.status,
+        'already_recorded',true,'stock_review_required',v_existing.stock_review_required);
     end if;
     raise exception 'This PayPal transaction has already been used.';
   end if;
@@ -134,12 +139,16 @@ begin
 
   insert into public.payments(
     order_id,provider,provider_order_id,provider_payment_id,status,amount,currency,
-    payment_method_type,idempotency_key,paid_at
+    payment_method_type,idempotency_key,paid_at,stock_review_required
   ) values(p_order_id,'paypal',trim(p_paypal_order_id),trim(p_capture_id),'paid',
-    round(p_amount,2),upper(trim(p_currency)),'paypal','paypal-capture:'||trim(p_capture_id),v_now);
+    round(p_amount,2),upper(trim(p_currency)),'paypal','paypal-capture:'||trim(p_capture_id),v_now,v_stock_review);
 
-  v_new_status:=case when v_stock_review then 'on_hold'::public.order_status else 'paid'::public.order_status end;
-  update public.orders set status=v_new_status,paid_at=v_now where id=p_order_id;
+  v_new_status:='paid'::public.order_status;
+  update public.orders set status=v_new_status,paid_at=v_now,
+    internal_note=case when v_stock_review
+      then left(concat_ws(E'\\n',nullif(internal_note,''),'PayPal payment received. Stock reservation requires manual review before fulfilment.'),2000)
+      else internal_note end
+  where id=p_order_id;
 
   insert into public.order_status_history(order_id,old_status,new_status,note,changed_by)
   values(p_order_id,'pending_payment',v_new_status,
@@ -154,6 +163,9 @@ begin
       'stock_review_required',v_stock_review));
 
   if v_stock_review then
+    update public.order_email_outbox
+      set payload=payload || pg_catalog.jsonb_build_object('stockReviewRequired',true)
+      where order_id=p_order_id and event_type='payment_received' and recipient_type='customer';
     v_customer_name:=coalesce(v_order.shipping_address_snapshot->>'recipient_name','');
     v_payload:=pg_catalog.jsonb_build_object('eventType','payment_received',
       'orderNumber',v_order.order_number,'customerName',v_customer_name,
@@ -161,8 +173,7 @@ begin
       'shippingAmount',v_order.shipping_amount,'shippingMethod',v_order.shipping_method_name,
       'stockReviewRequired',true);
     insert into public.order_email_outbox(order_id,event_type,recipient_type,recipient_email,payload)
-    values(p_order_id,'payment_received','customer',v_order.customer_email,v_payload),
-      (p_order_id,'payment_received','staff','info@jinqaya.com',v_payload)
+    values(p_order_id,'payment_received','staff','info@jinqaya.com',v_payload)
     on conflict(order_id,event_type,recipient_type) do nothing;
   end if;
 
