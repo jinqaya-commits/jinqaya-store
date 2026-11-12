@@ -118,7 +118,7 @@ export function CheckoutForm() {
         <section className="checkout-page">
           <p className="eyebrow">ORDER REQUEST</p>
           <h1>Delivery details</h1>
-          <p className="checkout-intro">Send us your order details first. We’ll confirm availability, shipping and the final total with you before payment.</p>
+          <p className="checkout-intro">Enter your delivery details to submit your order. Shipping is estimated at 50% of the item subtotal; your confirmed total is shown after the server checks destination restrictions, current prices and stock.</p>
           {items.length === 0 ? (
             <div className="cart-empty"><p>Your bag is empty.</p><Link className="button button-dark" href="/shop">EXPLORE THE COLLECTION <span>↗</span></Link></div>
           ) : (
@@ -154,7 +154,7 @@ export function CheckoutForm() {
                 <button className="button button-dark checkout-submit" type="submit" disabled={busy || mixedCurrencies}>
                   {busy ? "SUBMITTING…" : "SUBMIT ORDER REQUEST"} <span>↗</span>
                 </button>
-                <p className="checkout-disclaimer">Submitting this request does not charge your payment method. We’ll confirm availability, shipping and the final total with you first. By submitting, you acknowledge our <Link href="/policies/terms">Terms of Service</Link> and <Link href="/policies/privacy">Privacy Policy</Link>.</p>
+                <p className="checkout-disclaimer">Submitting this request does not charge your payment method. If all items can be reserved, you can verify your email and continue to PayPal using the confirmed order total. If stock cannot be reserved, payment remains unavailable. By submitting, you acknowledge our <Link href="/policies/terms">Terms of Service</Link> and <Link href="/policies/privacy">Privacy Policy</Link>.</p>
               </form>
 
               <aside className="checkout-summary">
