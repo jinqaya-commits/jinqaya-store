@@ -327,6 +327,23 @@ export async function addProductImage(productId: string, storagePath: string, al
 }
 
 
+async function cleanupUnlinkedProductImage(supabase: Awaited<ReturnType<typeof createClient>>, storagePath: string) {
+  try {
+    if (storagePath.startsWith("r2://")) {
+      const config = getR2Config();
+      await getR2Client().send(new DeleteObjectCommand({
+        Bucket: config.bucket,
+        Key: storagePath.slice("r2://".length),
+      }));
+    } else if (storagePath && !(storagePath.startsWith("https://") || storagePath.startsWith("http://"))) {
+      const { error } = await supabase.storage.from("product-images").remove([storagePath]);
+      if (error) console.error("Unable to clean up unlinked replacement image:", error.message);
+    }
+  } catch (cleanupError) {
+    console.error("Unable to clean up unlinked replacement image:", cleanupError);
+  }
+}
+
 export async function replaceProductImage(productId: string, imageId: string, storagePath: string) {
   const supabase = await requireCatalogManager();
   const isR2 = storagePath.startsWith("r2://");
@@ -341,14 +358,23 @@ export async function replaceProductImage(productId: string, imageId: string, st
     .eq("id", imageId)
     .eq("product_id", productId)
     .maybeSingle();
-  if (readError) return { error: readError.message };
-  if (!current) return { error: "Product image not found." };
+  if (readError) {
+    await cleanupUnlinkedProductImage(supabase, storagePath);
+    return { error: readError.message };
+  }
+  if (!current) {
+    await cleanupUnlinkedProductImage(supabase, storagePath);
+    return { error: "Product image not found." };
+  }
 
   const { error: updateError } = await supabase.from("product_images")
     .update({ storage_path: storagePath })
     .eq("id", imageId)
     .eq("product_id", productId);
-  if (updateError) return { error: updateError.message };
+  if (updateError) {
+    await cleanupUnlinkedProductImage(supabase, storagePath);
+    return { error: updateError.message };
+  }
 
   const oldPath = current.storage_path;
   try {
