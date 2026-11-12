@@ -9,6 +9,7 @@ type Shipment = {
   tracking_url: string | null; shipped_at: string | null; delivered_at: string | null;
 };
 type CustomerOrder = {
+  order_id: string; payment_ready: boolean; payment_status: string | null;
   order_number: string; status: string; created_at: string; updated_at: string; currency: string;
   subtotal: number | string; shipping_amount: number | string | null;
   total_amount: number | string | null; shipping_method: string | null;
