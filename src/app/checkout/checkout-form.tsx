@@ -14,6 +14,7 @@ type OrderResult = {
   total_amount: number;
   shipping_status: string;
   payment_status: string;
+  payment_ready?: boolean;
   currency: string;
 };
 
@@ -43,6 +44,7 @@ export function CheckoutForm() {
   const shippingEstimate = shippingCents / 100;
   const totalEstimate = (subtotalCents + shippingCents) / 100;
   const isBlockedCountry = countryCode.toUpperCase() === "KR" || countryCode.toUpperCase() === "BR";
+  const paymentReady = order ? (order.payment_ready ?? order.status === "pending_payment") : false;
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -107,7 +109,7 @@ export function CheckoutForm() {
           <p>Your order request <strong>{order.order_number}</strong> has been recorded.</p>
           <div className="checkout-notice">
             <strong>What happens next</strong>
-            {order.status === "pending_payment" ? (
+            {paymentReady ? (
               <p>Your items have been reserved for 48 hours. Your order is ready for secure payment. Open Track Order and verify your checkout email to continue with PayPal.</p>
             ) : (
               <p>Shipping is estimated at 50% of the merchandise subtotal. We still need to confirm stock availability, so payment is not available yet.</p>
@@ -116,14 +118,14 @@ export function CheckoutForm() {
             <p className="checkout-pending"><span>Estimated shipping</span><strong>{formatCartMoney(order.shipping_amount, order.currency)}</strong></p>
             <p className="checkout-total"><span>Estimated total</span><strong>{formatCartMoney(order.total_amount, order.currency)}</strong></p>
           </div>
-          {order.status === "pending_payment" && <Link className="button button-dark" href="/order-status">TRACK ORDER & PAY <span>↗</span></Link>}
+          {paymentReady && <Link className="button button-dark" href="/order-status">TRACK ORDER & PAY <span>↗</span></Link>}
           <Link className="back-link" href="/shop">CONTINUE EXPLORING ↗</Link>
         </section>
       ) : (
         <section className="checkout-page">
           <p className="eyebrow">ORDER REQUEST</p>
           <h1>Delivery details</h1>
-          <p className="checkout-intro">Shipping is estimated at 50% of the merchandise subtotal. We’ll check stock availability before payment.</p>
+          <p className="checkout-intro">Enter your delivery details to submit your order. Shipping is estimated at 50% of the item subtotal; your confirmed total is shown after the server checks destination restrictions, current prices and stock.</p>
           {items.length === 0 ? (
             <div className="cart-empty"><p>Your bag is empty.</p><Link className="button button-dark" href="/shop">EXPLORE THE COLLECTION <span>↗</span></Link></div>
           ) : (
@@ -160,7 +162,7 @@ export function CheckoutForm() {
                 <button className="button button-dark checkout-submit" type="submit" disabled={busy || mixedCurrencies || isBlockedCountry}>
                   {busy ? "SUBMITTING…" : "SUBMIT ORDER REQUEST"} <span>↗</span>
                 </button>
-                <p className="checkout-disclaimer">Submitting this request does not charge your payment method. Shipping is estimated at 50% of the merchandise subtotal; payment remains unavailable until stock is confirmed. By submitting, you acknowledge our <Link href="/policies/terms">Terms of Service</Link> and <Link href="/policies/privacy">Privacy Policy</Link>.</p>
+                <p className="checkout-disclaimer">Submitting this request does not charge your payment method. If all items can be reserved, you can verify your email and continue to PayPal using the confirmed order total. If stock cannot be reserved, payment remains unavailable. By submitting, you acknowledge our <Link href="/policies/terms">Terms of Service</Link> and <Link href="/policies/privacy">Privacy Policy</Link>.</p>
               </form>
 
               <aside className="checkout-summary">
