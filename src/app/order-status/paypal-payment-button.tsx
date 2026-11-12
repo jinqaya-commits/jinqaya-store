@@ -34,7 +34,7 @@ export function PayPalPaymentButton({ currency, onPaid }: Props) {
     let button: HTMLElement | null = null;
     let clickHandler: (() => void) | null = null;
 
-    async function initialize(clientId: string) {
+    async function initialize(clientToken: string) {
       if (!active || !window.paypal || !containerRef.current) return;
       try {
         const sdk = await window.paypal.createInstance({
