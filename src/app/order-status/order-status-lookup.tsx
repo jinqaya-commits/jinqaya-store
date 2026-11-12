@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { PayPalPaymentButton } from "./paypal-payment-button";
 
 type OrderItem = { product_name: string; variant_name: string | null; quantity: number };
 type Shipment = {
@@ -193,6 +194,19 @@ export function OrderStatusLookup() {
             </ol>
           )}
           {terminal && <p className="order-status-terminal">This order is {labels[status]?.toLowerCase() || status}. Please contact info@jinqaya.com if you need help with this update.</p>}
+          {status === "pending_payment" && order.payment_ready && (
+            <PayPalPaymentButton currency={order.currency} onPaid={refresh} />
+          )}
+          {status === "pending_payment" && !order.payment_ready && (
+            <div className="order-status-terminal">
+              The payment reservation has expired or needs to be reconfirmed. Please contact <a href="mailto:info@jinqaya.com">info@jinqaya.com</a> before making a payment.
+            </div>
+          )}
+          {status === "on_hold" && order.payment_status === "paid" && (
+            <div className="order-status-terminal">
+              Your PayPal payment has been received. Our team is reviewing the stock reservation before fulfilment and will contact you if anything needs attention.
+            </div>
+          )}
           <div className="order-status-card">
             <h3>Order summary</h3>
             {order.items.map((item, index) => <div className="order-status-item" key={item.product_name + index}><span>{item.product_name}{item.variant_name ? " · " + item.variant_name : ""} × {item.quantity}</span></div>)}
