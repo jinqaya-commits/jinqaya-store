@@ -27,10 +27,31 @@ export async function GET(request: NextRequest) {
     if (!items.length) return NextResponse.json({ ok: true, claimed: 0, deleted: 0, failed: 0 });
 
     let deleted = 0;
+    let skipped = 0;
     let failed = 0;
     for (const item of items) {
       try {
         const path = item.storage_path;
+        // A path may still be referenced if it was attached again after being queued.
+        // Never delete an object while a product_images row points to it.
+        const { data: references, error: referenceError } = await supabase
+          .from("product_images")
+          .select("id")
+          .eq("storage_path", path)
+          .limit(1);
+        if (referenceError) throw referenceError;
+        if (references?.length) {
+          // Keep the queue row: the last reference may be removed concurrently.
+          // Retrying later avoids losing the cleanup task in that race.
+          const { error: retryError } = await callCleanupRpc<null>("fail_product_image_cleanup", {
+            p_id: item.id,
+            p_error: "Storage path is still referenced by a product image.",
+          });
+          if (retryError) throw retryError;
+          skipped++;
+          continue;
+        }
+
         if (path.startsWith("r2://")) {
           const config = getR2Config();
           await getR2Client().send(new DeleteObjectCommand({
@@ -57,7 +78,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ ok: failed === 0, claimed: items.length, deleted, failed });
+    return NextResponse.json({ ok: failed === 0, claimed: items.length, deleted, skipped, failed });
   } catch (error) {
     console.error("[product-image-cleanup] scheduled processing failed", error);
     return NextResponse.json({ error: "Product image cleanup failed." }, { status: 500 });

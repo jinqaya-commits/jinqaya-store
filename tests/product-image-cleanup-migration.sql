@@ -2,9 +2,16 @@
 \set ON_ERROR_STOP on
 
 create schema if not exists auth;
-create or replace function auth.uid() returns uuid language sql stable as $$ select null::uuid $$;
-create or replace function auth.jwt() returns json language sql stable as $$ select '{}'::json $$;
-create or replace function public.can_manage_catalog() returns boolean language sql stable as $$ select false $$;
+do $$
+begin
+  if not exists (select 1 from pg_roles where rolname = 'anon') then create role anon nologin; end if;
+  if not exists (select 1 from pg_roles where rolname = 'authenticated') then create role authenticated nologin; end if;
+  if not exists (select 1 from pg_roles where rolname = 'service_role') then create role service_role nologin; end if;
+end
+$$;
+create or replace function auth.uid() returns uuid language sql stable as $$ select '00000000-0000-0000-0000-000000000001'::uuid $$;
+create or replace function auth.jwt() returns json language sql stable as $$ select '{"role":"service_role"}'::json $$;
+create or replace function public.can_manage_catalog() returns boolean language sql stable as $$ select true $$;
 
 create type public.image_kind as enum ('main', 'gallery');
 create table public.products (id uuid primary key);
@@ -29,6 +36,7 @@ alter table public.product_image_cleanup_queue enable row level security;
 insert into public.product_image_cleanup_queue(storage_path) values ('legacy/product-image.jpg');
 
 \ir ../supabase/migrations/202611120001_product_image_cleanup_queue.sql
+\ir ../supabase/migrations/20261112070000_queue_failed_replacement_image_cleanup.sql
 
 do $$
 declare
@@ -55,4 +63,64 @@ begin
 end
 $$;
 
-select 'legacy product image cleanup migration test passed' as result;
+
+
+-- The replacement cleanup migration must queue only detached paths and prevent
+-- image rows from being attached to paths already scheduled for deletion.
+do $$
+declare
+  v_product uuid := '00000000-0000-0000-0000-000000000101';
+  v_image uuid := '00000000-0000-0000-0000-000000000102';
+begin
+  insert into public.products(id) values (v_product);
+
+  perform public.admin_enqueue_product_image_cleanup('unreferenced/new-upload.jpg');
+  if not exists (
+    select 1 from public.product_image_cleanup_queue
+    where storage_path = 'unreferenced/new-upload.jpg'
+  ) then
+    raise exception 'Unreferenced upload was not queued';
+  end if;
+
+  begin
+    insert into public.product_images(id, product_id, storage_path)
+    values (v_image, v_product, 'unreferenced/new-upload.jpg');
+    raise exception 'Expected pending cleanup path insert to be rejected';
+  exception when raise_exception then
+    if sqlerrm = 'Expected pending cleanup path insert to be rejected' then raise; end if;
+  end;
+
+  insert into public.product_images(id, product_id, storage_path)
+  values ('00000000-0000-0000-0000-000000000103', v_product, 'detached/old-image.jpg');
+
+  perform public.admin_delete_product_image(
+    v_product,
+    '00000000-0000-0000-0000-000000000103'
+  );
+
+  if exists (
+    select 1 from public.product_images
+    where id = '00000000-0000-0000-0000-000000000103'
+  ) then
+    raise exception 'Image row was not deleted';
+  end if;
+  if not exists (
+    select 1 from public.product_image_cleanup_queue
+    where storage_path = 'detached/old-image.jpg'
+  ) then
+    raise exception 'Deleted image was not queued for cleanup';
+  end if;
+
+  insert into public.product_images(id, product_id, storage_path)
+  values ('00000000-0000-0000-0000-000000000104', v_product, 'shared/used-image.jpg');
+
+  begin
+    perform public.admin_enqueue_product_image_cleanup('shared/used-image.jpg');
+    raise exception 'Expected referenced path enqueue to be rejected';
+  exception when raise_exception then
+    if sqlerrm = 'Expected referenced path enqueue to be rejected' then raise; end if;
+  end;
+end
+$$;
+
+select 'product image cleanup migration and safety tests passed' as result;

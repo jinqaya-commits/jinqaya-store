@@ -3858,6 +3858,10 @@ export type Database = {
         Args: { p_image_id: string; p_product_id: string }
         Returns: string
       }
+      admin_enqueue_product_image_cleanup: {
+        Args: { p_storage_path: string }
+        Returns: undefined
+      }
       admin_inspect_shipment_return: {
         Args: { p_condition: string; p_notes?: string; p_receipt_id: string }
         Returns: Json

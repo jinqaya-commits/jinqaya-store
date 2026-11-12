@@ -3,8 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { DeleteObjectCommand } from "@aws-sdk/client-s3";
-import { getR2Client, getR2Config } from "@/lib/r2";
 import { getProductReadiness } from "@/lib/product-readiness";
 
 async function requireCatalogManager() {
@@ -262,29 +260,14 @@ export async function reorderImages(productId:string, ids:string[]) {
 
 export async function removeImage(productId: string, imageId: string, _path: string) {
   const supabase = await requireCatalogManager();
-  const { data: storagePath, error } = await supabase.rpc("admin_delete_product_image", {
+  const { error } = await supabase.rpc("admin_delete_product_image", {
     p_product_id: productId,
     p_image_id: imageId,
   });
   if (error) return { error: error.message };
 
-  // The database change is committed atomically before external object cleanup.
-  // A storage failure must not restore a catalog row pointing at a deleted image.
-  const path = typeof storagePath === "string" ? storagePath : "";
-  try {
-    if (path.startsWith("r2://")) {
-      const config = getR2Config();
-      await getR2Client().send(new DeleteObjectCommand({
-        Bucket: config.bucket,
-        Key: path.slice("r2://".length),
-      }));
-    } else if (path && !(path.startsWith("https://") || path.startsWith("http://"))) {
-      const { error: storageError } = await supabase.storage.from("product-images").remove([path]);
-      if (storageError) console.error("Product image row deleted but storage cleanup failed:", storageError.message);
-    }
-  } catch (cleanupError) {
-    console.error("Product image row deleted but storage cleanup failed:", cleanupError);
-  }
+  // The database function queues the detached object. The worker checks that no
+  // product image row still references the path before deleting the stored file.
 
   revalidatePath("/admin/products");
   revalidatePath("/shop");
@@ -307,15 +290,9 @@ export async function addProductImage(productId: string, storagePath: string, al
   });
 
   if (error || !imageId) {
-    try {
-      if (isR2) {
-        const config = getR2Config();
-        await getR2Client().send(new DeleteObjectCommand({ Bucket: config.bucket, Key: objectKey }));
-      } else {
-        await supabase.storage.from("product-images").remove([storagePath]);
-      }
-    } catch (cleanupError) {
-      console.error("Unable to clean up unlinked product image:", cleanupError);
+    const queued = await enqueueProductImageCleanup(supabase, storagePath);
+    if (!queued) {
+      console.error("Unlinked product image could not be queued for cleanup.", { productId, storagePath });
     }
     return { error: error?.message || "Unable to save product image." };
   }
@@ -326,6 +303,23 @@ export async function addProductImage(productId: string, storagePath: string, al
   return { success: true, imageId };
 }
 
+
+async function enqueueProductImageCleanup(supabase: Awaited<ReturnType<typeof createClient>>, storagePath: string): Promise<boolean> {
+  const { error } = await supabase.rpc("admin_enqueue_product_image_cleanup", {
+    p_storage_path: storagePath,
+  });
+  if (error) {
+    console.error("Unable to queue product image cleanup:", error.message);
+    return false;
+  }
+  return true;
+}
+
+async function cleanupUnlinkedProductImage(supabase: Awaited<ReturnType<typeof createClient>>, storagePath: string) {
+  // Do not delete directly: another image row may share this path. The RPC
+  // takes the same advisory lock as image-row writes and queues only unreferenced paths.
+  return enqueueProductImageCleanup(supabase, storagePath);
+}
 
 export async function replaceProductImage(productId: string, imageId: string, storagePath: string) {
   const supabase = await requireCatalogManager();
@@ -341,29 +335,31 @@ export async function replaceProductImage(productId: string, imageId: string, st
     .eq("id", imageId)
     .eq("product_id", productId)
     .maybeSingle();
-  if (readError) return { error: readError.message };
-  if (!current) return { error: "Product image not found." };
+  if (readError) {
+    await cleanupUnlinkedProductImage(supabase, storagePath);
+    return { error: readError.message };
+  }
+  if (!current) {
+    await cleanupUnlinkedProductImage(supabase, storagePath);
+    return { error: "Product image not found." };
+  }
 
-  const { error: updateError } = await supabase.from("product_images")
+  const { data: updatedImage, error: updateError } = await supabase.from("product_images")
     .update({ storage_path: storagePath })
     .eq("id", imageId)
-    .eq("product_id", productId);
-  if (updateError) return { error: updateError.message };
+    .eq("product_id", productId)
+    .select("id")
+    .maybeSingle();
+  if (updateError || !updatedImage) {
+    await cleanupUnlinkedProductImage(supabase, storagePath);
+    return { error: updateError?.message || "Product image no longer exists. Refresh and try again." };
+  }
 
   const oldPath = current.storage_path;
-  try {
-    if (oldPath && oldPath.startsWith("r2://")) {
-      const config = getR2Config();
-      await getR2Client().send(new DeleteObjectCommand({
-        Bucket: config.bucket,
-        Key: oldPath.slice("r2://".length),
-      }));
-    } else if (oldPath && !(oldPath.startsWith("https://") || oldPath.startsWith("http://"))) {
-      const { error: cleanupError } = await supabase.storage.from("product-images").remove([oldPath]);
-      if (cleanupError) console.error("Replacement saved but old product image cleanup failed:", cleanupError.message);
-    }
-  } catch (cleanupError) {
-    console.error("Replacement saved but old product image cleanup failed:", cleanupError);
+  if (oldPath && oldPath !== storagePath && !(oldPath.startsWith("https://") || oldPath.startsWith("http://"))) {
+    // Always queue detached objects. The worker rechecks references immediately
+    // before deletion so a path shared by another image is not removed.
+    await enqueueProductImageCleanup(supabase, oldPath);
   }
 
   const { data: product } = await supabase.from("products").select("slug").eq("id", productId).maybeSingle();
