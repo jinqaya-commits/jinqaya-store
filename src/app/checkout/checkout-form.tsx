@@ -10,8 +10,11 @@ type OrderResult = {
   order_number: string;
   status: string;
   subtotal: number;
+  shipping_amount: number;
+  total_amount: number;
   shipping_status: string;
   payment_status: string;
+  payment_ready?: boolean;
   currency: string;
 };
 
@@ -96,10 +99,18 @@ export function CheckoutForm() {
         <section className="checkout-success">
           <p className="eyebrow">REQUEST RECEIVED</p>
           <h1>Thank you.</h1>
-          <p>Your order request <strong>{order.order_number}</strong> has been recorded.</p>
+          <p>Your order <strong>{order.order_number}</strong> has been recorded.</p>
+          <div className="checkout-summary checkout-confirmed-summary">
+            <h2>Order total</h2>
+            <div className="checkout-total"><span>Item subtotal</span><strong>{formatCartMoney(Number(order.subtotal), order.currency)}</strong></div>
+            <div className="checkout-pending"><span>Shipping (50%)</span><strong>{formatCartMoney(Number(order.shipping_amount), order.currency)}</strong></div>
+            <div className="checkout-total"><span>Total</span><strong>{formatCartMoney(Number(order.total_amount), order.currency)}</strong></div>
+          </div>
           <div className="checkout-notice">
-            <strong>What happens next</strong>
-            <p>We’ll confirm stock availability, shipping options and the final delivery cost before requesting payment. Your order is not paid or ready for dispatch yet.</p>
+            <strong>{order.payment_ready ? "Verify your email to continue to payment" : "Stock confirmation required"}</strong>
+            <p>{order.payment_ready
+              ? "Your items have been reserved for 48 hours. Open the order-status email, verify your email address, and you’ll be able to pay securely with PayPal. This order has not been paid yet."
+              : "We couldn’t reserve every item from available stock. Your request is recorded, but payment is not available yet. Our team will contact you to confirm availability."}</p>
           </div>
           <Link className="button button-dark" href="/shop">CONTINUE EXPLORING <span>↗</span></Link>
         </section>
@@ -107,7 +118,7 @@ export function CheckoutForm() {
         <section className="checkout-page">
           <p className="eyebrow">ORDER REQUEST</p>
           <h1>Delivery details</h1>
-          <p className="checkout-intro">Send us your order details first. We’ll confirm availability, shipping and the final total with you before payment.</p>
+          <p className="checkout-intro">Enter your delivery details to submit your order. Shipping is estimated at 50% of the item subtotal; your confirmed total is shown after the server checks destination restrictions, current prices and stock.</p>
           {items.length === 0 ? (
             <div className="cart-empty"><p>Your bag is empty.</p><Link className="button button-dark" href="/shop">EXPLORE THE COLLECTION <span>↗</span></Link></div>
           ) : (
@@ -143,7 +154,7 @@ export function CheckoutForm() {
                 <button className="button button-dark checkout-submit" type="submit" disabled={busy || mixedCurrencies}>
                   {busy ? "SUBMITTING…" : "SUBMIT ORDER REQUEST"} <span>↗</span>
                 </button>
-                <p className="checkout-disclaimer">Submitting this request does not charge your payment method. We’ll confirm availability, shipping and the final total with you first. By submitting, you acknowledge our <Link href="/policies/terms">Terms of Service</Link> and <Link href="/policies/privacy">Privacy Policy</Link>.</p>
+                <p className="checkout-disclaimer">Submitting this request does not charge your payment method. If all items can be reserved, you can verify your email and continue to PayPal using the confirmed order total. If stock cannot be reserved, payment remains unavailable. By submitting, you acknowledge our <Link href="/policies/terms">Terms of Service</Link> and <Link href="/policies/privacy">Privacy Policy</Link>.</p>
               </form>
 
               <aside className="checkout-summary">
@@ -156,8 +167,9 @@ export function CheckoutForm() {
                   </div>
                 ))}
                 <div className="checkout-total"><span>Estimated subtotal</span><strong>{mixedCurrencies ? "Multiple currencies" : formatCartMoney(estimate, currency)}</strong></div>
-                <div className="checkout-pending"><span>Shipping</span><strong>To be confirmed</strong></div>
-                <p>Product prices are rechecked when you submit. Shipping and any applicable taxes are not included until confirmed.</p>
+                <div className="checkout-pending"><span>Estimated shipping (50%)</span><strong>{mixedCurrencies ? "—" : formatCartMoney(estimate * 0.5, currency)}</strong></div>
+                <div className="checkout-total"><span>Estimated total</span><strong>{mixedCurrencies ? "—" : formatCartMoney(estimate * 1.5, currency)}</strong></div>
+                <p>Shipping is calculated as 50% of the merchandise subtotal. The server rechecks product prices, destination restrictions and stock when you submit; the confirmed order total is shown after submission.</p>
                 {mixedCurrencies && <p className="checkout-error">Your bag contains different currencies. Please check out separately.</p>}
                 <Link className="back-link" href="/cart">← RETURN TO BAG</Link>
               </aside>
