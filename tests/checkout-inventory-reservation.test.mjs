@@ -35,3 +35,8 @@ test("checkout copy explains the confirmed total and email-verified PayPal path"
   assert.match(checkoutForm, /verify your email and continue to PayPal using the confirmed order total/);
   assert.match(checkoutForm, /payment remains unavailable/);
 });
+
+test("stock reservation migration can be safely reconciled when its changes already exist", () => {
+  assert.match(migration, /elsif position\(v_new in v_definition\)=0 then/g);
+  assert.match(migration, /FOR UPDATE OF i/);
+});
