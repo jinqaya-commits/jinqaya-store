@@ -35,7 +35,7 @@ export default async function AdminCustomerDetailPage({ params }: { params: Prom
 
   const [{ data: orders, error: ordersError }, { count: orderCount }, { data: followUps, error: followUpsError }, { data: supportTickets, error: supportError }] = await Promise.all([
     supabase.from("orders")
-      .select("id,order_number,status,currency,subtotal,shipping_amount,total_amount,placed_at,created_at,paid_at,shipping_method_name,order_items(product_name,variant_name,sku,quantity,unit_price,line_total)")
+      .select("id,order_number,status,currency,subtotal,shipping_amount,total_amount,placed_at,created_at,paid_at,shipping_method_name,order_items(product_name,variant_name,sku,quantity,unit_price,line_total),payments(amount,currency,status),order_refunds(amount,currency)")
       .eq("customer_id", id).order("created_at", { ascending: false }).limit(100),
     supabase.from("orders").select("id", { count: "exact", head: true }).eq("customer_id", id),
     supabase.from("customer_follow_ups").select("id,title,notes,due_at,status,completed_at,created_at").eq("customer_id", id).order("due_at", { ascending: true }).limit(100),
@@ -52,12 +52,27 @@ export default async function AdminCustomerDetailPage({ params }: { params: Prom
     return { ...item, status: item.status as (typeof followUpStatuses)[number] };
   });
 
-  const paidOrders = (orders || []).filter(order => ["paid", "processing", "partially_shipped", "shipped", "delivered"].includes(order.status));
-  const currencies = [...new Set(paidOrders.map(order => order.currency.trim() || "USD"))];
-  const paidTotals = currencies.map(currency => ({
-    currency,
-    total: paidOrders.filter(order => (order.currency.trim() || "USD") === currency).reduce((sum, order) => sum + Number(order.total_amount || 0), 0),
-  }));
+  const isRecordedPayment = (payment: { status: string }) =>
+    ["paid", "partially_refunded", "refunded"].includes(payment.status);
+  const paidOrders = (orders || []).filter(order =>
+    (Array.isArray(order.payments) ? order.payments : []).some(isRecordedPayment)
+  );
+  const currencies = [...new Set((orders || []).flatMap(order =>
+    (Array.isArray(order.payments) ? order.payments : [])
+      .filter(isRecordedPayment)
+      .map(payment => payment.currency.trim() || "USD")
+  ))];
+  const paidTotals = currencies.map(currency => {
+    const paid = (orders || []).reduce((sum, order) => sum +
+      (Array.isArray(order.payments) ? order.payments : [])
+        .filter(payment => isRecordedPayment(payment) && (payment.currency.trim() || "USD") === currency)
+        .reduce((amount, payment) => amount + Number(payment.amount || 0), 0), 0);
+    const refunded = (orders || []).reduce((sum, order) => sum +
+      (Array.isArray(order.order_refunds) ? order.order_refunds : [])
+        .filter(refund => (refund.currency.trim() || "USD") === currency)
+        .reduce((amount, refund) => amount + Number(refund.amount || 0), 0), 0);
+    return { currency, total: Math.max(0, paid - refunded) };
+  });
   const name = [customer.first_name, customer.last_name].filter(Boolean).join(" ") || "Customer";
 
   return <main className="admin-shell">
