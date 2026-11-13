@@ -1,6 +1,7 @@
 import { after, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { processOrderEmailOutbox } from "@/lib/order-email-outbox";
+import { newSessionToken, sha256 } from "@/lib/order-status-security";
 
 export const runtime = "nodejs";
 
@@ -78,6 +79,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "We couldn't submit your order request. Please try again." }, { status: 500 });
     }
 
+    let paymentSessionToken = "";
+    let paymentSessionReady = false;
     if (data && typeof data === "object" && !Array.isArray(data)) {
       const orderId = typeof data.order_id === "string" ? data.order_id : "";
       if (orderId) {
@@ -88,9 +91,49 @@ export async function POST(request: Request) {
             console.error("[checkout] order email outbox processing failed", error);
           }
         });
+
+        // Create a short-lived, server-issued order session so the customer can pay
+        // immediately after checkout without looking up the order or entering an OTP.
+        if (data.payment_ready === true) {
+          const email = String(body.customer.email || "").trim().toLowerCase();
+          paymentSessionToken = newSessionToken();
+          const sessionClient = supabase as unknown as {
+            from: (table: string) => {
+              insert: (values: Record<string, unknown>) => Promise<{ error: { message: string } | null }>;
+            };
+          };
+          const { error: sessionError } = await sessionClient
+            .from("customer_order_status_sessions")
+            .insert({
+              order_id: orderId,
+              email,
+              token_hash: sha256(paymentSessionToken),
+              expires_at: new Date(Date.now() + 20 * 60 * 1000).toISOString(),
+            });
+          if (sessionError) {
+            paymentSessionToken = "";
+            console.error("[checkout] secure payment session could not be created", sessionError.message);
+          } else {
+            paymentSessionReady = true;
+          }
+        }
       }
     }
-    return NextResponse.json({ order: data }, { status: 201 });
+    const response = NextResponse.json({
+      order: data && typeof data === "object" && !Array.isArray(data)
+        ? { ...data, payment_session_ready: paymentSessionReady }
+        : data,
+    }, { status: 201 });
+    if (paymentSessionToken) {
+      response.cookies.set("jq_order_status_session", paymentSessionToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        path: "/api",
+        maxAge: 20 * 60,
+      });
+    }
+    return response;
   } catch {
     return NextResponse.json({ error: "Checkout is temporarily unavailable. Please try again shortly." }, { status: 503 });
   }
