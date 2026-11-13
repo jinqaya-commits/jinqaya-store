@@ -16,7 +16,7 @@ create or replace function public.can_manage_catalog() returns boolean language 
 create type public.image_kind as enum ('main', 'gallery');
 create table public.products (id uuid primary key);
 create table public.product_images (
-  id uuid primary key,
+  id uuid primary key default gen_random_uuid(),
   product_id uuid not null references public.products(id),
   storage_path text,
   alt_text text,
