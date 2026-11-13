@@ -3747,6 +3747,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_process_order: {
+        Args: {
+          p_action: string
+          p_carrier_name?: string | null
+          p_note?: string | null
+          p_order_id: string
+          p_shipping_amount?: number | null
+          p_shipping_method?: string | null
+          p_tracking_number?: string | null
+          p_tracking_url?: string | null
+        }
+        Returns: Json
+      }
       release_expired_stock_reservations: {
         Args: { p_limit?: number }
         Returns: Json
