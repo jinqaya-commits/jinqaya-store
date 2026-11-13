@@ -22,15 +22,9 @@ export async function processOrderAction(
   formData: FormData
 ) {
   const supabase = await requireOrderManager();
-  const amountRaw = String(formData.get("shipping_amount") ?? "").trim();
-  const amount = amountRaw === "" ? null : Number(amountRaw);
-  if (amountRaw !== "" && (!Number.isFinite(amount) || Number(amount) < 0)) {
-    return { error: "Enter a valid shipping amount." };
-  }
   const { data, error } = await supabase.rpc("admin_process_order", {
     p_order_id: orderId,
     p_action: action,
-    p_shipping_amount: amount ?? undefined,
     p_shipping_method: String(formData.get("shipping_method") ?? ""),
     p_carrier_name: String(formData.get("carrier_name") ?? ""),
     p_tracking_number: String(formData.get("tracking_number") ?? ""),
