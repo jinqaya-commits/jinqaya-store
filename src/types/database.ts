@@ -3782,6 +3782,14 @@ export type Database = {
         }
         Returns: string
       }
+      admin_create_product_image_upload_intent: {
+        Args: { p_product_id: string; p_storage_path: string }
+        Returns: string
+      }
+      admin_replace_product_image: {
+        Args: { p_image_id: string; p_product_id: string; p_storage_path: string }
+        Returns: string
+      }
       admin_adjust_inventory: {
         Args: {
           p_notes?: string
