@@ -3945,7 +3945,7 @@ export type Database = {
         Returns: Json
       }
       claim_order_email_outbox: {
-        Args: { p_limit?: number; p_order_id?: string }
+        Args: { p_limit?: number; p_order_id?: string | null }
         Returns: {
           attempt_count: number
           created_at: string
@@ -3973,9 +3973,9 @@ export type Database = {
       }
       complete_order_email_outbox: {
         Args: {
-          p_error?: string
+          p_error?: string | null
           p_id: string
-          p_provider_message_id?: string
+          p_provider_message_id?: string | null
           p_retryable?: boolean
           p_success: boolean
         }
@@ -3986,7 +3986,7 @@ export type Database = {
           p_category_ids: string[]
           p_primary_category_id: string
           p_product: Json
-          p_product_id: string
+          p_product_id: string | null
           p_variant?: Json
         }
         Returns: string
