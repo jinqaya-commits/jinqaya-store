@@ -1,14 +1,15 @@
 "use client";
 import { useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { processOrderAction } from "./actions";
+import { processOrderAction, resolvePaidOrderStockReviewAction } from "./actions";
 
-type Props={orderId:string;status:string;shippingMethod:string|null;subtotal:number|string|null;hasValidStockReservation:boolean;paymentProvider:string|null};
-export function OrderActions({orderId,status,shippingMethod,subtotal,hasValidStockReservation,paymentProvider}:Props){
+type Props={orderId:string;status:string;shippingMethod:string|null;subtotal:number|string|null;hasValidStockReservation:boolean;paymentProvider:string|null;stockReviewRequired:boolean};
+export function OrderActions({orderId,status,shippingMethod,subtotal,hasValidStockReservation,paymentProvider,stockReviewRequired}:Props){
  const router=useRouter();
  const [busy,start]=useTransition();const [error,setError]=useState("");const [success,setSuccess]=useState("");
  const [method,setMethod]=useState(shippingMethod||"");const [carrier,setCarrier]=useState("");const [tracking,setTracking]=useState("");const [url,setUrl]=useState("");const [note,setNote]=useState("");
  function run(action:string,formData:FormData){setError("");setSuccess("");start(async()=>{const r=await processOrderAction(orderId,action,formData);if(r.error){setError(r.error);return;}setSuccess("Order updated.");router.refresh();});}
+ function resolveStockReview(){if(!window.confirm("Confirm that you have checked the inventory and that every ordered item is now available in the reserved stock?"))return;setError("");setSuccess("");start(async()=>{const r=await resolvePaidOrderStockReviewAction(orderId,note);if(r.error){setError(r.error);return;}setSuccess("Stock review completed. The order can now enter processing.");router.refresh();});}
  function submit(action:string,e:FormEvent<HTMLFormElement>){e.preventDefault();if(action==="cancel"&&!window.confirm("Cancel this unpaid order and release any reserved stock?"))return;run(action,new FormData(e.currentTarget));}
  return <section className="admin-panel order-actions-panel"><div className="admin-panel-heading"><div><p className="admin-kicker">ORDER WORKFLOW</p><h2>Next action</h2></div><span>{status.replaceAll("_"," ").toUpperCase()}</span></div>
  <form className="order-action-form" onSubmit={e=>submit(status==="on_hold"?"confirm_quote":status==="pending_payment"?"confirm_payment":status==="paid"?"start_processing":status==="processing"?"ship":status==="shipped"?"delivered":"save_note",e)}>
@@ -21,7 +22,8 @@ export function OrderActions({orderId,status,shippingMethod,subtotal,hasValidSto
  {status==="pending_payment"&&!hasValidStockReservation&&<><p className="admin-help">The stock hold is missing or expired. Refresh inventory availability before accepting payment.</p><button className="admin-secondary-button" disabled={busy} type="button" onClick={()=>{const fd=new FormData();run("reconfirm_stock",fd);}}>Recheck stock & reserve for 48 hours</button></>}
  {status==="pending_payment"&&paymentProvider!=="paypal"&&<button className="admin-primary-button" disabled={busy} type="submit">Confirm offline payment received</button>}
  {status==="pending_payment"&&paymentProvider==="paypal"&&<p className="admin-help">PayPal payment is recorded automatically after PayPal confirms the capture. Do not manually confirm this payment.</p>}
- {status==="paid"&&<button className="admin-primary-button" disabled={busy} type="submit">Start processing</button>}
+ {status==="paid"&&stockReviewRequired&&<><div className="admin-warning-panel" role="alert"><strong>Inventory review required</strong><p>PayPal confirmed this payment, but the stock reservation could not be safely committed. Check the ordered quantities, receive or adjust stock if necessary, and make sure active reservations exactly match every order item before continuing.</p></div><button className="admin-primary-button" disabled={busy} type="button" onClick={resolveStockReview}>Verify inventory & complete review</button></>}
+ {status==="paid"&&!stockReviewRequired&&<button className="admin-primary-button" disabled={busy} type="submit">Start processing</button>}
  {status==="processing"&&<button className="admin-primary-button" disabled={busy} type="submit">Mark shipped & add tracking</button>}
  {status==="shipped"&&<button className="admin-primary-button" disabled={busy} type="submit">Mark delivered</button>}
  {["on_hold","pending_payment"].includes(status)&&<button className="admin-danger-button" disabled={busy} type="button" onClick={()=>{if(!window.confirm("Cancel this unpaid order and release any reserved stock?"))return;const fd=new FormData();fd.set("note",note);run("cancel",fd);}}>Cancel order</button>}
