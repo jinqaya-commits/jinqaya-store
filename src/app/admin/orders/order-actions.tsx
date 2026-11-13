@@ -3,8 +3,8 @@ import { useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { processOrderAction } from "./actions";
 
-type Props={orderId:string;status:string;shippingMethod:string|null;subtotal:number|string|null;hasValidStockReservation:boolean};
-export function OrderActions({orderId,status,shippingMethod,subtotal,hasValidStockReservation}:Props){
+type Props={orderId:string;status:string;shippingMethod:string|null;subtotal:number|string|null;hasValidStockReservation:boolean;paymentProvider:string|null};
+export function OrderActions({orderId,status,shippingMethod,subtotal,hasValidStockReservation,paymentProvider}:Props){
  const router=useRouter();
  const [busy,start]=useTransition();const [error,setError]=useState("");const [success,setSuccess]=useState("");
  const [method,setMethod]=useState(shippingMethod||"");const [carrier,setCarrier]=useState("");const [tracking,setTracking]=useState("");const [url,setUrl]=useState("");const [note,setNote]=useState("");
@@ -19,7 +19,8 @@ export function OrderActions({orderId,status,shippingMethod,subtotal,hasValidSto
  <div className="order-action-buttons">
  {status==="on_hold"&&<button className="admin-primary-button" disabled={busy} type="submit">Confirm 50% shipping & reserve stock</button>}
  {status==="pending_payment"&&!hasValidStockReservation&&<><p className="admin-help">The stock hold is missing or expired. Refresh inventory availability before accepting payment.</p><button className="admin-secondary-button" disabled={busy} type="button" onClick={()=>{const fd=new FormData();run("reconfirm_stock",fd);}}>Recheck stock & reserve for 48 hours</button></>}
- {status==="pending_payment"&&<button className="admin-primary-button" disabled={busy} type="submit">Confirm payment received</button>}
+ {status==="pending_payment"&&paymentProvider!=="paypal"&&<button className="admin-primary-button" disabled={busy} type="submit">Confirm offline payment received</button>}
+ {status==="pending_payment"&&paymentProvider==="paypal"&&<p className="admin-help">PayPal payment is recorded automatically after PayPal confirms the capture. Do not manually confirm this payment.</p>}
  {status==="paid"&&<button className="admin-primary-button" disabled={busy} type="submit">Start processing</button>}
  {status==="processing"&&<button className="admin-primary-button" disabled={busy} type="submit">Mark shipped & add tracking</button>}
  {status==="shipped"&&<button className="admin-primary-button" disabled={busy} type="submit">Mark delivered</button>}
