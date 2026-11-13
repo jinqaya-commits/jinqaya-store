@@ -76,6 +76,11 @@ async function processRow(supabase: ReturnType<typeof createAdminClient>, row: O
 }
 
 export async function processOrderEmailOutbox(options: { orderId?: string; limit?: number } = {}) {
+  // Final safety boundary: no Preview or local invocation may claim or send queued emails.
+  if (process.env.VERCEL_ENV !== "production") {
+    return { processed: 0, sent: 0, retried: 0, dead: 0 };
+  }
+
   const supabase = createAdminClient();
   const limit = Math.min(Math.max(options.limit ?? 20, 1), 100);
   let processed = 0;
