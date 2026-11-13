@@ -124,3 +124,80 @@ end
 $$;
 
 select 'product image cleanup migration and safety tests passed' as result;
+
+
+-- Image replacement and cleanup enqueue must commit or roll back together.
+\\ir ../supabase/migrations/20261113125359_admin_replace_product_image_atomic_cleanup.sql
+\\ir ../supabase/migrations/20261113125417_tighten_atomic_image_replacement_path_validation.sql
+
+create or replace function public.reject_cleanup_queue_insert()
+returns trigger language plpgsql as $$
+begin
+  if new.storage_path = 'old/force-queue-failure.jpg' then
+    raise exception 'simulated cleanup queue failure';
+  end if;
+  return new;
+end
+$$;
+
+do $$
+declare
+  v_product uuid := '00000000-0000-0000-0000-000000000201';
+  v_image uuid := '00000000-0000-0000-0000-000000000202';
+  v_path text;
+begin
+  insert into public.products(id) values (v_product);
+  insert into public.product_images(id, product_id, storage_path)
+  values (v_image, v_product, 'old/previous-image.jpg');
+
+  perform public.admin_replace_product_image(
+    v_product, v_image, 'r2://' || v_product::text || '/replacement.webp'
+  );
+
+  select storage_path into v_path from public.product_images where id = v_image;
+  if v_path <> 'r2://' || v_product::text || '/replacement.webp' then
+    raise exception 'Image replacement did not persist';
+  end if;
+  if not exists (
+    select 1 from public.product_image_cleanup_queue
+    where storage_path = 'old/previous-image.jpg'
+  ) then
+    raise exception 'Previous image was not queued in the replacement transaction';
+  end if;
+
+  update public.product_images
+  set storage_path = 'old/force-queue-failure.jpg'
+  where id = v_image;
+  create trigger reject_cleanup_queue_insert
+    before insert on public.product_image_cleanup_queue
+    for each row execute function public.reject_cleanup_queue_insert();
+
+  begin
+    perform public.admin_replace_product_image(
+      v_product, v_image, 'r2://' || v_product::text || '/replacement-2.webp'
+    );
+    raise exception 'Expected cleanup queue failure to abort image replacement';
+  exception when raise_exception then
+    if sqlerrm = 'Expected cleanup queue failure to abort image replacement' then raise; end if;
+  end;
+
+  select storage_path into v_path from public.product_images where id = v_image;
+  if v_path <> 'old/force-queue-failure.jpg' then
+    raise exception 'Image row changed even though cleanup enqueue failed';
+  end if;
+
+  drop trigger reject_cleanup_queue_insert on public.product_image_cleanup_queue;
+
+  begin
+    perform public.admin_replace_product_image(
+      v_product, v_image, 'r2://another-product/not-owned.webp'
+    );
+    raise exception 'Expected cross-product storage path to be rejected';
+  exception when raise_exception then
+    if sqlerrm = 'Expected cross-product storage path to be rejected' then raise; end if;
+  end;
+end
+$$;
+
+drop function public.reject_cleanup_queue_insert();
+select 'atomic product image replacement tests passed' as result;
