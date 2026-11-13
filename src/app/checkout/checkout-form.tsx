@@ -6,6 +6,7 @@ import { formatCartMoney, getCartSnapshot, parseCartSnapshot, subscribeCart, wri
 import { CartLink } from "@/components/storefront/cart-link";
 import { PayPalPaymentButton } from "../order-status/paypal-payment-button";
 import { isRestrictedShippingDestination } from "@/lib/shipping-country";
+import { COUNTRY_OPTIONS } from "@/lib/country-options";
 
 type OrderResult = {
   order_id: string;
@@ -182,8 +183,25 @@ export function CheckoutForm() {
                 <section className="checkout-section">
                   <div className="checkout-section-heading"><span>02</span><div><h2>Shipping address</h2><p>Enter the destination where you’d like your order delivered.</p></div></div>
                   <div className="checkout-fields two">
-                    <label className="full">Country / Region<input name="country" autoComplete="country-name" value={countryName} onChange={(event) => setCountryName(event.target.value)} required maxLength={100} placeholder="e.g. United States" /></label>
-                    <label>Country code<input name="country_code" value={countryCode} onChange={(event) => setCountryCode(event.target.value.toUpperCase().slice(0, 2))} required minLength={2} maxLength={2} placeholder="US" /></label>
+                    <label className="full">Country / Region
+                      <select
+                        name="country_code"
+                        autoComplete="country"
+                        value={countryCode}
+                        onChange={(event) => {
+                          const selected = COUNTRY_OPTIONS.find((country) => country.code === event.target.value);
+                          setCountryCode(selected?.code || "");
+                          setCountryName(selected?.name || "");
+                        }}
+                        required
+                      >
+                        <option value="">Select your country or region</option>
+                        {COUNTRY_OPTIONS.map((country) => (
+                          <option key={country.code} value={country.code}>{country.name}</option>
+                        ))}
+                      </select>
+                      <input type="hidden" name="country" value={countryName} />
+                    </label>
                     <label>State / Province<input name="state_region" autoComplete="address-level1" maxLength={100} /></label>
                     <label>City<input name="city" autoComplete="address-level2" required maxLength={100} /></label>
                     <label>Postal code<input name="postal_code" autoComplete="postal-code" maxLength={30} /></label>
