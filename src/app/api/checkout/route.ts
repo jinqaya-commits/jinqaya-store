@@ -90,13 +90,16 @@ export async function POST(request: Request) {
     if (data && typeof data === "object" && !Array.isArray(data)) {
       const orderId = typeof data.order_id === "string" ? data.order_id : "";
       if (orderId) {
-        after(async () => {
-          try {
-            await processOrderEmailOutbox({ orderId, limit: 20 });
-          } catch (error) {
-            console.error("[checkout] order email outbox processing failed", error);
-          }
-        });
+        // Keep Preview checkout isolated: test orders must never trigger real customer/staff email.
+        if (process.env.VERCEL_ENV === "production") {
+          after(async () => {
+            try {
+              await processOrderEmailOutbox({ orderId, limit: 20 });
+            } catch (error) {
+              console.error("[checkout] order email outbox processing failed", error);
+            }
+          });
+        }
 
         // Create a short-lived, server-issued order session so the customer can pay
         // immediately after checkout without looking up the order or entering an OTP.
