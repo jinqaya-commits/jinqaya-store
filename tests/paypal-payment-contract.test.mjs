@@ -8,6 +8,7 @@ const captureOrder = await readFile(new URL("capture-order/route.ts", routeRoot)
 const webhook = await readFile(new URL("webhook/route.ts", routeRoot), "utf8");
 const verifyOrderStatus = await readFile(new URL("../src/app/api/order-status/verify/route.ts", import.meta.url), "utf8");
 const paypal = await readFile(new URL("../src/lib/paypal.ts", import.meta.url), "utf8");
+const emailOutbox = await readFile(new URL("../src/lib/order-email-outbox.ts", import.meta.url), "utf8");
 const paymentSql = await readFile(new URL("../supabase/migrations/202611120003_paypal_order_payments.sql", import.meta.url), "utf8");
 
 test("verified order session cookie is scoped to API routes used by PayPal", () => {
@@ -110,4 +111,10 @@ test("the payment-recording RPC is idempotent, validates the confirmed total, an
   assert.match(paymentSql, /upper\(trim\(v_order\.currency\)\)<>upper\(trim\(p_currency\)\)/);
   assert.match(paymentSql, /revoke all on function public\.record_paypal_order_payment\(uuid,text,text,numeric,text\) from public,anon,authenticated/);
   assert.match(paymentSql, /grant execute on function public\.record_paypal_order_payment\(uuid,text,text,numeric,text\) to service_role/);
+});
+
+test("order email processing is blocked at the service boundary outside Production", () => {
+  assert.match(emailOutbox, /if \(process\.env\.VERCEL_ENV !== "production"\)/);
+  assert.ok(emailOutbox.indexOf('VERCEL_ENV !== "production"') < emailOutbox.indexOf("const supabase = createAdminClient();"));
+  assert.match(emailOutbox, /return \{ processed: 0, sent: 0, retried: 0, dead: 0 \}/);
 });
