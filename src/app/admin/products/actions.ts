@@ -331,7 +331,7 @@ export async function replaceProductImage(productId: string, imageId: string, st
 
   // Replace the row and enqueue its detached previous object in one database
   // transaction. If queue insertion fails, the image update rolls back too.
-  const { data: oldPath, error: replaceError } = await supabase.rpc("admin_replace_product_image", {
+  const { error: replaceError } = await supabase.rpc("admin_replace_product_image", {
     p_product_id: productId,
     p_image_id: imageId,
     p_storage_path: storagePath,
