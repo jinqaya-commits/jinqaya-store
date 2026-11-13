@@ -127,8 +127,8 @@ select 'product image cleanup migration and safety tests passed' as result;
 
 
 -- Image replacement and cleanup enqueue must commit or roll back together.
-\\ir ../supabase/migrations/20261113125359_admin_replace_product_image_atomic_cleanup.sql
-\\ir ../supabase/migrations/20261113125417_tighten_atomic_image_replacement_path_validation.sql
+\ir ../supabase/migrations/20261113125359_admin_replace_product_image_atomic_cleanup.sql
+\ir ../supabase/migrations/20261113125417_tighten_atomic_image_replacement_path_validation.sql
 
 create or replace function public.reject_cleanup_queue_insert()
 returns trigger language plpgsql as $$
