@@ -111,8 +111,10 @@ $old$;
 $new$;
   if position(v_old in v_definition)>0 then
     v_definition := replace(v_definition,v_old,v_new);
-  elsif position(v_new in v_definition)=0 then
-    raise exception 'Could not locate guest checkout shipping calculation block; migration stopped.';
+  elsif position('shipping_amount=round(v_subtotal*0.50,2)' in v_definition)=0
+     OR position('total_amount=v_subtotal+round(v_subtotal*0.50,2)' in v_definition)=0
+     OR position('checkout_country_restrictions r' in v_definition)=0 THEN
+    raise exception 'Guest checkout shipping or country policy is not installed; migration stopped.';
   end if;
   execute v_definition;
 end
