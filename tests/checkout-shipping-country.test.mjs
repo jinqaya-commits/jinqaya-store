@@ -24,10 +24,10 @@ test("South Korea and Brazil are seeded as restricted destinations and restricti
 });
 
 test("checkout displays the estimated freight and blocks the two explicitly excluded countries", () => {
-  assert.match(checkoutForm, /countryCode\.toUpperCase\(\)/);
-  assert.match(checkoutForm, /countryCode\.toUpperCase\(\) === "KR" \|\| countryCode\.toUpperCase\(\) === "BR"/);
+  assert.match(checkoutForm, /isRestrictedShippingDestination\(countryCode, countryName\)/);
   assert.match(checkoutForm, /shippingEstimate/);
-  assert.match(checkoutRoute, /isRestrictedShippingDestination\\(body\\.shipping_address\\.country_code, body\\.shipping_address\\.country\\)/);\n  assert.match(checkoutRoute, /not currently ship to this destination/);
+  assert.match(checkoutRoute, /isRestrictedShippingDestination\(body\.shipping_address\.country_code, body\.shipping_address\.country\)/);
+  assert.match(checkoutRoute, /not currently ship to this destination/);
 });
 
 test("idempotent checkout retries preserve the existing order's payment readiness and totals", () => {
