@@ -47,6 +47,26 @@ export async function processOrderAction(
   return { success: true, data };
 }
 
+
+export async function resolvePaidOrderStockReviewAction(orderId: string, note: string) {
+  const supabase = await requireOrderManager();
+  if (!/^[0-9a-f-]{36}$/i.test(orderId) || typeof note !== "string" || note.trim().length < 3 || note.length > 1000) {
+    return { error: "Enter an inventory review note of at least 3 characters." };
+  }
+  const typedClient = supabase as unknown as {
+    rpc: (name: string, args: { p_order_id: string; p_note: string }) => Promise<{ error: { message: string } | null }>;
+  };
+  const { error } = await typedClient.rpc("admin_resolve_paid_order_stock_review", {
+    p_order_id: orderId,
+    p_note: note.trim(),
+  });
+  if (error) return { error: error.message };
+  revalidatePath("/admin/orders");
+  revalidatePath("/admin/orders/" + orderId);
+  revalidatePath("/admin/inventory");
+  return { success: true };
+}
+
 export async function retryOrderEmailAction(orderId: string, emailId: string) {
   const supabase = await requireOrderManager();
   if (!/^[0-9a-f-]{36}$/i.test(orderId) || !/^[0-9a-f-]{36}$/i.test(emailId)) {
