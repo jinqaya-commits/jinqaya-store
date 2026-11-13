@@ -28,7 +28,11 @@ export default async function AdminOrderDetail({params}:{params:Promise<{id:stri
   supabase.from("order_refunds").select("id,source_type,source_id,amount,currency,reference,refund_method,transaction_number,recorded_by,confirmed_at").eq("order_id",id).order("confirmed_at",{ascending:false})
  ]);
  const {data:emailOutbox}=await (supabase as any).rpc("admin_list_order_email_outbox",{p_order_id:id});
- const hasValidStockReservation=(reservations||[]).some(r=>r.status==="active"&&!!r.expires_at&&new Date(r.expires_at).getTime()>Date.now());
+ const requiredStock=new Map<string,number>();
+ for(const item of items||[]){if(item.variant_id)requiredStock.set(item.variant_id,(requiredStock.get(item.variant_id)||0)+Number(item.quantity));}
+ const reservedStock=new Map<string,number>();
+ for(const reservation of reservations||[]){if(reservation.status==="active"&&reservation.expires_at&&new Date(reservation.expires_at).getTime()>Date.now())reservedStock.set(reservation.variant_id,(reservedStock.get(reservation.variant_id)||0)+Number(reservation.quantity));}
+ const hasValidStockReservation=requiredStock.size>0&&[...requiredStock].every(([variantId,quantity])=>reservedStock.get(variantId)===quantity);
  const currency=order.currency.trim()||"USD";
  const paidTotal=(payments||[]).filter(p=>["paid","partially_refunded","refunded"].includes(p.status)&&p.currency.trim()===currency).reduce((sum,p)=>sum+Number(p.amount),0);
  const refundedTotal=(refundLedger||[]).reduce((sum,r)=>sum+Number(r.amount),0);
