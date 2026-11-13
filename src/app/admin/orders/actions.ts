@@ -22,9 +22,20 @@ export async function processOrderAction(
   formData: FormData
 ) {
   const supabase = await requireOrderManager();
+  const shippingAmountRaw = String(formData.get("shipping_amount") ?? "").trim();
+  if (action === "confirm_quote" && shippingAmountRaw !== "" &&
+      (!/^\\d+(?:\\.\\d{1,2})?$/.test(shippingAmountRaw) ||
+       !Number.isFinite(Number(shippingAmountRaw)) || Number(shippingAmountRaw) < 0 ||
+       Number(shippingAmountRaw) > 99999999.99)) {
+    return { error: "Enter a valid shipping amount with no more than two decimal places." };
+  }
   const { data, error } = await supabase.rpc("admin_process_order", {
     p_order_id: orderId,
     p_action: action,
+    p_shipping_amount: (() => {
+      const raw = String(formData.get("shipping_amount") ?? "").trim();
+      return raw === "" ? null : Number(raw);
+    })(),
     p_shipping_method: String(formData.get("shipping_method") ?? ""),
     p_carrier_name: String(formData.get("carrier_name") ?? ""),
     p_tracking_number: String(formData.get("tracking_number") ?? ""),
