@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState, useSyncExternalStore, type FormEvent } from "react";
 import { formatCartMoney, getCartSnapshot, parseCartSnapshot, subscribeCart, writeCart } from "@/lib/cart";
 import { CartLink } from "@/components/storefront/cart-link";
+import { PayPalPaymentButton } from "../order-status/paypal-payment-button";
 
 type OrderResult = {
   order_id: string;
@@ -15,6 +16,8 @@ type OrderResult = {
   shipping_status: string;
   payment_status: string;
   payment_ready?: boolean;
+  payment_session_ready?: boolean;
+  payment_status?: string;
   currency: string;
 };
 
@@ -104,21 +107,34 @@ export function CheckoutForm() {
 
       {order ? (
         <section className="checkout-success">
-          <p className="eyebrow">REQUEST RECEIVED</p>
-          <h1>Thank you.</h1>
-          <p>Your order request <strong>{order.order_number}</strong> has been recorded.</p>
+          <p className="eyebrow">ORDER RECEIVED</p>
+          <h1>{order.payment_status === "paid" ? "Payment confirmed." : paymentReady ? "Your order is ready." : "Thank you."}</h1>
+          <p>Order <strong>{order.order_number}</strong> has been recorded.</p>
           <div className="checkout-notice">
-            <strong>What happens next</strong>
+            <strong>{paymentReady ? "Confirmed order total" : "Stock confirmation required"}</strong>
             {paymentReady ? (
-              <p>Your items have been reserved for 48 hours. Your order is ready for secure payment. Open Track Order and verify your checkout email to continue with PayPal.</p>
+              <p>Your items are reserved for 48 hours. Complete payment securely below — there’s no need to look up your order or enter a verification code.</p>
             ) : (
-              <p>Shipping is estimated at 50% of the merchandise subtotal. We still need to confirm stock availability, so payment is not available yet.</p>
+              <p>Your order is recorded, but we couldn't reserve every item from available stock. Payment is not available yet; our team will contact you to confirm availability.</p>
             )}
             <p className="checkout-total"><span>Merchandise</span><strong>{formatCartMoney(order.subtotal, order.currency)}</strong></p>
             <p className="checkout-pending"><span>Estimated shipping</span><strong>{formatCartMoney(order.shipping_amount, order.currency)}</strong></p>
-            <p className="checkout-total"><span>Estimated total</span><strong>{formatCartMoney(order.total_amount, order.currency)}</strong></p>
+            <p className="checkout-total"><span>Order total</span><strong>{formatCartMoney(order.total_amount, order.currency)}</strong></p>
           </div>
-          {paymentReady && <Link className="button button-dark" href="/order-status">TRACK ORDER & PAY <span>↗</span></Link>}
+          {paymentReady && order.payment_session_ready === true && (
+            <PayPalPaymentButton
+              currency={order.currency}
+              onPaid={() => setOrder((current) => current ? { ...current, status: "paid", payment_status: "paid" } : current)}
+            />
+          )}
+          {paymentReady && order.payment_session_ready !== true && (
+            <div className="checkout-notice">
+              <strong>Continue to secure payment</strong>
+              <p>Your order is reserved. To continue, open Track Order and verify the checkout email. You won't need to place the order again.</p>
+              <Link className="button button-dark" href="/order-status">TRACK ORDER & PAY <span>↗</span></Link>
+            </div>
+          )}
+          <p className="checkout-disclaimer">You will receive an email confirmation. If you leave this page, you can still find your order using your order number and checkout email.</p>
           <Link className="back-link" href="/shop">CONTINUE EXPLORING ↗</Link>
         </section>
       ) : (
@@ -162,7 +178,7 @@ export function CheckoutForm() {
                 <button className="button button-dark checkout-submit" type="submit" disabled={busy || mixedCurrencies || isBlockedCountry}>
                   {busy ? "SUBMITTING…" : "SUBMIT ORDER REQUEST"} <span>↗</span>
                 </button>
-                <p className="checkout-disclaimer">Submitting this request does not charge your payment method. If all items can be reserved, you can verify your email and continue to PayPal using the confirmed order total. If stock cannot be reserved, payment remains unavailable. By submitting, you acknowledge our <Link href="/policies/terms">Terms of Service</Link> and <Link href="/policies/privacy">Privacy Policy</Link>.</p>
+                <p className="checkout-disclaimer">If all items can be reserved, you can pay immediately with PayPal using the confirmed total shown after submission. If stock cannot be reserved, payment remains unavailable. By submitting, you acknowledge our <Link href="/policies/terms">Terms of Service</Link> and <Link href="/policies/privacy">Privacy Policy</Link>.</p>
               </form>
 
               <aside className="checkout-summary">
