@@ -36,7 +36,7 @@ test("idempotent checkout retries preserve the existing order's payment readines
 });
 
 const retryMigration = await readFile(
-  new URL("../supabase/migrations/20261113120000_preserve_checkout_retry_payment_readiness.sql", import.meta.url),
+  new URL("../supabase/migrations/20261112162608_preserve_checkout_retry_payment_readiness.sql", import.meta.url),
   "utf8",
 );
 
