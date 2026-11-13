@@ -12,11 +12,11 @@ const restrictedDestinations = [
 function normalizeCountryName(value: string) {
   return value
     .normalize("NFKD")
-    .replace(/[\\u0300-\\u036f]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, " ")
     .trim()
-    .replace(/\\s+/g, " ");
+    .replace(/\s+/g, " ");
 }
 
 export function isRestrictedShippingDestination(countryCode: unknown, countryName: unknown) {
