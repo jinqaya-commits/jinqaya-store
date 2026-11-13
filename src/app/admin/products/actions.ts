@@ -290,10 +290,8 @@ export async function addProductImage(productId: string, storagePath: string, al
   });
 
   if (error || !imageId) {
-    const queued = await enqueueProductImageCleanup(supabase, storagePath);
-    if (!queued) {
-      console.error("Unlinked product image could not be queued for cleanup.", { productId, storagePath });
-    }
+    // The upload intent remains pending and the scheduled worker will remove
+    // this object after its signed upload URL has expired.
     return { error: error?.message || "Unable to save product image." };
   }
 
@@ -315,12 +313,6 @@ async function enqueueProductImageCleanup(supabase: Awaited<ReturnType<typeof cr
   return true;
 }
 
-async function cleanupUnlinkedProductImage(supabase: Awaited<ReturnType<typeof createClient>>, storagePath: string) {
-  // Do not delete directly: another image row may share this path. The RPC
-  // takes the same advisory lock as image-row writes and queues only unreferenced paths.
-  return enqueueProductImageCleanup(supabase, storagePath);
-}
-
 export async function replaceProductImage(productId: string, imageId: string, storagePath: string) {
   const supabase = await requireCatalogManager();
   const isR2 = storagePath.startsWith("r2://");
@@ -337,12 +329,9 @@ export async function replaceProductImage(productId: string, imageId: string, st
     p_storage_path: storagePath,
   });
   if (replaceError) {
-    const queued = await cleanupUnlinkedProductImage(supabase, storagePath);
-    return {
-      error: replaceError.message + (queued
-        ? ""
-        : " The newly uploaded file could not be queued for cleanup and may need manual removal."),
-    };
+    // Keep the upload intent pending; the worker waits until the signed URL
+    // has expired before deleting an un-attached object.
+    return { error: replaceError.message };
   }
 
   const { data: product } = await supabase.from("products").select("slug").eq("id", productId).maybeSingle();
