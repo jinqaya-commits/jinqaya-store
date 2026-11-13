@@ -7,7 +7,7 @@ CREATE OR REPLACE FUNCTION public.admin_process_order(p_order_id uuid, p_action 
 AS $function$
 declare
  v_order public.orders%rowtype; v_item record; v_inventory public.inventory%rowtype;
- v_reservation public.stock_reservations%rowtype; v_old_status public.order_status; v_new_status public.order_status;
+ v_reservation public.stock_reservations%rowtype; v_shipment uuid; v_old_status public.order_status; v_new_status public.order_status;
  v_now timestamptz:=pg_catalog.now(); v_shipping numeric(12,2); v_method text;
  v_note text:=nullif(pg_catalog.left(pg_catalog.trim(coalesce(p_note,'')),2000),'');
  v_carrier text:=nullif(pg_catalog.left(pg_catalog.trim(coalesce(p_carrier_name,'')),100),'');
