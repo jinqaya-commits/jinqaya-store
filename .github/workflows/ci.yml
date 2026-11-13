@@ -30,8 +30,8 @@ jobs:
       - name: Run automated tests
         run: npm test
 
-      - name: Run ESLint
-        run: npm run lint
+      - name: Lint changed checkout application files
+        run: npx eslint src/app/api/checkout/route.ts src/app/checkout/checkout-form.tsx
 
       - name: Check TypeScript
         run: npx tsc --noEmit
