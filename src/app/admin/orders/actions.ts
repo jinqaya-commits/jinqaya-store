@@ -24,7 +24,7 @@ export async function processOrderAction(
   const supabase = await requireOrderManager();
   const shippingAmountRaw = String(formData.get("shipping_amount") ?? "").trim();
   if (action === "confirm_quote" && shippingAmountRaw !== "" &&
-      (!/^\\d+(?:\\.\\d{1,2})?$/.test(shippingAmountRaw) ||
+      (!/^\d+(?:\.\d{1,2})?$/.test(shippingAmountRaw) ||
        !Number.isFinite(Number(shippingAmountRaw)) || Number(shippingAmountRaw) < 0 ||
        Number(shippingAmountRaw) > 99999999.99)) {
     return { error: "Enter a valid shipping amount with no more than two decimal places." };
