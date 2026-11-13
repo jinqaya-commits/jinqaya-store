@@ -1,6 +1,8 @@
 import { resolveProductImageUrls } from "@/lib/product-images";
 import { createClient } from "@/lib/supabase/server";
 
+const internalPreviewProductSlugs = ["preview-checkout-test-item", "test-harness-item"] as const;
+
 export type StoreProductImage = {
   id: string;
   storage_path: string;
@@ -171,7 +173,7 @@ export async function getStoreProducts(categorySlug?: string): Promise<StoreProd
     .select(productColumns)
     .eq("status", "active")
     // Keep internal checkout fixtures out of every public storefront listing.
-    .not("slug", "in", '("preview-checkout-test-item","test-harness-item")')
+    .not("slug", "in", `(${internalPreviewProductSlugs.map((slug) => `"${slug}"`).join(",")})`)
     .order("published_at", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false });
 
@@ -212,6 +214,9 @@ export async function getStoreProducts(categorySlug?: string): Promise<StoreProd
 }
 
 export async function getStoreProductBySlug(slug: string): Promise<StoreProduct | null> {
+  // Preview checkout fixtures must never be reachable through direct product URLs.
+  if ((internalPreviewProductSlugs as readonly string[]).includes(slug)) return null;
+
   let supabase;
   try { supabase = await createClient(); } catch (error) {
     if (isNextDynamicServerUsageError(error)) throw error;
