@@ -139,9 +139,9 @@ export function CheckoutForm() {
         </section>
       ) : (
         <section className="checkout-page">
-          <p className="eyebrow">ORDER REQUEST</p>
+          <p className="eyebrow">CHECKOUT</p>
           <h1>Delivery details</h1>
-          <p className="checkout-intro">Enter your delivery details to submit your order. Shipping is estimated at 50% of the item subtotal; your confirmed total is shown after the server checks destination restrictions, current prices and stock.</p>
+          <p className="checkout-intro">Enter your delivery details and review the estimated total. We’ll confirm current prices, destination eligibility and stock when you submit. If your items can be reserved, you can pay immediately with PayPal on the next screen.</p>
           {items.length === 0 ? (
             <div className="cart-empty"><p>Your bag is empty.</p><Link className="button button-dark" href="/shop">EXPLORE THE COLLECTION <span>↗</span></Link></div>
           ) : (
@@ -176,9 +176,9 @@ export function CheckoutForm() {
                 {isBlockedCountry && <p className="checkout-error" role="alert">We do not currently ship to this destination.</p>}
                 {error && <p className="checkout-error" role="alert">{error}</p>}
                 <button className="button button-dark checkout-submit" type="submit" disabled={busy || mixedCurrencies || isBlockedCountry}>
-                  {busy ? "SUBMITTING…" : "SUBMIT ORDER REQUEST"} <span>↗</span>
+                  {busy ? "SUBMITTING…" : "CONTINUE TO PAYMENT"} <span>↗</span>
                 </button>
-                <p className="checkout-disclaimer">If all items can be reserved, you can pay immediately with PayPal using the confirmed total shown after submission. If stock cannot be reserved, payment remains unavailable. By submitting, you acknowledge our <Link href="/policies/terms">Terms of Service</Link> and <Link href="/policies/privacy">Privacy Policy</Link>.</p>
+                <p className="checkout-disclaimer">You won’t be charged when you submit. If all items can be reserved, the next screen will show your confirmed total and a secure PayPal payment button. Payment is collected only after you approve it in PayPal. By submitting, you acknowledge our <Link href="/policies/terms">Terms of Service</Link> and <Link href="/policies/privacy">Privacy Policy</Link>.</p>
               </form>
 
               <aside className="checkout-summary">
