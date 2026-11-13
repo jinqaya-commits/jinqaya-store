@@ -2,6 +2,7 @@ import { after, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { processOrderEmailOutbox } from "@/lib/order-email-outbox";
 import { newSessionToken, sha256 } from "@/lib/order-status-security";
+import { isRestrictedShippingDestination } from "@/lib/shipping-country";
 
 export const runtime = "nodejs";
 
