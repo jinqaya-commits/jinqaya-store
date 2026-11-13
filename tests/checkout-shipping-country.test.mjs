@@ -5,6 +5,7 @@ import { readFile } from "node:fs/promises";
 const checkoutRoute = await readFile(new URL("../src/app/api/checkout/route.ts", import.meta.url), "utf8");
 const checkoutForm = await readFile(new URL("../src/app/checkout/checkout-form.tsx", import.meta.url), "utf8");
 const migration = await readFile(new URL("../supabase/migrations/20261112080000_checkout_shipping_country_policy.sql", import.meta.url), "utf8");
+const countryOptions = await readFile(new URL("../src/lib/country-options.ts", import.meta.url), "utf8");
 
 test("checkout freight is calculated from the server-verified merchandise subtotal at 50 percent", () => {
   assert.match(migration, /shipping_amount=round\(v_subtotal\*0\.50,2\)/);
@@ -49,4 +50,15 @@ test("idempotent checkout retries preserve payment readiness for reserved orders
 test("country policy migration can be safely reconciled when its schema changes already exist", () => {
   assert.match(migration, /elsif position\(v_new in v_definition\)=0 then/g);
   assert.match(migration, /create table if not exists public\.checkout_country_restrictions/);
+});
+
+
+test("checkout uses one ISO country selector and derives the country name from the selected code", () => {
+  assert.match(checkoutForm, /name="country_code"/);
+  assert.match(checkoutForm, /COUNTRY_OPTIONS\.find\(\(country\) => country\.code === event\.target\.value\)/);
+  assert.match(checkoutForm, /<input type="hidden" name="country" value=\{countryName\} \/>/);
+  assert.doesNotMatch(checkoutForm, /name="country_code" value=\{countryCode\} onChange=\{\(event\) => setCountryCode/);
+  assert.match(countryOptions, /new Intl\.DisplayNames\(\["en"\], \{ type: "region" \}\)/);
+  assert.match(countryOptions, /"KR"/);
+  assert.match(countryOptions, /"BR"/);
 });
