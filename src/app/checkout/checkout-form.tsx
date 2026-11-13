@@ -114,7 +114,7 @@ export function CheckoutForm() {
             {paymentReady ? (
               <p>Your items are reserved for 48 hours. Complete payment securely below — there’s no need to look up your order or enter a verification code.</p>
             ) : (
-              <p>Your order is recorded, but we couldn't reserve every item from available stock. Payment is not available yet; our team will contact you to confirm availability.</p>
+              <p>Your order is recorded, but we couldn&apos;t reserve every item from available stock. Payment is not available yet; our team will contact you to confirm availability.</p>
             )}
             <p className="checkout-total"><span>Merchandise</span><strong>{formatCartMoney(order.subtotal, order.currency)}</strong></p>
             <p className="checkout-pending"><span>Estimated shipping</span><strong>{formatCartMoney(order.shipping_amount, order.currency)}</strong></p>
@@ -129,7 +129,7 @@ export function CheckoutForm() {
           {paymentReady && order.payment_session_ready !== true && (
             <div className="checkout-notice">
               <strong>Continue to secure payment</strong>
-              <p>Your order is reserved. To continue, open Track Order and verify the checkout email. You won't need to place the order again.</p>
+              <p>Your order is reserved. To continue, open Track Order and verify the checkout email. You won&apos;t need to place the order again.</p>
               <Link className="button button-dark" href="/order-status">TRACK ORDER & PAY <span>↗</span></Link>
             </div>
           )}
