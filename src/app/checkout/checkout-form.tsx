@@ -5,6 +5,7 @@ import { useMemo, useState, useSyncExternalStore, type FormEvent } from "react";
 import { formatCartMoney, getCartSnapshot, parseCartSnapshot, subscribeCart, writeCart } from "@/lib/cart";
 import { CartLink } from "@/components/storefront/cart-link";
 import { PayPalPaymentButton } from "../order-status/paypal-payment-button";
+import { isRestrictedShippingDestination } from "@/lib/shipping-country";
 
 type OrderResult = {
   order_id: string;
@@ -37,6 +38,7 @@ export function CheckoutForm() {
   const [order, setOrder] = useState<OrderResult | null>(null);
   const [requestKey, setRequestKey] = useState("");
   const [countryCode, setCountryCode] = useState("");
+  const [countryName, setCountryName] = useState("");
 
   const currency = items[0]?.currency || "USD";
   const mixedCurrencies = items.some((item) => item.currency !== currency);
@@ -45,7 +47,7 @@ export function CheckoutForm() {
   const shippingCents = Math.round(subtotalCents / 2);
   const shippingEstimate = shippingCents / 100;
   const totalEstimate = (subtotalCents + shippingCents) / 100;
-  const isBlockedCountry = countryCode.toUpperCase() === "KR" || countryCode.toUpperCase() === "BR";
+  const isBlockedCountry = isRestrictedShippingDestination(countryCode, countryName);
   const paymentReady = order ? (order.payment_ready ?? order.status === "pending_payment") : false;
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -180,7 +182,7 @@ export function CheckoutForm() {
                 <section className="checkout-section">
                   <div className="checkout-section-heading"><span>02</span><div><h2>Shipping address</h2><p>Enter the destination where you’d like your order delivered.</p></div></div>
                   <div className="checkout-fields two">
-                    <label className="full">Country / Region<input name="country" autoComplete="country-name" required maxLength={100} placeholder="e.g. United States" /></label>
+                    <label className="full">Country / Region<input name="country" autoComplete="country-name" value={countryName} onChange={(event) => setCountryName(event.target.value)} required maxLength={100} placeholder="e.g. United States" /></label>
                     <label>Country code<input name="country_code" value={countryCode} onChange={(event) => setCountryCode(event.target.value.toUpperCase().slice(0, 2))} required minLength={2} maxLength={2} placeholder="US" /></label>
                     <label>State / Province<input name="state_region" autoComplete="address-level1" maxLength={100} /></label>
                     <label>City<input name="city" autoComplete="address-level2" required maxLength={100} /></label>
