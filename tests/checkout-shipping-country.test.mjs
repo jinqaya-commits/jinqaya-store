@@ -45,3 +45,8 @@ test("idempotent checkout retries preserve payment readiness for reserved orders
   assert.match(retryMigration, /Could not locate guest checkout idempotency response block/);
   assert.match(retryMigration, /if position\(v_new in v_definition\) > 0 then/);
 });
+
+test("country policy migration can be safely reconciled when its schema changes already exist", () => {
+  assert.match(migration, /elsif position\(v_new in v_definition\)=0 then/g);
+  assert.match(migration, /create table if not exists public\.checkout_country_restrictions/);
+});
