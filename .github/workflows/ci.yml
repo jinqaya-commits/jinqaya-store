@@ -36,6 +36,12 @@ jobs:
       - name: Check TypeScript
         run: npx tsc --noEmit
 
+      - name: Build Next.js application
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://127.0.0.1:54321
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-build-placeholder-key
+        run: npm run build
+
   product-image-db-integration:
     runs-on: ubuntu-latest
     services:
