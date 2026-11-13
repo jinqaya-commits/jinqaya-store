@@ -95,6 +95,7 @@ begin
     raise exception 'Not authorized to manage inventory';
   end if;
   if p_variant_id is null
+     or p_movement_type is null
      or p_movement_type not in ('purchase_receipt', 'customer_return', 'supplier_return', 'damage')
      or p_quantity is null or p_quantity < 1 or p_quantity > 1000000
      or length(coalesce(p_notes, '')) < 3 or length(coalesce(p_notes, '')) > 500 then
