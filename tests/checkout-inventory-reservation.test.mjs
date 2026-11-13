@@ -24,16 +24,19 @@ test("stock reservation and order status transition are atomic and recorded in i
   assert.match(migration, /'payment_ready',v_stock_ready/);
 });
 
-test("checkout confirmation distinguishes reserved stock from an order awaiting review", () => {
+test("checkout confirmation shows immediate PayPal payment for reserved stock and keeps Track Order as fallback", () => {
   assert.match(checkoutForm, /order\.payment_ready \?\? order\.status === "pending_payment"/);
+  assert.match(checkoutForm, /order\.payment_session_ready === true/);
+  assert.match(checkoutForm, /<PayPalPaymentButton/);
   assert.match(checkoutForm, /\/order-status/);
-  assert.match(checkoutForm, /Your items have been reserved for 48 hours/);
+  assert.match(checkoutForm, /Your items are reserved for 48 hours/);
 });
 
-test("checkout copy explains the confirmed total and email-verified PayPal path", () => {
-  assert.match(checkoutForm, /your confirmed total is shown after the server checks destination restrictions, current prices and stock/);
-  assert.match(checkoutForm, /verify your email and continue to PayPal using the confirmed order total/);
-  assert.match(checkoutForm, /payment remains unavailable/);
+test("checkout copy explains that customers can pay immediately without looking up the order", () => {
+  assert.match(checkoutForm, /pay immediately with PayPal on the next screen/);
+  assert.match(checkoutForm, /no need to look up your order or enter a verification code/);
+  assert.match(checkoutForm, /Payment is not available yet/);
+  assert.match(checkoutForm, /You won’t be charged when you submit/);
 });
 
 test("stock reservation migration can be safely reconciled when its changes already exist", () => {
