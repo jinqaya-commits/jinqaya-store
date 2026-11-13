@@ -170,6 +170,8 @@ export async function getStoreProducts(categorySlug?: string): Promise<StoreProd
     .from("products")
     .select(productColumns)
     .eq("status", "active")
+    // Keep internal checkout fixtures out of every public storefront listing.
+    .not("slug", "in", '("preview-checkout-test-item","test-harness-item")')
     .order("published_at", { ascending: false, nullsFirst: false })
     .order("created_at", { ascending: false });
 
