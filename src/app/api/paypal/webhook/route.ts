@@ -110,10 +110,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unable to record the verified capture." }, { status: 503 });
     }
 
-    after(async () => {
-      try { await processOrderEmailOutbox({ orderId: unit.custom_id!, limit: 20 }); }
-      catch (emailError) { console.error("[paypal-webhook] payment email processing failed", emailError); }
-    });
+    // Only Production sends order emails automatically; Preview keeps test messages queued.
+    if (process.env.VERCEL_ENV === "production") {
+      after(async () => {
+        try { await processOrderEmailOutbox({ orderId: unit.custom_id!, limit: 20 }); }
+        catch (emailError) { console.error("[paypal-webhook] payment email processing failed", emailError); }
+      });
+    }
     return NextResponse.json({ received: true });
   } catch {
     return NextResponse.json({ error: "Unable to verify the PayPal webhook." }, { status: 503 });
