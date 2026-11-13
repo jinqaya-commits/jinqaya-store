@@ -34,7 +34,7 @@ export async function processOrderAction(
     p_action: action,
     p_shipping_amount: (() => {
       const raw = String(formData.get("shipping_amount") ?? "").trim();
-      return raw === "" ? null : Number(raw);
+      return raw === "" ? undefined : Number(raw);
     })(),
     p_shipping_method: String(formData.get("shipping_method") ?? ""),
     p_carrier_name: String(formData.get("carrier_name") ?? ""),
