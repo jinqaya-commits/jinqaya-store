@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
 
   const sessionToken = (await cookies()).get(COOKIE)?.value;
   if (!sessionToken) {
-    return NextResponse.json({ error: "Verify your order email before paying." }, { status: 401 });
+    return NextResponse.json({ error: "Your secure checkout session has expired. Return to checkout or verify your email in Track Order." }, { status: 401 });
   }
 
   let body: unknown;
