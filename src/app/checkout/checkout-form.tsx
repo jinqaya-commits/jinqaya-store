@@ -140,7 +140,7 @@ export function CheckoutForm() {
           {paymentReady && order.payment_session_ready === true && (
             <PayPalPaymentButton
               currency={order.currency}
-              onPaid={() => setOrder((current) => current ? { ...current, status: "paid", payment_status: "paid" } : current)}
+              onPaid={() => { window.location.assign("/checkout/success"); }}
             />
           )}
           {paymentReady && order.payment_session_ready !== true && (
