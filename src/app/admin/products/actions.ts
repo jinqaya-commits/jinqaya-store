@@ -302,17 +302,6 @@ export async function addProductImage(productId: string, storagePath: string, al
 }
 
 
-async function enqueueProductImageCleanup(supabase: Awaited<ReturnType<typeof createClient>>, storagePath: string): Promise<boolean> {
-  const { error } = await supabase.rpc("admin_enqueue_product_image_cleanup", {
-    p_storage_path: storagePath,
-  });
-  if (error) {
-    console.error("Unable to queue product image cleanup:", error.message);
-    return false;
-  }
-  return true;
-}
-
 export async function replaceProductImage(productId: string, imageId: string, storagePath: string) {
   const supabase = await requireCatalogManager();
   const isR2 = storagePath.startsWith("r2://");
