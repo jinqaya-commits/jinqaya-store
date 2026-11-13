@@ -27,7 +27,7 @@ test("checkout displays the estimated freight and blocks the two explicitly excl
   assert.match(checkoutForm, /countryCode\.toUpperCase\(\)/);
   assert.match(checkoutForm, /countryCode\.toUpperCase\(\) === "KR" \|\| countryCode\.toUpperCase\(\) === "BR"/);
   assert.match(checkoutForm, /shippingEstimate/);
-  assert.match(checkoutRoute, /not currently ship to this destination/);
+  assert.match(checkoutRoute, /isRestrictedShippingDestination\\(body\\.shipping_address\\.country_code, body\\.shipping_address\\.country\\)/);\n  assert.match(checkoutRoute, /not currently ship to this destination/);
 });
 
 test("idempotent checkout retries preserve the existing order's payment readiness and totals", () => {
