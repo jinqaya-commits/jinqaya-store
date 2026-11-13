@@ -63,6 +63,12 @@ export async function POST(request: Request) {
       ContentLength: fileSize,
       CacheControl: "public, max-age=31536000, immutable",
     });
+    const { error: intentError } = await supabase.rpc("admin_create_product_image_upload_intent", {
+      p_product_id: productId,
+      p_storage_path: `r2://${key}`,
+    });
+    if (intentError) throw intentError;
+
     const uploadUrl = await getSignedUrl(getR2Client(), command, { expiresIn: 300 });
 
     return NextResponse.json({ uploadUrl, storagePath: `r2://${key}`, expiresIn: 300 });
