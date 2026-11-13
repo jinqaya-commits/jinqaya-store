@@ -203,6 +203,7 @@ drop function public.reject_cleanup_queue_insert();
 select 'atomic product image replacement tests passed' as result;
 
 \ir ../supabase/migrations/20261113170000_track_product_image_upload_intents.sql
+\ir ../supabase/migrations/20261113171000_require_r2_upload_intents.sql
 
 -- Uploads are registered before a signed URL is issued. Attaching consumes the
 -- intent transactionally; expired unattached intents become claimable by cron.
