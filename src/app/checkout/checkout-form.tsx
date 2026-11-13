@@ -105,6 +105,23 @@ export function CheckoutForm() {
       </header>
 
       {order ? (
+        order.payment_status === "paid" || order.status === "paid" ? (
+          <section className="checkout-success checkout-payment-success" aria-live="polite">
+            <div className="payment-success-mark" aria-hidden="true">✓</div>
+            <p className="eyebrow">PAYMENT COMPLETE</p>
+            <h1>Payment successful.</h1>
+            <p>Thank you for your order. Your PayPal payment has been received and confirmed.</p>
+            <div className="checkout-notice">
+              <strong>Order confirmation</strong>
+              <p className="checkout-total"><span>Order number</span><strong>{order.order_number}</strong></p>
+              <p className="checkout-total"><span>Payment status</span><strong className="payment-success-status">Paid</strong></p>
+              <p className="checkout-total"><span>Payment method</span><strong>PayPal</strong></p>
+              <p className="checkout-total"><span>Total paid</span><strong>{formatCartMoney(order.total_amount, order.currency)}</strong></p>
+            </div>
+            <p className="checkout-disclaimer">We’ll send an order confirmation to your checkout email. You can safely close this page. If you need help, contact info@jinqaya.com.</p>
+            <Link className="button button-dark" href="/shop">CONTINUE SHOPPING <span>↗</span></Link>
+          </section>
+        ) : (
         <section className="checkout-success">
           <p className="eyebrow">ORDER RECEIVED</p>
           <h1>{order.payment_status === "paid" ? "Payment confirmed." : paymentReady ? "Your order is ready." : "Thank you."}</h1>
@@ -136,6 +153,7 @@ export function CheckoutForm() {
           <p className="checkout-disclaimer">You will receive an email confirmation. If you leave this page, you can still find your order using your order number and checkout email.</p>
           <Link className="back-link" href="/shop">CONTINUE EXPLORING ↗</Link>
         </section>
+        )
       ) : (
         <section className="checkout-page">
           <p className="eyebrow">CHECKOUT</p>
