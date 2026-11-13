@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { CheckoutSuccessContent } from "./success-content";
+import { CheckoutSuccessContent } from "../success-content";
 
 export const metadata: Metadata = {
   title: "Payment status",
