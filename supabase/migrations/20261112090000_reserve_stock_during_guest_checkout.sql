@@ -22,10 +22,11 @@ $old$;
  v_warehouse_id uuid;
 BEGIN
 $new$;
-  if position(v_old in v_definition)=0 then
+  if position(v_old in v_definition)>0 then
+    v_definition := replace(v_definition,v_old,v_new);
+  elsif position(v_new in v_definition)=0 then
     raise exception 'Could not locate guest checkout declaration block; migration stopped.';
   end if;
-  v_definition := replace(v_definition,v_old,v_new);
 
   v_old := $old$
  IF v_count=0 THEN RAISE EXCEPTION 'Your bag is empty.'; END IF;
@@ -115,10 +116,11 @@ $old$;
 
  UPDATE public.orders SET currency=coalesce(v_currency,'USD'),
 $new$;
-  if position(v_old in v_definition)=0 then
+  if position(v_old in v_definition)>0 then
+    v_definition := replace(v_definition,v_old,v_new);
+  elsif position(v_new in v_definition)=0 then
     raise exception 'Could not locate guest checkout inventory insertion point; migration stopped.';
   end if;
-  v_definition := replace(v_definition,v_old,v_new);
 
   v_old := $old$
   'order_id',v_order_id,'order_number',v_order_number,'status','on_hold',
@@ -134,10 +136,11 @@ $old$;
   'shipping_status','estimated','payment_status','not_started',
   'payment_ready',v_stock_ready,'currency',coalesce(v_currency,'USD')
 $new$;
-  if position(v_old in v_definition)=0 then
+  if position(v_old in v_definition)>0 then
+    v_definition := replace(v_definition,v_old,v_new);
+  elsif position(v_new in v_definition)=0 then
     raise exception 'Could not locate guest checkout response block; migration stopped.';
   end if;
-  v_definition := replace(v_definition,v_old,v_new);
   execute v_definition;
 end
 $migration$;
