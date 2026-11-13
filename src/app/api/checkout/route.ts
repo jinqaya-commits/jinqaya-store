@@ -28,6 +28,11 @@ export async function POST(request: Request) {
   if (!body.customer || !body.shipping_address || !Array.isArray(body.items) || !body.idempotency_key) {
     return NextResponse.json({ error: "Please complete your contact and shipping details." }, { status: 400 });
   }
+  // Enforce destination restrictions against both fields. Never trust a customer-entered
+  // country code alone: a mismatched country name must not bypass the shipping policy.
+  if (isRestrictedShippingDestination(body.shipping_address.country_code, body.shipping_address.country)) {
+    return NextResponse.json({ error: "We do not currently ship to this destination." }, { status: 400 });
+  }
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(body.idempotency_key)) {
     return NextResponse.json({ error: "Your checkout session has expired. Please refresh and try again." }, { status: 400 });
   }
