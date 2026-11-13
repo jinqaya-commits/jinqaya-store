@@ -15,7 +15,7 @@ declare
  v_url text:=nullif(pg_catalog.trim(coalesce(p_tracking_url,'')),''); v_reserved integer:=0;
 begin
  if not public.can_manage_catalog() then raise exception 'You do not have permission to manage orders.'; end if;
- if p_order_id is null or p_action not in ('confirm_quote','confirm_payment','start_processing','ship','delivered','cancel','save_note') then raise exception 'Invalid order action.'; end if;
+ if p_order_id is null or coalesce(p_action,'') not in ('confirm_quote','reconfirm_stock','confirm_payment','start_processing','ship','delivered','cancel','save_note') then raise exception 'Invalid order action.'; end if;
  if length(coalesce(p_note,''))>2000 or length(coalesce(p_shipping_method,''))>100 or length(coalesce(p_carrier_name,''))>100 or length(coalesce(p_tracking_number,''))>150 or length(coalesce(p_tracking_url,''))>2000 then raise exception 'One or more order fields exceed the allowed length.'; end if;
  if v_url is not null and v_url !~* '^https?://' then raise exception 'Tracking URL must begin with http:// or https://.'; end if;
  select * into v_order from public.orders where id=p_order_id for update;
@@ -51,6 +51,28 @@ begin
   insert into public.order_status_history(order_id,old_status,new_status,note,changed_by) values(p_order_id,v_old_status,v_new_status,'Stock reserved for 48 hours. Shipping quote confirmed; awaiting payment.',auth.uid());
   insert into public.activity_logs(actor_user_id,action,entity_type,entity_id,old_values,new_values) values(auth.uid(),'order.shipping_confirmed','order',p_order_id,jsonb_build_object('status',v_old_status),jsonb_build_object('status',v_new_status,'shipping_amount',v_shipping,'shipping_method',v_method,'shipping_calculation',case when p_shipping_amount is null then '50_percent_of_subtotal' else 'manual_quote' end,'reserved_units',v_reserved));
   return jsonb_build_object('order_id',p_order_id,'status',v_new_status,'shipping_amount',v_shipping,'total_amount',round(v_order.subtotal+v_shipping+coalesce(v_order.tax_amount,0)-coalesce(v_order.discount_amount,0),2),'reserved_units',v_reserved);
+
+ elsif p_action='reconfirm_stock' then
+  if v_old_status<>'pending_payment' then raise exception 'Only orders awaiting payment can have stock reservations renewed.'; end if;
+  if coalesce(v_order.shipping_quote_snapshot->>'status','')<>'confirmed'
+    or round(v_order.shipping_amount,2)<>round(coalesce((v_order.shipping_quote_snapshot->>'amount')::numeric,-1),2)
+    or round(v_order.total_amount,2)<>round(coalesce(v_order.subtotal,0)+v_order.shipping_amount+coalesce(v_order.tax_amount,0)-coalesce(v_order.discount_amount,0),2)
+   then raise exception 'Order total does not match the confirmed shipping quote.'; end if;
+  if exists(select 1 from public.stock_reservations where order_id=p_order_id and status='active') then
+   raise exception 'Active stock reservations already exist. Refresh the order before retrying.';
+  end if;
+  for v_item in select oi.variant_id,sum(oi.quantity)::integer quantity from public.order_items oi where oi.order_id=p_order_id group by oi.variant_id order by oi.variant_id loop
+   if v_item.variant_id is null then raise exception 'An order item has no inventory variant.'; end if;
+   select i.* into v_inventory from public.inventory i where i.variant_id=v_item.variant_id and i.on_hand-i.reserved-i.damaged>=v_item.quantity order by i.warehouse_id limit 1 for update;
+   if not found then raise exception 'Insufficient stock for one or more items. The order remains awaiting payment.'; end if;
+   update public.inventory set reserved=reserved+v_item.quantity,updated_at=v_now where id=v_inventory.id and on_hand-reserved-damaged>=v_item.quantity;
+   if not found then raise exception 'Inventory changed while renewing stock reservations. Please retry.'; end if;
+   insert into public.stock_reservations(order_id,warehouse_id,variant_id,quantity,status,expires_at) values(p_order_id,v_inventory.warehouse_id,v_item.variant_id,v_item.quantity,'active',v_now+interval '48 hours');
+   insert into public.inventory_movements(warehouse_id,variant_id,movement_type,quantity_change,reserved_change,reference_type,reference_id,notes,created_by) values(v_inventory.warehouse_id,v_item.variant_id,'reservation',0,v_item.quantity,'order',p_order_id,'Stock reservation renewed for pending payment.',auth.uid());
+   v_reserved:=v_reserved+v_item.quantity;
+  end loop;
+  insert into public.activity_logs(actor_user_id,action,entity_type,entity_id,old_values,new_values) values(auth.uid(),'order.stock_reservation_renewed','order',p_order_id,jsonb_build_object('status',v_old_status),jsonb_build_object('reserved_units',v_reserved));
+  return jsonb_build_object('order_id',p_order_id,'status',v_old_status,'action',p_action,'reserved_units',v_reserved,'expires_in_hours',48);
  elsif p_action='confirm_payment' then
   if v_old_status<>'pending_payment' then raise exception 'Only orders awaiting payment can be manually confirmed.'; end if;
   if exists(select 1 from public.payments where order_id=p_order_id and status='paid') then raise exception 'A payment is already recorded for this order.'; end if;
@@ -74,11 +96,13 @@ begin
  elsif p_action='ship' then
   if v_old_status<>'processing' then raise exception 'Only processing orders can be shipped.'; end if;
   if v_carrier is null or v_tracking is null then raise exception 'Carrier and tracking number are required.'; end if;
-  insert into public.shipments(order_id,status,carrier_name,tracking_number,tracking_url,shipped_at) values(p_order_id,'shipped',v_carrier,v_tracking,v_url,v_now);
+  insert into public.shipments(order_id,status,carrier_name,tracking_number,tracking_url,shipping_cost,currency,shipped_at,shipped_by,notes) values(p_order_id,'shipped',v_carrier,v_tracking,v_url,v_order.shipping_amount,v_order.currency,v_now,auth.uid(),v_note) returning id into v_shipment;
+  insert into public.shipment_items(shipment_id,order_item_id,quantity) select v_shipment,oi.id,oi.quantity from public.order_items oi where oi.order_id=p_order_id;
   update public.orders set status='shipped',updated_at=v_now where id=p_order_id; v_new_status:='shipped';
  elsif p_action='delivered' then
   if v_old_status<>'shipped' then raise exception 'Only shipped orders can be marked delivered.'; end if;
-  update public.shipments set status='delivered',delivered_at=v_now where order_id=p_order_id and status in ('shipped','in_transit');
+  update public.shipments set status='delivered',delivered_at=v_now,updated_at=v_now where order_id=p_order_id and status in ('shipped','in_transit');
+  if not found then raise exception 'No active shipment was found for this order.'; end if;
   update public.orders set status='delivered',delivered_at=v_now,updated_at=v_now where id=p_order_id; v_new_status:='delivered';
  elsif p_action='cancel' then
   if v_old_status not in ('on_hold','pending_payment') then raise exception 'Only unpaid orders can be cancelled.'; end if;
@@ -96,7 +120,7 @@ begin
  end if;
  return jsonb_build_object('order_id',p_order_id,'status',v_new_status,'action',p_action);
 end;
-$function$
+$function$;
 
 revoke all on function public.admin_process_order(uuid,text,numeric,text,text,text,text,text) from public, anon;
 grant execute on function public.admin_process_order(uuid,text,numeric,text,text,text,text,text) to authenticated;
