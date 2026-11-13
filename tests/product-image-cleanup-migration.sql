@@ -201,3 +201,61 @@ $$;
 
 drop function public.reject_cleanup_queue_insert();
 select 'atomic product image replacement tests passed' as result;
+
+\ir ../supabase/migrations/20261113170000_track_product_image_upload_intents.sql
+
+-- Uploads are registered before a signed URL is issued. Attaching consumes the
+-- intent transactionally; expired unattached intents become claimable by cron.
+do $$
+declare
+  v_product uuid := '00000000-0000-0000-0000-000000000301';
+  v_image uuid;
+  v_intent uuid;
+  v_path text;
+  v_claimed uuid;
+begin
+  insert into public.products(id) values (v_product);
+
+  v_path := 'r2://' || v_product::text || '/new-upload.webp';
+  v_intent := public.admin_create_product_image_upload_intent(v_product, v_path);
+  if not exists (
+    select 1 from public.product_image_upload_intents
+    where id = v_intent and status = 'pending'
+  ) then
+    raise exception 'Upload intent was not registered';
+  end if;
+
+  v_image := public.admin_add_product_image(v_product, v_path, 'test alt');
+  if not exists (select 1 from public.product_images where id = v_image and storage_path = v_path) then
+    raise exception 'Image row was not attached';
+  end if;
+  if exists (select 1 from public.product_image_upload_intents where id = v_intent) then
+    raise exception 'Successful image attach did not consume its upload intent';
+  end if;
+
+  v_path := 'r2://' || v_product::text || '/abandoned-upload.webp';
+  v_intent := public.admin_create_product_image_upload_intent(v_product, v_path);
+  update public.product_image_upload_intents
+  set expires_at = now() - interval '1 minute'
+  where id = v_intent;
+
+  select id into v_claimed
+  from public.claim_product_image_upload_cleanup(50)
+  where id = v_intent;
+  if v_claimed is null then raise exception 'Expired upload intent was not claimable'; end if;
+
+  begin
+    perform public.admin_add_product_image(v_product, v_path, 'too late');
+    raise exception 'Expected claimed upload intent to reject attachment';
+  exception when raise_exception then
+    if sqlerrm = 'Expected claimed upload intent to reject attachment' then raise; end if;
+  end;
+
+  perform public.complete_product_image_upload_cleanup(v_intent);
+  if exists (select 1 from public.product_image_upload_intents where id = v_intent) then
+    raise exception 'Completed orphan cleanup did not remove upload intent';
+  end if;
+end
+$$;
+
+select 'product image upload intent tests passed' as result;
