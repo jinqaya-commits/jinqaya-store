@@ -17,7 +17,6 @@ type OrderResult = {
   payment_status: string;
   payment_ready?: boolean;
   payment_session_ready?: boolean;
-  payment_status?: string;
   currency: string;
 };
 
