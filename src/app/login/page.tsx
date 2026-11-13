@@ -15,7 +15,7 @@ export default function LoginPage() {
     <section className="admin-login-card">
       <p className="admin-kicker">PRIVATE ACCESS</p>
       <h1>Welcome back.</h1>
-      <p>Sign in with your JINQAYA administrator account to manage the catalog.</p>
+      <p>Enter your administrator email and we’ll send you a secure sign-in link. No password needed.</p>
       <LoginForm />
     </section>
     <Link href="/" className="admin-login-back">← Back to storefront</Link>
