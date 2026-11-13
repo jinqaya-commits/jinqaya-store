@@ -139,7 +139,7 @@ export async function createPurchaseOrderAction(formData: FormData) {
   try { items = JSON.parse(String(formData.get("items") ?? "[]")); } catch { return { error: "Invalid purchase order items." }; }
   if ((!supplierId && (!supplierName || supplierName.length > 160)) || supplierEmail.length > 254 || supplierPhone.length > 60 ||
       !/^[A-Z]{3}$/.test(currency) || supplierReference.length > 160 || notes.length > 3000 ||
-      (expectedDate && !/^\\d{4}-\\d{2}-\\d{2}$/.test(expectedDate)) ||
+      (expectedDate && !/^\d{4}-\d{2}-\d{2}$/.test(expectedDate)) ||
       !Array.isArray(items) || items.length < 1 || items.length > 100 ||
       items.some((item) => !item || !item.variant_id || !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 1000000 ||
         item.unit_cost === "" || !Number.isFinite(Number(item.unit_cost)) || Number(item.unit_cost) < 0)) {
@@ -213,8 +213,8 @@ export async function recordPurchaseOrderPaymentAction(purchaseOrderId: string, 
   const reference = String(formData.get("reference_number") ?? "").trim();
   const notes = String(formData.get("notes") ?? "").trim();
 
-  if (!/^\\d+(?:\\.\\d{1,2})?$/.test(amountRaw) || !Number.isFinite(amount) || amount <= 0 ||
-      !/^\\d{4}-\\d{2}-\\d{2}$/.test(paymentDate) ||
+  if (!/^\d+(?:\.\d{1,2})?$/.test(amountRaw) || !Number.isFinite(amount) || amount <= 0 ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(paymentDate) ||
       !["bank_transfer", "cash", "card", "other"].includes(paymentMethod) ||
       reference.length > 160 || notes.length > 2000) {
     return { error: "Check the payment amount, date, method and reference." };
