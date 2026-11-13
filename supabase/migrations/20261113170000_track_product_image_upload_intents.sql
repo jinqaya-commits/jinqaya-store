@@ -131,7 +131,7 @@ begin
   if p_storage_path is null or p_storage_path = ''
      or p_storage_path like 'http://%' or p_storage_path like 'https://%'
      or p_storage_path like '%..%'
-     or split_part(v_object_key, '/') <> p_product_id::text
+     or split_part(v_object_key, '/', 1) <> p_product_id::text
      or position('/' in v_object_key) = 0 then
     raise exception 'Invalid product image storage path';
   end if;
