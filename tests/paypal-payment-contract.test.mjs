@@ -17,9 +17,10 @@ test("verified order session cookie is scoped to API routes used by PayPal", () 
   assert.match(captureOrder, /const COOKIE = "jq_order_status_session"/);
 });
 
-test("PayPal create-order requires same-origin and a verified order email session", () => {
+test("PayPal create-order requires same-origin and the secure checkout order session", () => {
   assert.ok(createOrder.indexOf("if (!isSameOriginRequest(request))") < createOrder.indexOf("(await cookies()).get(COOKIE)"));
   assert.match(createOrder, /if \(!sessionToken\)[\s\S]*?status: 401/);
+  assert.doesNotMatch(createOrder, /Verify your order email before paying/);
   assert.match(createOrder, /action: "get-order",[\s\S]*?tokenHash: sha256\(sessionToken\)/);
 });
 
