@@ -3748,8 +3748,143 @@ export type Database = {
         }
         Relationships: []
       }
-    }
-
+    
+      checkout_country_restrictions: {
+        Row: {
+          country_code: string
+          country_name: string
+          created_at: string
+          is_active: boolean
+          reason: string
+          updated_at: string
+        }
+        Insert: {
+          country_code: string
+          country_name: string
+          created_at?: string
+          is_active?: boolean
+          reason: string
+          updated_at?: string
+        }
+        Update: {
+          country_code?: string
+          country_name?: string
+          created_at?: string
+          is_active?: boolean
+          reason?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      customer_order_status_sessions: {
+        Row: {
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          order_id: string
+          token_hash: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          order_id: string
+          token_hash: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          order_id?: string
+          token_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_order_status_sessions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_status_email_challenges: {
+        Row: {
+          attempts: number
+          code_hash: string
+          created_at: string
+          delivery_failed_at: string | null
+          email: string
+          expires_at: string
+          id: string
+          order_id: string
+          verified_at: string | null
+        }
+        Insert: {
+          attempts?: number
+          code_hash: string
+          created_at?: string
+          delivery_failed_at?: string | null
+          email: string
+          expires_at: string
+          id?: string
+          order_id: string
+          verified_at?: string | null
+        }
+        Update: {
+          attempts?: number
+          code_hash?: string
+          created_at?: string
+          delivery_failed_at?: string | null
+          email?: string
+          expires_at?: string
+          id?: string
+          order_id?: string
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_status_email_challenges_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_image_cleanup_queue: {
+        Row: {
+          attempts: number
+          created_at: string
+          id: string
+          last_error: string | null
+          locked_at: string | null
+          next_attempt_at: string
+          storage_path: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          locked_at?: string | null
+          next_attempt_at?: string
+          storage_path: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          locked_at?: string | null
+          next_attempt_at?: string
+          storage_path?: string
+        }
+        Relationships: []
+      }
       product_image_upload_intents: {
         Row: {
           attempts: number
@@ -3800,142 +3935,8 @@ export type Database = {
           },
         ]
       }
-      product_image_cleanup_queue: {
-        Row: {
-          attempts: number
-          created_at: string
-          id: string
-          last_error: string | null
-          locked_at: string | null
-          next_attempt_at: string
-          storage_path: string
-        }
-        Insert: {
-          attempts?: number
-          created_at?: string
-          id?: string
-          last_error?: string | null
-          locked_at?: string | null
-          next_attempt_at?: string
-          storage_path: string
-        }
-        Update: {
-          attempts?: number
-          created_at?: string
-          id?: string
-          last_error?: string | null
-          locked_at?: string | null
-          next_attempt_at?: string
-          storage_path?: string
-        }
-        Relationships: []
-      }
-      order_status_email_challenges: {
-        Row: {
-          attempts: number
-          code_hash: string
-          created_at: string
-          delivery_failed_at: string | null
-          email: string
-          expires_at: string
-          id: string
-          order_id: string
-          verified_at: string | null
-        }
-        Insert: {
-          attempts?: number
-          code_hash: string
-          created_at?: string
-          delivery_failed_at?: string | null
-          email: string
-          expires_at: string
-          id?: string
-          order_id: string
-          verified_at?: string | null
-        }
-        Update: {
-          attempts?: number
-          code_hash?: string
-          created_at?: string
-          delivery_failed_at?: string | null
-          email?: string
-          expires_at?: string
-          id?: string
-          order_id?: string
-          verified_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "order_status_email_challenges_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: false
-            referencedRelation: "orders"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      customer_order_status_sessions: {
-        Row: {
-          created_at: string
-          email: string
-          expires_at: string
-          id: string
-          order_id: string
-          token_hash: string
-        }
-        Insert: {
-          created_at?: string
-          email: string
-          expires_at: string
-          id?: string
-          order_id: string
-          token_hash: string
-        }
-        Update: {
-          created_at?: string
-          email?: string
-          expires_at?: string
-          id?: string
-          order_id?: string
-          token_hash?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "customer_order_status_sessions_order_id_fkey"
-            columns: ["order_id"]
-            isOneToOne: false
-            referencedRelation: "orders"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      checkout_country_restrictions: {
-        Row: {
-          country_code: string
-          country_name: string
-          created_at: string
-          is_active: boolean
-          reason: string
-          updated_at: string
-        }
-        Insert: {
-          country_code: string
-          country_name: string
-          created_at?: string
-          is_active?: boolean
-          reason: string
-          updated_at?: string
-        }
-        Update: {
-          country_code?: string
-          country_name?: string
-          created_at?: string
-          is_active?: boolean
-          reason?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }    Views: {
+}
+    Views: {
       [_ in never]: never
     }
     Functions: {
@@ -4324,8 +4325,53 @@ export type Database = {
             }
             Returns: string
           }
-    }
-
+    
+      admin_create_product_image_upload_intent: {
+        Args: { p_product_id: string; p_storage_path: string }
+        Returns: string
+      }
+      admin_replace_product_image: {
+        Args: {
+          p_image_id: string
+          p_product_id: string
+          p_storage_path: string
+        }
+        Returns: string
+      }
+      admin_resolve_paid_order_stock_review: {
+        Args: { p_note: string; p_order_id: string }
+        Returns: Json
+      }
+      claim_product_image_cleanup: {
+        Args: { p_limit?: number }
+        Returns: {
+          id: string
+          storage_path: string
+        }[]
+      }
+      claim_product_image_upload_cleanup: {
+        Args: { p_limit?: number }
+        Returns: {
+          id: string
+          storage_path: string
+        }[]
+      }
+      complete_product_image_cleanup: {
+        Args: { p_id: string }
+        Returns: undefined
+      }
+      complete_product_image_upload_cleanup: {
+        Args: { p_id: string }
+        Returns: undefined
+      }
+      fail_product_image_cleanup: {
+        Args: { p_error: string; p_id: string }
+        Returns: undefined
+      }
+      fail_product_image_upload_cleanup: {
+        Args: { p_error: string; p_id: string }
+        Returns: undefined
+      }
       record_paypal_order_payment: {
         Args: {
           p_amount: number
@@ -4336,52 +4382,8 @@ export type Database = {
         }
         Returns: Json
       }
-      fail_product_image_upload_cleanup: {
-        Args: { p_error: string; p_id: string }
-        Returns: undefined
-      }
-      fail_product_image_cleanup: {
-        Args: { p_error: string; p_id: string }
-        Returns: undefined
-      }
-      complete_product_image_upload_cleanup: {
-        Args: { p_id: string }
-        Returns: undefined
-      }
-      complete_product_image_cleanup: {
-        Args: { p_id: string }
-        Returns: undefined
-      }
-      claim_product_image_upload_cleanup: {
-        Args: { p_limit?: number }
-        Returns: {
-          id: string
-          storage_path: string
-        }[]
-      }
-      claim_product_image_cleanup: {
-        Args: { p_limit?: number }
-        Returns: {
-          id: string
-          storage_path: string
-        }[]
-      }
-      admin_resolve_paid_order_stock_review: {
-        Args: { p_note: string; p_order_id: string }
-        Returns: Json
-      }
-      admin_replace_product_image: {
-        Args: {
-          p_image_id: string
-          p_product_id: string
-          p_storage_path: string
-        }
-        Returns: string
-      }
-      admin_create_product_image_upload_intent: {
-        Args: { p_product_id: string; p_storage_path: string }
-        Returns: string
-      }    Enums: {
+}
+    Enums: {
       app_role: "owner" | "admin" | "warehouse" | "customer_service"
       cart_status: "active" | "converted" | "abandoned" | "expired"
       goods_receipt_status: "draft" | "posted" | "cancelled"
