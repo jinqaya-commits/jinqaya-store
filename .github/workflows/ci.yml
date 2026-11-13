@@ -65,7 +65,7 @@ jobs:
           import re
 
           sql = Path("tests/product-image-cleanup-migration.sql").read_text()
-          pattern = re.compile(r"^\\ir ../supabase/migrations/([^\\s]+\\.sql)\\s*$", re.MULTILINE)
+          pattern = re.compile(r"^\\ir ../supabase/migrations/([^\s]+\.sql)\s*$", re.MULTILINE)
 
           def expand(match):
               migration = Path("supabase/migrations") / match.group(1)
@@ -74,7 +74,7 @@ jobs:
               return migration.read_text()
 
           sql = pattern.sub(expand, sql)
-          if "\\\\ir " in sql:
+          if "\\ir " in sql:
               raise SystemExit("Unexpanded migration include remains in SQL test")
           print(sql)
           PY
