@@ -1,67 +1,45 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 
 export function LoginForm() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [sent, setSent] = useState(false);
   const [busy, setBusy] = useState(false);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setBusy(true);
     setError("");
+    setSent(false);
 
     try {
       const supabase = createClient();
+      const redirectTo = new URL("/auth/callback?next=/admin/products", window.location.origin);
 
-      const { error: authError } = await supabase.auth.signInWithPassword({
+      const { error: authError } = await supabase.auth.signInWithOtp({
         email: email.trim(),
-        password,
+        options: {
+          emailRedirectTo: redirectTo.toString(),
+          shouldCreateUser: false,
+        },
       });
 
       if (authError) {
-        setError(authError.message);
-        setBusy(false);
-        return;
-      }
-
-      // Confirm the browser client can read the newly-created session.
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
-
-      if (userError || !user) {
-        setError(userError?.message ?? "Sign-in succeeded, but the session could not be confirmed. Please try again.");
-        setBusy(false);
-        return;
-      }
-
-      const { data: allowed, error: roleError } = await supabase.rpc("can_manage_catalog");
-
-      if (roleError || allowed !== true) {
-        await supabase.auth.signOut();
         setError(
-          roleError?.message ??
-            "This account does not have catalog management permission."
+          authError.message.includes("rate limit")
+            ? "Too many emails have been requested. Please wait before requesting another sign-in link."
+            : authError.message
         );
-        setBusy(false);
         return;
       }
 
-      // Force a fresh document request so the server reads the latest auth cookies.
-      router.replace("/admin/products");
+      setSent(true);
     } catch (cause) {
-      setError(
-        cause instanceof Error
-          ? cause.message
-          : "An unexpected sign-in error occurred. Please try again."
-      );
+      setError(cause instanceof Error ? cause.message : "Could not request a sign-in link. Please try again.");
+    } finally {
       setBusy(false);
     }
   }
@@ -69,26 +47,14 @@ export function LoginForm() {
   return (
     <form className="admin-login-form" onSubmit={submit}>
       <label>
-        Email address
+        Administrator email
         <input
           type="email"
-          autoComplete="username"
+          autoComplete="email"
           required
           value={email}
           onChange={(event) => setEmail(event.target.value)}
           placeholder="you@example.com"
-        />
-      </label>
-
-      <label>
-        Password
-        <input
-          type="password"
-          autoComplete="current-password"
-          required
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          placeholder="Your password"
         />
       </label>
 
@@ -98,8 +64,14 @@ export function LoginForm() {
         </p>
       )}
 
+      {sent && (
+        <p role="status">
+          If this address is an invited administrator account, a sign-in link will arrive by email. Open it on this same browser to continue.
+        </p>
+      )}
+
       <button className="admin-primary-button" type="submit" disabled={busy}>
-        {busy ? "Signing in…" : "Sign in"}
+        {busy ? "Sending link…" : "Email me a sign-in link"}
       </button>
     </form>
   );
