@@ -46,10 +46,11 @@ $old$;
  )
  INTO v_existing FROM public.orders o WHERE o.checkout_idempotency_key=p_idempotency_key AND lower(o.customer_email)=v_email LIMIT 1;
 $new$;
-  if position(v_old in v_definition)=0 then
+  if position(v_old in v_definition)>0 then
+    v_definition := replace(v_definition,v_old,v_new);
+  elsif position(v_new in v_definition)=0 then
     raise exception 'Could not locate guest checkout idempotency response block; migration stopped.';
   end if;
-  v_definition := replace(v_definition,v_old,v_new);
 
   v_old := $old$
  IF length(v_address->>'country_code')<>2 OR length(v_address->>'country')<2 OR length(v_address->>'country')>100
@@ -74,10 +75,11 @@ $old$;
   RAISE EXCEPTION 'We do not currently ship to this destination.';
  END IF;
 $new$;
-  if position(v_old in v_definition)=0 then
+  if position(v_old in v_definition)>0 then
+    v_definition := replace(v_definition,v_old,v_new);
+  elsif position(v_new in v_definition)=0 then
     raise exception 'Could not locate guest checkout address validation block; migration stopped.';
   end if;
-  v_definition := replace(v_definition,v_old,v_new);
 
   v_old := $old$
  UPDATE public.orders SET currency=coalesce(v_currency,'USD'),subtotal=v_subtotal,total_amount=v_subtotal,
@@ -107,10 +109,11 @@ $old$;
   'shipping_status','estimated','payment_status','not_started','currency',coalesce(v_currency,'USD')
  );
 $new$;
-  if position(v_old in v_definition)=0 then
+  if position(v_old in v_definition)>0 then
+    v_definition := replace(v_definition,v_old,v_new);
+  elsif position(v_new in v_definition)=0 then
     raise exception 'Could not locate guest checkout shipping calculation block; migration stopped.';
   end if;
-  v_definition := replace(v_definition,v_old,v_new);
   execute v_definition;
 end
 $migration$;
