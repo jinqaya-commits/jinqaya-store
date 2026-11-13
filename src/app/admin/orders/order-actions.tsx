@@ -3,8 +3,8 @@ import { useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { processOrderAction } from "./actions";
 
-type Props={orderId:string;status:string;shippingAmount:number|string|null;shippingMethod:string|null;subtotal:number|string|null};
-export function OrderActions({orderId,status,shippingAmount,shippingMethod,subtotal}:Props){
+type Props={orderId:string;status:string;shippingMethod:string|null;subtotal:number|string|null};
+export function OrderActions({orderId,status,shippingMethod,subtotal}:Props){
  const router=useRouter();
  const [busy,start]=useTransition();const [error,setError]=useState("");const [success,setSuccess]=useState("");
  const [method,setMethod]=useState(shippingMethod||"");const [carrier,setCarrier]=useState("");const [tracking,setTracking]=useState("");const [url,setUrl]=useState("");const [note,setNote]=useState("");
