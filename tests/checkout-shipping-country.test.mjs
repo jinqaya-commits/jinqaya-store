@@ -59,6 +59,6 @@ test("checkout uses one ISO country selector and derives the country name from t
   assert.match(checkoutForm, /<input type="hidden" name="country" value=\{countryName\} \/>/);
   assert.doesNotMatch(checkoutForm, /name="country_code" value=\{countryCode\} onChange=\{\(event\) => setCountryCode/);
   assert.match(countryOptions, /new Intl\.DisplayNames\(\["en"\], \{ type: "region" \}\)/);
-  assert.match(countryOptions, /"KR"/);
-  assert.match(countryOptions, /"BR"/);
+  assert.match(countryOptions, /,KR,/);
+  assert.match(countryOptions, /,BR,/);
 });
