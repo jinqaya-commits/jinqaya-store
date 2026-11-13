@@ -318,12 +318,10 @@ BEGIN
 
     FOR v_inventory IN
       SELECT i.* FROM public.inventory i
-      JOIN public.warehouses w ON w.id = i.warehouse_id
       WHERE i.variant_id = v_item.variant_id
         AND i.on_hand - i.reserved - i.damaged > 0
-        AND w.is_active = true
-      ORDER BY w.is_default DESC, i.warehouse_id
-      FOR UPDATE OF i
+      ORDER BY i.warehouse_id
+      FOR UPDATE
     LOOP
       EXIT WHEN v_remaining <= 0;
       v_add := least(v_remaining, v_inventory.on_hand - v_inventory.reserved - v_inventory.damaged);
