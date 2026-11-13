@@ -19,6 +19,7 @@ create table public.product_images (
   id uuid primary key,
   product_id uuid not null references public.products(id),
   storage_path text,
+  alt_text text,
   sort_order integer not null default 0,
   is_primary boolean not null default false,
   image_type public.image_kind not null default 'gallery'
@@ -232,6 +233,16 @@ begin
   end if;
   if exists (select 1 from public.product_image_upload_intents where id = v_intent) then
     raise exception 'Successful image attach did not consume its upload intent';
+  end if;
+
+  v_path := 'r2://' || v_product::text || '/replacement-upload.webp';
+  v_intent := public.admin_create_product_image_upload_intent(v_product, v_path);
+  perform public.admin_replace_product_image(v_product, v_image, v_path);
+  if exists (select 1 from public.product_image_upload_intents where id = v_intent) then
+    raise exception 'Successful image replacement did not consume its upload intent';
+  end if;
+  if not exists (select 1 from public.product_images where id = v_image and storage_path = v_path) then
+    raise exception 'Image replacement did not attach the new object';
   end if;
 
   v_path := 'r2://' || v_product::text || '/abandoned-upload.webp';
