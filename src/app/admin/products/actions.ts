@@ -329,37 +329,20 @@ export async function replaceProductImage(productId: string, imageId: string, st
     return { error: "Invalid image storage path." };
   }
 
-  const { data: current, error: readError } = await supabase
-    .from("product_images")
-    .select("storage_path")
-    .eq("id", imageId)
-    .eq("product_id", productId)
-    .maybeSingle();
-  if (readError) {
-    await cleanupUnlinkedProductImage(supabase, storagePath);
-    return { error: readError.message };
-  }
-  if (!current) {
-    await cleanupUnlinkedProductImage(supabase, storagePath);
-    return { error: "Product image not found." };
-  }
-
-  const { data: updatedImage, error: updateError } = await supabase.from("product_images")
-    .update({ storage_path: storagePath })
-    .eq("id", imageId)
-    .eq("product_id", productId)
-    .select("id")
-    .maybeSingle();
-  if (updateError || !updatedImage) {
-    await cleanupUnlinkedProductImage(supabase, storagePath);
-    return { error: updateError?.message || "Product image no longer exists. Refresh and try again." };
-  }
-
-  const oldPath = current.storage_path;
-  if (oldPath && oldPath !== storagePath && !(oldPath.startsWith("https://") || oldPath.startsWith("http://"))) {
-    // Always queue detached objects. The worker rechecks references immediately
-    // before deletion so a path shared by another image is not removed.
-    await enqueueProductImageCleanup(supabase, oldPath);
+  // Replace the row and enqueue its detached previous object in one database
+  // transaction. If queue insertion fails, the image update rolls back too.
+  const { data: oldPath, error: replaceError } = await supabase.rpc("admin_replace_product_image", {
+    p_product_id: productId,
+    p_image_id: imageId,
+    p_storage_path: storagePath,
+  });
+  if (replaceError) {
+    const queued = await cleanupUnlinkedProductImage(supabase, storagePath);
+    return {
+      error: replaceError.message + (queued
+        ? ""
+        : " The newly uploaded file could not be queued for cleanup and may need manual removal."),
+    };
   }
 
   const { data: product } = await supabase.from("products").select("slug").eq("id", productId).maybeSingle();
