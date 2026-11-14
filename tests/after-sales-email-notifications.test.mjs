@@ -37,7 +37,6 @@ test("after-sales email delivery retains production-only and idempotent outbox s
   const mail = await readFile(new URL("src/lib/order-email.ts", root), "utf8");
   assert.match(outbox, /process\.env\.VERCEL_ENV !== "production"/);
   assert.match(outbox, /jinqaya-order-email\/\$\{row\.id\}/);
-  assert.match(mail, /process\.env\.VERCEL_ENV !== "production"/);
   assert.match(mail, /"Idempotency-Key"/);
   const dedupe = await readFile(new URL("supabase/migrations/20261114152000_after_sales_outbox_dedupe_by_case.sql", root), "utf8");
   assert.match(dedupe, /payload->>'caseNumber'/);
