@@ -50,11 +50,29 @@ begin
          or coalesce(v_order.shipping_quote_snapshot->>'status','') <> 'confirmed'
          or round(v_order.shipping_amount,2) <> round(coalesce((v_order.shipping_quote_snapshot->>'amount')::numeric,-1),2)
          or round(v_order.total_amount,2) <> round(coalesce(v_order.subtotal,0) + v_order.shipping_amount + coalesce(v_order.tax_amount,0) - coalesce(v_order.discount_amount,0),2)
-         or not exists (
+         or exists (
            select 1 from public.stock_reservations r
             where r.order_id = v_order.id
               and r.status = 'active'
-              and r.expires_at > v_now
+              and (r.expires_at is null or r.expires_at <= v_now)
+         )
+         or exists (
+           select 1
+             from (
+               select oi.variant_id, sum(oi.quantity)::integer as quantity
+                 from public.order_items oi
+                where oi.order_id = v_order.id
+                group by oi.variant_id
+             ) required
+             full join (
+               select r.variant_id, sum(r.quantity)::integer as quantity
+                 from public.stock_reservations r
+                where r.order_id = v_order.id
+                  and r.status = 'active'
+                  and r.expires_at > v_now
+                group by r.variant_id
+             ) reserved using (variant_id)
+            where coalesce(required.quantity, 0) <> coalesce(reserved.quantity, 0)
          ) then
         raise exception 'The previous payment reservation is no longer valid. Please contact support before retrying.';
       end if;
