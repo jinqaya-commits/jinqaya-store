@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import type { StoreProduct, StoreProductVariant } from "@/lib/products";
 import { addCartItem } from "@/lib/cart";
 
@@ -10,6 +11,7 @@ function formatPrice(variant: StoreProductVariant | undefined) {
 }
 
 export function AddToCart({ product }: { product: StoreProduct }) {
+  const router = useRouter();
   const available = product.variants.filter((variant) => variant.is_active && variant.price !== null && Number.isFinite(variant.price));
   const [variantId, setVariantId] = useState(available[0]?.id ?? "");
   const [quantity, setQuantity] = useState(1);
@@ -32,7 +34,7 @@ export function AddToCart({ product }: { product: StoreProduct }) {
     setMessage("");
   }
 
-  function add() {
+  function add(redirectToCheckout = false) {
     if (!selected || selected.price === null) return;
     addCartItem({
       productId: product.id,
@@ -45,7 +47,11 @@ export function AddToCart({ product }: { product: StoreProduct }) {
       currency: selected.currency || "USD",
       imageUrl: product.images.find((image) => image.is_primary)?.detail_url ?? product.images[0]?.detail_url ?? null,
     }, quantity);
-    setMessage("Added to your bag.");
+    if (redirectToCheckout) {
+      router.push("/checkout");
+      return;
+    }
+    setMessage("Added to your bag. You can continue shopping or go to checkout.");
   }
 
   if (available.length === 0) {
@@ -109,14 +115,18 @@ export function AddToCart({ product }: { product: StoreProduct }) {
           <span>QUANTITY</span>
           <input aria-label="Quantity" type="number" min="1" max="99" value={quantity} onChange={(event) => setQuantity(Math.max(1, Math.min(99, Number(event.target.value) || 1)))} />
         </label>
-        <button type="button" className="button button-dark product-add-button" onClick={add}>
-          ADD TO BAG <span aria-hidden="true">↗</span>
-        </button>
+        <div className="product-purchase-actions">
+          <button type="button" className="button button-light product-add-button" onClick={() => add()}>ADD TO BAG</button>
+          <button type="button" className="button button-dark product-buy-now-button" onClick={() => add(true)}>BUY NOW <span aria-hidden="true">↗</span></button>
+        </div>
       </div>
       {message && <p className="cart-feedback" role="status">{message}</p>}
       <div className="product-mobile-buybar">
         <span className="product-mobile-buybar-price">{formatPrice(selected)}</span>
-        <button type="button" className="button button-dark" onClick={add}>ADD TO BAG <span aria-hidden="true">↗</span></button>
+        <div className="product-mobile-buybar-actions">
+          <button type="button" className="button button-light" onClick={() => add()}>ADD TO BAG</button>
+          <button type="button" className="button button-dark" onClick={() => add(true)}>BUY NOW <span aria-hidden="true">↗</span></button>
+        </div>
       </div>
     </div>
   );
