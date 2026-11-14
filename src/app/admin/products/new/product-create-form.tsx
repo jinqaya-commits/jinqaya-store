@@ -8,7 +8,7 @@ type Category = { id: string; parent_id: string|null; name: string; slug:string;
 
 const initialValues: CreateProductInput = {
   name: "", categoryIds: [], primaryCategoryId: "", petType: "both", shortDescription: "", description: "",
-  material: "", careInstructions: "", seoTitle: "", seoDescription: "", status: "draft",
+  material: "", careInstructions: "", seoTitle: "", seoDescription: "", variants: [], status: "draft",
 };
 
 export function ProductCreateForm({ categories }: { categories: Category[] }) {
