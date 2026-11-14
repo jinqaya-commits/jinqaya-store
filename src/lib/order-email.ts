@@ -27,11 +27,6 @@ function shell(title: string, body: string) {
 }
 
 async function send(message: MailMessage, idempotencyKey?: string): Promise<SendResult> {
-  // Never send customer or staff email from Preview or local environments.
-  if (process.env.VERCEL_ENV !== "production") {
-    return { ok: false, retryable: false, providerMessageId: null, error: "email_delivery_disabled_outside_production" };
-  }
-
   if (!RESEND_API_KEY || !FROM) {
     return {
       ok: false,
