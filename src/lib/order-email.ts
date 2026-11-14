@@ -27,6 +27,11 @@ function shell(title: string, body: string) {
 }
 
 async function send(message: MailMessage, idempotencyKey?: string): Promise<SendResult> {
+  // Never send customer or staff email from Preview or local environments.
+  if (process.env.VERCEL_ENV !== "production") {
+    return { ok: false, retryable: false, providerMessageId: null, error: "email_delivery_disabled_outside_production" };
+  }
+
   if (!RESEND_API_KEY || !FROM) {
     return {
       ok: false,
@@ -106,7 +111,7 @@ function money(amount: number | string | null | undefined, currency: string) {
 }
 
 export type OrderEmailOutboxPayload = {
-  eventType?: "order_received" | "quote_confirmed" | "payment_received" | "shipped" | "delivered" | "cancelled" | "reservation_expired";
+  eventType?: "order_received" | "quote_confirmed" | "payment_received" | "shipped" | "delivered" | "cancelled" | "reservation_expired" | "after_sales_submitted" | "after_sales_under_review" | "after_sales_approved" | "after_sales_rejected" | "after_sales_resolved" | "after_sales_refund_recorded";
   orderNumber: string;
   customerName: string;
   customerEmail: string;
@@ -117,6 +122,11 @@ export type OrderEmailOutboxPayload = {
   trackingNumber?: string | null;
   trackingUrl?: string | null;
   stockReviewRequired?: boolean;
+  caseNumber?: string;
+  caseStatus?: string;
+  resolution?: string | null;
+  refundAmount?: number | string | null;
+  refundReference?: string | null;
 };
 
 export async function sendOrderOutboxEmail(
@@ -135,6 +145,12 @@ export async function sendOrderOutboxEmail(
       delivered: { subject: `JINQAYA order ${order.orderNumber} marked delivered`, title: "Delivery update.", copy: "Your order has been marked as delivered. We hope it settles beautifully into your life together." },
       cancelled: { subject: `JINQAYA order ${order.orderNumber} cancelled`, title: "Your order request was cancelled.", copy: "Your order has been cancelled. If you believe this was a mistake, please contact us." },
       reservation_expired: { subject: `Action needed: JINQAYA order ${order.orderNumber} reservation expired`, title: "Your stock reservation has expired.", copy: "The 48-hour payment window has passed, so the stock reserved for this order has been released and the previous shipping quote is no longer valid. No payment was collected and this order will not be dispatched. Please email info@jinqaya.com so we can reconfirm current stock, shipping options and the final total before you proceed." },
+      after_sales_submitted: { subject: `We received after-sales case ${order.caseNumber || ""}`, title: "We’ve received your request.", copy: `Your quality-related after-sales request for order ${order.orderNumber} has been received. Your case reference is ${order.caseNumber || "being assigned"}. Our team will review the information and contact you with an update.` },
+      after_sales_under_review: { subject: `Your JINQAYA case ${order.caseNumber || ""} is under review`, title: "Your case is being reviewed.", copy: `Our team is reviewing after-sales case ${order.caseNumber || ""} for order ${order.orderNumber}. We’ll contact you when there is an update.` },
+      after_sales_approved: { subject: `Update on your JINQAYA case ${order.caseNumber || ""}`, title: "Your request has been approved.", copy: `Your after-sales case ${order.caseNumber || ""} for order ${order.orderNumber} has been approved. Our team will follow up with the agreed next steps.${order.resolution ? ` Resolution: ${order.resolution}` : ""}` },
+      after_sales_rejected: { subject: `Update on your JINQAYA case ${order.caseNumber || ""}`, title: "An update on your request.", copy: `After reviewing case ${order.caseNumber || ""} for order ${order.orderNumber}, we’re unable to approve the request. Reason: ${order.resolution || "Please contact our support team for further details."}` },
+      after_sales_resolved: { subject: `Your JINQAYA case ${order.caseNumber || ""} is closed`, title: "Your case has been resolved.", copy: `After-sales case ${order.caseNumber || ""} for order ${order.orderNumber} has been marked as resolved. ${order.resolution || "Thank you for working with our team."}` },
+      after_sales_refund_recorded: { subject: `Refund update for JINQAYA order ${order.orderNumber}`, title: "Your refund has been recorded.", copy: `We have recorded the refund for after-sales case ${order.caseNumber || ""} in the amount of ${money(order.refundAmount, order.currency)}. This message confirms the refund record; your payment provider may take additional time to show the funds. Reference: ${order.refundReference || "Please contact support if you need the transaction reference."}` },
     };
     const detail = statusDetails[event];
     return send({
