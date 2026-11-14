@@ -417,6 +417,13 @@ begin
     case when p_shipping_amount is null then 'Standard shipping' else 'Custom shipping quote' end
   );
 
+  if exists (
+    select 1 from public.stock_reservations
+     where order_id = p_order_id and status = 'active'
+  ) then
+    raise exception 'This order already has active stock reservations. Review inventory before continuing.';
+  end if;
+
   -- Reserve across warehouses atomically, matching the customer Pay now flow.
   for v_item in
     select oi.variant_id, sum(oi.quantity)::integer as quantity
