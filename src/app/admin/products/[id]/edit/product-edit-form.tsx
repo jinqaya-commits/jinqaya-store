@@ -55,7 +55,7 @@ export function ProductEditForm({product,categoryIds,primaryCategoryId,categorie
   setAltSaving(true);setError("");
   try{
    const result=await updateProductImageAltBatch(product.id,images.map(img=>({imageId:img.id,altText:img.alt_text??""})));
-   if("error" in result){setError(result.error);return;}
+   if("error" in result){setError(result.error ?? "Unable to save image descriptions.");return;}
    if(result.failures.length){setError(`${result.updated} description(s) saved; ${result.failures.length} failed. Save the failed descriptions again.`);return;}
    router.refresh();
   }catch(err){setError(err instanceof Error?err.message:"Unable to save image descriptions.");}
