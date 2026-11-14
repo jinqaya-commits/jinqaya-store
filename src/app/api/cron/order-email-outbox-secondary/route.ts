@@ -9,7 +9,7 @@ function isAuthorized(request: NextRequest) {
   const vercelSecret = process.env.CRON_SECRET;
   if (
     vercelSecret &&
-    request.headers.get("authorization") === `Bearer ${vercelSecret}`
+    request.headers.get("authorization") === \`Bearer \${vercelSecret}\`
   ) {
     return true;
   }
@@ -17,7 +17,7 @@ function isAuthorized(request: NextRequest) {
   const secret = process.env.SUPABASE_CRON_HMAC_SECRET;
   const timestamp = request.headers.get("x-cron-timestamp");
   const signature = request.headers.get("x-cron-signature");
-  if (!secret || !timestamp || !signature || !/^\\d{13}$/.test(timestamp)) {
+  if (!secret || !timestamp || !signature || !/^\d{13}$/.test(timestamp)) {
     return false;
   }
 
