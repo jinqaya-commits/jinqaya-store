@@ -146,7 +146,7 @@ jobs:
           import re
 
           sql = Path("tests/product-image-cleanup-migration.sql").read_text()
-          pattern = re.compile(r"^\\\\ir ../supabase/migrations/([^\\s]+\\.sql)\\s*$", re.MULTILINE)
+          pattern = re.compile(r"^\\ir ../supabase/migrations/([^\s]+\.sql)\s*$", re.MULTILINE)
 
           def expand(match):
               migration = Path("supabase/migrations") / match.group(1)
