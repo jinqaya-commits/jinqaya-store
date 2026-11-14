@@ -36,7 +36,8 @@ test("manual payment validation accepts the confirmed quote instead of requiring
 
 test("admin UI allows staff to edit shipping and explains the 50 percent default", () => {
   assert.match(ui, /name="shipping_amount"/);
-  assert.match(ui, /50% OF SUBTOTAL/);\n  assert.match(ui, /\\$50 FOR 1–2 ITEMS/);
+  assert.match(ui, /50% OF SUBTOTAL/);
+  assert.match(ui, /\$50 FOR 1–2 ITEMS/);
   assert.match(ui, /replace it with the actual shipping quote/i);
   assert.match(ui, /Confirm shipping quote & reserve stock/);
 });
