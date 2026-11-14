@@ -38,3 +38,15 @@ test("order email explains immediate payment and the fallback order lookup", () 
   assert.match(orderEmail, /pay securely with PayPal directly on that page/);
   assert.match(orderEmail, /order number and checkout email on our Track Order page/);
 });
+
+test("Pay now refreshes the queued order email with the server-confirmed shipping amount", async () => {
+  const migration = await readFile(new URL("../supabase/migrations/20261114130000_checkout_modes_and_unit_shipping.sql", import.meta.url), "utf8");
+  assert.match(migration, /update public\.order_email_outbox[\s\S]*?'shippingAmount', v_shipping/);
+  assert.match(migration, /'shippingMethod', 'Standard shipping'/);
+});
+
+test("staff order emails distinguish confirmed PayPal shipping from a quote request", () => {
+  assert.match(orderEmail, /const shippingConfirmed = order\.shippingAmount !== null/);
+  assert.match(orderEmail, /New order awaiting PayPal payment/);
+  assert.match(orderEmail, /Shipping is not yet quoted and payment has not been collected/);
+});
