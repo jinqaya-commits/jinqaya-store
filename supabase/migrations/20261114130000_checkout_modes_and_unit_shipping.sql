@@ -361,6 +361,7 @@ begin
   update public.orders
      set shipping_quote_snapshot = coalesce(shipping_quote_snapshot,'{}'::jsonb)
        || pg_catalog.jsonb_build_object(
+            'checkout_mode', 'request_quote',
             'original_shipping_amount', v_original_shipping,
             'discount_amount', v_discount,
             'final_shipping_amount', v_final_shipping,
