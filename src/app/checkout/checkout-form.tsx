@@ -10,8 +10,11 @@ type OrderResult = {
   order_number: string;
   status: string;
   subtotal: number;
+  shipping_amount: number;
+  total_amount: number;
   shipping_status: string;
   payment_status: string;
+  payment_ready?: boolean;
   currency: string;
 };
 
@@ -31,14 +34,21 @@ export function CheckoutForm() {
   const [error, setError] = useState("");
   const [order, setOrder] = useState<OrderResult | null>(null);
   const [requestKey, setRequestKey] = useState("");
+  const [countryCode, setCountryCode] = useState("");
 
   const currency = items[0]?.currency || "USD";
   const mixedCurrencies = items.some((item) => item.currency !== currency);
   const estimate = useMemo(() => items.reduce((sum, item) => sum + item.price * item.quantity, 0), [items]);
+  const subtotalCents = Math.round((estimate + Number.EPSILON) * 100);
+  const shippingCents = Math.round(subtotalCents / 2);
+  const shippingEstimate = shippingCents / 100;
+  const totalEstimate = (subtotalCents + shippingCents) / 100;
+  const isBlockedCountry = countryCode.toUpperCase() === "KR" || countryCode.toUpperCase() === "BR";
+  const paymentReady = order ? (order.payment_ready ?? order.status === "pending_payment") : false;
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (busy || !items.length || mixedCurrencies) return;
+    if (busy || !items.length || mixedCurrencies || isBlockedCountry) return;
     setBusy(true);
     setError("");
     const data = new FormData(event.currentTarget);
@@ -99,15 +109,23 @@ export function CheckoutForm() {
           <p>Your order request <strong>{order.order_number}</strong> has been recorded.</p>
           <div className="checkout-notice">
             <strong>What happens next</strong>
-            <p>We’ll confirm stock availability, shipping options and the final delivery cost before requesting payment. Your order is not paid or ready for dispatch yet.</p>
+            {paymentReady ? (
+              <p>Your items have been reserved for 48 hours. Your order is ready for secure payment. Open Track Order and verify your checkout email to continue with PayPal.</p>
+            ) : (
+              <p>Shipping is estimated at 50% of the merchandise subtotal. We still need to confirm stock availability, so payment is not available yet.</p>
+            )}
+            <p className="checkout-total"><span>Merchandise</span><strong>{formatCartMoney(order.subtotal, order.currency)}</strong></p>
+            <p className="checkout-pending"><span>Estimated shipping</span><strong>{formatCartMoney(order.shipping_amount, order.currency)}</strong></p>
+            <p className="checkout-total"><span>Estimated total</span><strong>{formatCartMoney(order.total_amount, order.currency)}</strong></p>
           </div>
-          <Link className="button button-dark" href="/shop">CONTINUE EXPLORING <span>↗</span></Link>
+          {paymentReady && <Link className="button button-dark" href="/order-status">TRACK ORDER & PAY <span>↗</span></Link>}
+          <Link className="back-link" href="/shop">CONTINUE EXPLORING ↗</Link>
         </section>
       ) : (
         <section className="checkout-page">
           <p className="eyebrow">ORDER REQUEST</p>
           <h1>Delivery details</h1>
-          <p className="checkout-intro">Send us your order details first. We’ll confirm availability, shipping and the final total with you before payment.</p>
+          <p className="checkout-intro">Enter your delivery details to submit your order. Shipping is estimated at 50% of the item subtotal; your confirmed total is shown after the server checks destination restrictions, current prices and stock.</p>
           {items.length === 0 ? (
             <div className="cart-empty"><p>Your bag is empty.</p><Link className="button button-dark" href="/shop">EXPLORE THE COLLECTION <span>↗</span></Link></div>
           ) : (
@@ -126,7 +144,7 @@ export function CheckoutForm() {
                   <div className="checkout-section-heading"><span>02</span><div><h2>Shipping address</h2><p>Enter the destination where you’d like your order delivered.</p></div></div>
                   <div className="checkout-fields two">
                     <label className="full">Country / Region<input name="country" autoComplete="country-name" required maxLength={100} placeholder="e.g. United States" /></label>
-                    <label>Country code<input name="country_code" required minLength={2} maxLength={2} placeholder="US" /></label>
+                    <label>Country code<input name="country_code" value={countryCode} onChange={(event) => setCountryCode(event.target.value.toUpperCase().slice(0, 2))} required minLength={2} maxLength={2} placeholder="US" /></label>
                     <label>State / Province<input name="state_region" autoComplete="address-level1" maxLength={100} /></label>
                     <label>City<input name="city" autoComplete="address-level2" required maxLength={100} /></label>
                     <label>Postal code<input name="postal_code" autoComplete="postal-code" maxLength={30} /></label>
@@ -139,11 +157,12 @@ export function CheckoutForm() {
                   <label className="checkout-note">Order note <span className="optional">OPTIONAL</span><textarea name="customer_note" rows={3} maxLength={1000} /></label>
                 </section>
                 <label className="checkout-honeypot" aria-hidden="true">Website<input name="website" tabIndex={-1} autoComplete="off" /></label>
+                {isBlockedCountry && <p className="checkout-error" role="alert">We do not currently ship to this destination.</p>}
                 {error && <p className="checkout-error" role="alert">{error}</p>}
-                <button className="button button-dark checkout-submit" type="submit" disabled={busy || mixedCurrencies}>
+                <button className="button button-dark checkout-submit" type="submit" disabled={busy || mixedCurrencies || isBlockedCountry}>
                   {busy ? "SUBMITTING…" : "SUBMIT ORDER REQUEST"} <span>↗</span>
                 </button>
-                <p className="checkout-disclaimer">Submitting this request does not charge your payment method. We’ll confirm availability, shipping and the final total with you first. By submitting, you acknowledge our <Link href="/policies/terms">Terms of Service</Link> and <Link href="/policies/privacy">Privacy Policy</Link>.</p>
+                <p className="checkout-disclaimer">Submitting this request does not charge your payment method. If all items can be reserved, you can verify your email and continue to PayPal using the confirmed order total. If stock cannot be reserved, payment remains unavailable. By submitting, you acknowledge our <Link href="/policies/terms">Terms of Service</Link> and <Link href="/policies/privacy">Privacy Policy</Link>.</p>
               </form>
 
               <aside className="checkout-summary">
@@ -156,8 +175,9 @@ export function CheckoutForm() {
                   </div>
                 ))}
                 <div className="checkout-total"><span>Estimated subtotal</span><strong>{mixedCurrencies ? "Multiple currencies" : formatCartMoney(estimate, currency)}</strong></div>
-                <div className="checkout-pending"><span>Shipping</span><strong>To be confirmed</strong></div>
-                <p>Product prices are rechecked when you submit. Shipping and any applicable taxes are not included until confirmed.</p>
+                <div className="checkout-pending"><span>Estimated shipping (50%)</span><strong>{mixedCurrencies ? "—" : formatCartMoney(shippingEstimate, currency)}</strong></div>
+                <div className="checkout-total"><span>Estimated total</span><strong>{mixedCurrencies ? "Multiple currencies" : formatCartMoney(totalEstimate, currency)}</strong></div>
+                <p>Shipping is calculated as 50% of the merchandise subtotal. Product prices are rechecked when you submit. Taxes, if applicable, are not included.</p>
                 {mixedCurrencies && <p className="checkout-error">Your bag contains different currencies. Please check out separately.</p>}
                 <Link className="back-link" href="/cart">← RETURN TO BAG</Link>
               </aside>

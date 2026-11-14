@@ -64,6 +64,7 @@ export async function POST(request: Request) {
 
     if (error) {
       const message = error.message.toLowerCase();
+      if (message.includes("do not currently ship to this destination")) return NextResponse.json({ error: "We do not currently ship to this destination." }, { status: 400 });
       if (message.includes("too many checkout")) return NextResponse.json({ error: "Too many checkout attempts. Please try again later." }, { status: 429 });
       if (message.includes("no longer available") || message.includes("different currencies") || message.includes("quantities")) {
         return NextResponse.json({ error: error.message }, { status: 409 });
