@@ -8,11 +8,30 @@ export async function PATCH(request:NextRequest,{params}:{params:Promise<{id:str
  if(permissionError||allowed!==true)return NextResponse.json({error:"Forbidden"},{status:403});
  const {id,caseId}=await params;
  if(!/^[0-9a-f-]{36}$/i.test(id)||!/^[0-9a-f-]{36}$/i.test(caseId))return NextResponse.json({error:"Invalid ID"},{status:400});
- let body:any;try{body=await request.json()}catch{return NextResponse.json({error:"Invalid request"},{status:400})}
- const updates:any={};
- if(body.status!==undefined){if(!["under_review","approved","rejected","resolved"].includes(body.status))return NextResponse.json({error:"Invalid case status"},{status:400});updates.status=body.status;updates.reviewed_by=claims.claims.sub;updates.reviewed_at=new Date().toISOString();if(body.status==="resolved")updates.resolved_at=new Date().toISOString();}
- if(body.resolution!==undefined){if(typeof body.resolution!=="string"||body.resolution.length>3000)return NextResponse.json({error:"Resolution is too long"},{status:400});updates.resolution=body.resolution.trim()||null;}
- if(body.refundStatus!==undefined){if(!["not_started","pending_manual"].includes(body.refundStatus))return NextResponse.json({error:"Refund confirmation must use the order refund ledger action."},{status:400});updates.refund_status=body.refundStatus;}
+ let body:Record<string,unknown>;
+ try {
+  const parsed:unknown=await request.json();
+  if(!parsed||typeof parsed!=="object"||Array.isArray(parsed))return NextResponse.json({error:"Invalid request"},{status:400});
+  body=parsed as Record<string,unknown>;
+ } catch { return NextResponse.json({error:"Invalid request"},{status:400}); }
+ const updates:Record<string,string|null>={};
+ if(body.status!==undefined){
+  const allowedStatuses=["under_review","approved","rejected","resolved"] as const;
+  if(typeof body.status!=="string"||!allowedStatuses.includes(body.status as typeof allowedStatuses[number]))return NextResponse.json({error:"Invalid case status"},{status:400});
+  updates.status=body.status;
+  updates.reviewed_by=claims.claims.sub;
+  updates.reviewed_at=new Date().toISOString();
+  if(body.status==="resolved")updates.resolved_at=new Date().toISOString();
+ }
+ if(body.resolution!==undefined){
+  if(typeof body.resolution!=="string"||body.resolution.length>3000)return NextResponse.json({error:"Resolution is too long"},{status:400});
+  updates.resolution=body.resolution.trim()||null;
+ }
+ if(body.refundStatus!==undefined){
+  const allowedRefundStatuses=["not_started","pending_manual"] as const;
+  if(typeof body.refundStatus!=="string"||!allowedRefundStatuses.includes(body.refundStatus as typeof allowedRefundStatuses[number]))return NextResponse.json({error:"Refund confirmation must use the order refund ledger action."},{status:400});
+  updates.refund_status=body.refundStatus;
+ }
  if(!Object.keys(updates).length)return NextResponse.json({error:"No changes provided."},{status:400});
  const {data:previous}=await supabase.from("after_sales_cases").select("status,refund_status,resolution").eq("id",caseId).eq("order_id",id).maybeSingle();
  if(!previous)return NextResponse.json({error:"Case not found."},{status:404});
