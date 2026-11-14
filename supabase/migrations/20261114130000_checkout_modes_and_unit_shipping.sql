@@ -344,13 +344,21 @@ set search_path to ''
 as $function$
 declare
   v_order public.orders%rowtype;
+  v_inventory public.inventory%rowtype;
+  v_item record;
   v_result jsonb;
   v_units integer;
+  v_reserved integer := 0;
+  v_remaining integer := 0;
+  v_take integer := 0;
   v_original_shipping numeric(12,2);
   v_final_shipping numeric(12,2);
   v_discount numeric(12,2);
+  v_shipping numeric(12,2);
+  v_method text;
   v_reason text;
   v_calculation text;
+  v_now timestamptz := pg_catalog.now();
 begin
   if not public.can_manage_catalog() then
     raise exception 'You do not have permission to manage orders.';
@@ -387,26 +395,137 @@ begin
     'Standard shipping quote confirmed'
   );
 
-  v_result := public.admin_process_order(
-    p_order_id, p_action, p_shipping_amount, p_shipping_method,
-    p_carrier_name, p_tracking_number, p_tracking_url, p_note
+  if v_order.status <> 'on_hold' then
+    raise exception 'Only orders needing review can be confirmed.';
+  end if;
+  if p_shipping_amount is not null and (
+    p_shipping_amount < 0 or p_shipping_amount > 99999999.99
+    or p_shipping_amount <> round(p_shipping_amount,2)
+  ) then
+    raise exception 'Shipping amount must be a non-negative amount with no more than two decimal places.';
+  end if;
+
+  v_shipping := round(coalesce(
+    p_shipping_amount,
+    case when v_units <= 2 then 50.00 else coalesce(v_order.subtotal,0) * 0.50 end
+  ),2);
+  v_method := coalesce(
+    nullif(pg_catalog.btrim(coalesce(p_shipping_method,'')),''),
+    case when p_shipping_amount is null then 'Standard shipping' else 'Custom shipping quote' end
   );
-  v_final_shipping := coalesce((v_result->>'shipping_amount')::numeric, v_order.shipping_amount);
+
+  -- Reserve across warehouses atomically, matching the customer Pay now flow.
+  for v_item in
+    select oi.variant_id, sum(oi.quantity)::integer as quantity
+      from public.order_items oi
+     where oi.order_id = p_order_id
+     group by oi.variant_id
+     order by oi.variant_id
+  loop
+    if v_item.variant_id is null then
+      raise exception 'An order item has no inventory variant. Please review this order manually.';
+    end if;
+
+    v_remaining := v_item.quantity;
+    for v_inventory in
+      select i.*
+        from public.inventory i
+       where i.variant_id = v_item.variant_id
+         and i.on_hand - i.reserved - i.damaged > 0
+       order by i.warehouse_id
+       for update
+    loop
+      exit when v_remaining <= 0;
+      v_take := least(
+        v_remaining,
+        greatest(v_inventory.on_hand - v_inventory.reserved - v_inventory.damaged,0)
+      );
+      if v_take > 0 then
+        update public.inventory
+           set reserved = reserved + v_take, updated_at = v_now
+         where id = v_inventory.id
+           and on_hand - reserved - damaged >= v_take;
+        if not found then
+          raise exception 'Inventory changed while reserving stock. Please retry.';
+        end if;
+
+        insert into public.stock_reservations(
+          order_id, warehouse_id, variant_id, quantity, status, expires_at
+        ) values (
+          p_order_id, v_inventory.warehouse_id, v_item.variant_id,
+          v_take, 'active', v_now + interval '48 hours'
+        );
+
+        insert into public.inventory_movements(
+          warehouse_id, variant_id, movement_type, quantity_change, reserved_change,
+          reference_type, reference_id, notes, created_by
+        ) values (
+          v_inventory.warehouse_id, v_item.variant_id, 'reservation', 0, v_take,
+          'order', p_order_id, 'Stock reserved by staff after shipping quote review.', auth.uid()
+        );
+
+        v_remaining := v_remaining - v_take;
+        v_reserved := v_reserved + v_take;
+      end if;
+    end loop;
+    if v_remaining > 0 then
+      raise exception 'Insufficient stock for one or more items. The order remains on hold.';
+    end if;
+  end loop;
+
+  v_final_shipping := v_shipping;
   v_discount := greatest(v_original_shipping - v_final_shipping, 0);
 
   update public.orders
-     set shipping_quote_snapshot = coalesce(shipping_quote_snapshot,'{}'::jsonb)
-       || pg_catalog.jsonb_build_object(
-            'checkout_mode', 'request_quote',
-            'original_shipping_amount', v_original_shipping,
-            'discount_amount', v_discount,
-            'final_shipping_amount', v_final_shipping,
-            'adjustment_reason', v_reason,
-            'unit_count', v_units,
-            'calculation', v_calculation
-          ),
-         updated_at = pg_catalog.now()
+     set status = 'pending_payment',
+         shipping_amount = v_final_shipping,
+         total_amount = round(
+           coalesce(subtotal,0) + v_final_shipping
+           + coalesce(tax_amount,0) - coalesce(discount_amount,0), 2
+         ),
+         shipping_method_name = v_method,
+         shipping_quote_snapshot = coalesce(shipping_quote_snapshot,'{}'::jsonb)
+           || pg_catalog.jsonb_build_object(
+                'checkout_mode', 'request_quote',
+                'status', 'confirmed',
+                'original_shipping_amount', v_original_shipping,
+                'discount_amount', v_discount,
+                'final_shipping_amount', v_final_shipping,
+                'adjustment_reason', v_reason,
+                'unit_count', v_units,
+                'calculation', v_calculation,
+                'amount', v_final_shipping,
+                'confirmed_at', v_now,
+                'expires_at', v_now + interval '48 hours'
+              ),
+         internal_note = pg_catalog.left(
+           pg_catalog.concat_ws(E'\\n', nullif(internal_note,''), nullif(pg_catalog.btrim(coalesce(p_note,'')),'')),
+           2000
+         ),
+         updated_at = v_now
    where id = p_order_id;
+
+  insert into public.order_status_history(order_id,old_status,new_status,note,changed_by)
+  values(
+    p_order_id,'on_hold','pending_payment',
+    'Shipping quote confirmed and stock reserved for 48-hour payment window.',
+    auth.uid()
+  );
+
+  insert into public.activity_logs(
+    actor_user_id, action, entity_type, entity_id, old_values, new_values
+  ) values (
+    auth.uid(), 'order.shipping_quote_adjusted', 'order', p_order_id,
+    pg_catalog.jsonb_build_object('status','on_hold','original_shipping_amount',v_original_shipping),
+    pg_catalog.jsonb_build_object(
+      'status','pending_payment',
+      'discount_amount',v_discount,
+      'final_shipping_amount',v_final_shipping,
+      'adjustment_reason',v_reason,
+      'unit_count',v_units,
+      'reserved_units',v_reserved
+    )
+  );
 
   insert into public.order_shipping_quote_history(
     order_id, original_shipping_amount, discount_amount, final_shipping_amount,
@@ -416,20 +535,15 @@ begin
     v_reason, v_calculation, v_units, auth.uid()
   );
 
-  insert into public.activity_logs(
-    actor_user_id, action, entity_type, entity_id, old_values, new_values
-  ) values (
-    auth.uid(), 'order.shipping_quote_adjusted', 'order', p_order_id,
-    pg_catalog.jsonb_build_object('original_shipping_amount',v_original_shipping),
-    pg_catalog.jsonb_build_object(
-      'discount_amount',v_discount,
-      'final_shipping_amount',v_final_shipping,
-      'adjustment_reason',v_reason,
-      'unit_count',v_units
-    )
-  );
-
-  return v_result || pg_catalog.jsonb_build_object(
+  return pg_catalog.jsonb_build_object(
+    'order_id',p_order_id,
+    'status','pending_payment',
+    'shipping_amount',v_final_shipping,
+    'total_amount',round(
+      coalesce(v_order.subtotal,0) + v_final_shipping
+      + coalesce(v_order.tax_amount,0) - coalesce(v_order.discount_amount,0),2
+    ),
+    'reserved_units',v_reserved,
     'original_shipping_amount',v_original_shipping,
     'discount_amount',v_discount,
     'final_shipping_amount',v_final_shipping,
