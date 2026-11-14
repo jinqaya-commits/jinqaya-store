@@ -18,9 +18,11 @@ function parsePayload(value: unknown): OrderEmailOutboxPayload | null {
     typeof row.currency !== "string" ||
     (typeof row.subtotal !== "number" && typeof row.subtotal !== "string")
   ) return null;
-  const allowedEvents = ["order_received", "quote_confirmed", "payment_received", "shipped", "delivered", "cancelled", "reservation_expired"] as const;
-  const eventType = typeof row.eventType === "string" && allowedEvents.includes(row.eventType as typeof allowedEvents[number])
-    ? row.eventType as typeof allowedEvents[number] : "order_received";
+  const allowedEvents = ["order_received", "quote_confirmed", "payment_received", "shipped", "delivered", "cancelled", "reservation_expired", "after_sales_submitted", "after_sales_under_review", "after_sales_approved", "after_sales_rejected", "after_sales_resolved", "after_sales_refund_recorded"] as const;
+  const eventType = row.eventType === undefined ? "order_received"
+    : typeof row.eventType === "string" && allowedEvents.includes(row.eventType as typeof allowedEvents[number])
+      ? row.eventType as typeof allowedEvents[number] : null;
+  if (!eventType) return null;
   return {
     eventType,
     orderNumber: row.orderNumber,
@@ -33,6 +35,11 @@ function parsePayload(value: unknown): OrderEmailOutboxPayload | null {
     trackingNumber: typeof row.trackingNumber === "string" ? row.trackingNumber : null,
     trackingUrl: typeof row.trackingUrl === "string" ? row.trackingUrl : null,
     stockReviewRequired: row.stockReviewRequired === true,
+    caseNumber: typeof row.caseNumber === "string" ? row.caseNumber : undefined,
+    caseStatus: typeof row.caseStatus === "string" ? row.caseStatus : undefined,
+    resolution: typeof row.resolution === "string" ? row.resolution : null,
+    refundAmount: typeof row.refundAmount === "number" || typeof row.refundAmount === "string" ? row.refundAmount : null,
+    refundReference: typeof row.refundReference === "string" ? row.refundReference : null,
   };
 }
 
@@ -76,6 +83,11 @@ async function processRow(supabase: ReturnType<typeof createAdminClient>, row: O
 }
 
 export async function processOrderEmailOutbox(options: { orderId?: string; limit?: number } = {}) {
+  // Final safety boundary: no Preview or local invocation may claim or send queued emails.
+  if (process.env.VERCEL_ENV !== "production") {
+    return { processed: 0, sent: 0, retried: 0, dead: 0 };
+  }
+
   const supabase = createAdminClient();
   const limit = Math.min(Math.max(options.limit ?? 20, 1), 100);
   let processed = 0;

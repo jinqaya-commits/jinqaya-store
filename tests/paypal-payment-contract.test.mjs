@@ -8,6 +8,7 @@ const captureOrder = await readFile(new URL("capture-order/route.ts", routeRoot)
 const webhook = await readFile(new URL("webhook/route.ts", routeRoot), "utf8");
 const verifyOrderStatus = await readFile(new URL("../src/app/api/order-status/verify/route.ts", import.meta.url), "utf8");
 const paypal = await readFile(new URL("../src/lib/paypal.ts", import.meta.url), "utf8");
+const emailOutbox = await readFile(new URL("../src/lib/order-email-outbox.ts", import.meta.url), "utf8");
 const paymentSql = await readFile(new URL("../supabase/migrations/202611120003_paypal_order_payments.sql", import.meta.url), "utf8");
 
 test("verified order session cookie is scoped to API routes used by PayPal", () => {
@@ -17,9 +18,10 @@ test("verified order session cookie is scoped to API routes used by PayPal", () 
   assert.match(captureOrder, /const COOKIE = "jq_order_status_session"/);
 });
 
-test("PayPal create-order requires same-origin and a verified order email session", () => {
+test("PayPal create-order requires same-origin and the secure checkout order session", () => {
   assert.ok(createOrder.indexOf("if (!isSameOriginRequest(request))") < createOrder.indexOf("(await cookies()).get(COOKIE)"));
   assert.match(createOrder, /if \(!sessionToken\)[\s\S]*?status: 401/);
+  assert.doesNotMatch(createOrder, /Verify your order email before paying/);
   assert.match(createOrder, /action: "get-order",[\s\S]*?tokenHash: sha256\(sessionToken\)/);
 });
 
@@ -109,4 +111,46 @@ test("the payment-recording RPC is idempotent, validates the confirmed total, an
   assert.match(paymentSql, /upper\(trim\(v_order\.currency\)\)<>upper\(trim\(p_currency\)\)/);
   assert.match(paymentSql, /revoke all on function public\.record_paypal_order_payment\(uuid,text,text,numeric,text\) from public,anon,authenticated/);
   assert.match(paymentSql, /grant execute on function public\.record_paypal_order_payment\(uuid,text,text,numeric,text\) to service_role/);
+});
+
+test("order email processing is blocked at the service boundary outside Production", () => {
+  assert.match(emailOutbox, /if \(process\.env\.VERCEL_ENV !== "production"\)/);
+  assert.ok(emailOutbox.indexOf('VERCEL_ENV !== "production"') < emailOutbox.indexOf("const supabase = createAdminClient();"));
+  assert.match(emailOutbox, /return \{ processed: 0, sent: 0, retried: 0, dead: 0 \}/);
+});
+
+const adminOrderActions = await readFile(new URL("../src/app/admin/orders/order-actions.tsx", import.meta.url), "utf8");
+const adminOrderServerActions = await readFile(new URL("../src/app/admin/orders/actions.ts", import.meta.url), "utf8");
+const adminOrderDetail = await readFile(new URL("../src/app/admin/orders/[id]/page.tsx", import.meta.url), "utf8");
+const stockReviewSql = await readFile(new URL("../supabase/migrations/20261113170000_guard_paid_paypal_stock_review.sql", import.meta.url), "utf8");
+
+test("PayPal payment capture flags partial, expired, invalid, and mismatched reservations for review", () => {
+  assert.match(stockReviewSql, /sum\(quantity\)::integer AS quantity/);
+  assert.match(stockReviewSql, /coalesce\(sr\.quantity,0\) <> oi\.quantity/);
+  assert.match(stockReviewSql, /r\.expires_at <= v_now/);
+  assert.match(stockReviewSql, /v_stock_review := true/);
+});
+
+test("paid PayPal orders with unresolved stock review are blocked from processing at the database layer", () => {
+  assert.match(stockReviewSql, /BEFORE UPDATE OF status ON public\.orders/);
+  assert.match(stockReviewSql, /OLD\.status = 'paid' AND NEW\.status = 'processing'/);
+  assert.match(stockReviewSql, /p\.stock_review_required IS TRUE/);
+  assert.match(stockReviewSql, /Inventory review is required before this paid PayPal order can enter processing/);
+});
+
+test("stock review resolution tops up reservations from available stock and commits only the full order", () => {
+  assert.match(stockReviewSql, /admin_resolve_paid_order_stock_review/);
+  assert.match(stockReviewSql, /Active reservations exceed the ordered quantity/);
+  assert.match(stockReviewSql, /Not enough available stock to cover this paid order/);
+  assert.match(stockReviewSql, /status = 'committed', committed_at = v_now/);
+  assert.match(stockReviewSql, /stock_review_required = false/);
+  assert.match(stockReviewSql, /order\.paypal_stock_review_resolved/);
+});
+
+test("admin UI exposes stock review only for paid PayPal orders flagged by the database", () => {
+  assert.match(adminOrderDetail, /stock_review_required/);
+  assert.match(adminOrderActions, /stockReviewRequired/);
+  assert.match(adminOrderActions, /Verify inventory & complete review/);
+  assert.match(adminOrderActions, /status==="paid"&&!stockReviewRequired/);
+  assert.match(adminOrderServerActions, /admin_resolve_paid_order_stock_review/);
 });

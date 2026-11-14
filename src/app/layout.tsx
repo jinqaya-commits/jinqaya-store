@@ -50,6 +50,24 @@ export default function RootLayout({
         <WebsiteJsonLd />
         <VisitorAnalytics />
         <LiveChatWidget />
+        {process.env.VERCEL_ENV === "preview" ? (
+          <div
+            role="status"
+            aria-label="Preview test environment"
+            style={{
+              background: "#fff4d6",
+              borderBottom: "1px solid #e7c66b",
+              color: "#654b12",
+              fontSize: 12,
+              fontWeight: 700,
+              letterSpacing: "0.04em",
+              padding: "9px 16px",
+              textAlign: "center",
+            }}
+          >
+            PREVIEW · TEST ENVIRONMENT — Orders, customers, products, payments and inventory here are test data, not live business records.
+          </div>
+        ) : null}
         {children}
       </body>
     </html>

@@ -21,6 +21,7 @@ export default function CartPage() {
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const currency = items[0]?.currency || "USD";
   const mixedCurrencies = items.some((item) => item.currency !== currency);
+  const shipping = Math.round((subtotal + Number.EPSILON) * 50) / 100;
 
   return <main className="inner-page">
     <header className="inner-page-header">
@@ -53,7 +54,9 @@ export default function CartPage() {
         <aside className="cart-summary">
           <h2>Order summary</h2>
           <div><span>Subtotal</span><strong>{mixedCurrencies ? "Multiple currencies" : formatCartMoney(subtotal, currency)}</strong></div>
-          <p>Shipping and any applicable taxes will be confirmed with you after you submit an order request, before payment.</p>
+          <div><span>Shipping (50%)</span><strong>{mixedCurrencies ? "—" : formatCartMoney(shipping, currency)}</strong></div>
+          <div><span>Estimated total</span><strong>{mixedCurrencies ? "Multiple currencies" : formatCartMoney(subtotal + shipping, currency)}</strong></div>
+          <p>Shipping is calculated as 50% of the merchandise subtotal. Applicable taxes, if any, are not included.</p>
           <Link href="/checkout" className="button button-dark">CONTINUE TO CHECKOUT <span aria-hidden="true">↗</span></Link>
           <Link href="/shop" className="back-link">CONTINUE SHOPPING</Link>
         </aside>

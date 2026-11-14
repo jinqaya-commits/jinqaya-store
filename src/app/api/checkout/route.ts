@@ -1,6 +1,8 @@
 import { after, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { processOrderEmailOutbox } from "@/lib/order-email-outbox";
+import { newSessionToken, sha256 } from "@/lib/order-status-security";
+import { isRestrictedShippingDestination } from "@/lib/shipping-country";
 
 export const runtime = "nodejs";
 
@@ -26,6 +28,11 @@ export async function POST(request: Request) {
 
   if (!body.customer || !body.shipping_address || !Array.isArray(body.items) || !body.idempotency_key) {
     return NextResponse.json({ error: "Please complete your contact and shipping details." }, { status: 400 });
+  }
+  // Enforce destination restrictions against both fields. Never trust a customer-entered
+  // country code alone: a mismatched country name must not bypass the shipping policy.
+  if (isRestrictedShippingDestination(body.shipping_address.country_code, body.shipping_address.country)) {
+    return NextResponse.json({ error: "We do not currently ship to this destination." }, { status: 400 });
   }
   if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(body.idempotency_key)) {
     return NextResponse.json({ error: "Your checkout session has expired. Please refresh and try again." }, { status: 400 });
@@ -78,19 +85,64 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "We couldn't submit your order request. Please try again." }, { status: 500 });
     }
 
+    let paymentSessionToken = "";
+    let paymentSessionReady = false;
     if (data && typeof data === "object" && !Array.isArray(data)) {
       const orderId = typeof data.order_id === "string" ? data.order_id : "";
       if (orderId) {
-        after(async () => {
-          try {
-            await processOrderEmailOutbox({ orderId, limit: 20 });
-          } catch (error) {
-            console.error("[checkout] order email outbox processing failed", error);
+        // Keep Preview checkout isolated: test orders must never trigger real customer/staff email.
+        if (process.env.VERCEL_ENV === "production") {
+          after(async () => {
+            try {
+              await processOrderEmailOutbox({ orderId, limit: 20 });
+            } catch (error) {
+              console.error("[checkout] order email outbox processing failed", error);
+            }
+          });
+        }
+
+        // Create a short-lived, server-issued order session so the customer can pay
+        // immediately after checkout without looking up the order or entering an OTP.
+        if (data.payment_ready === true) {
+          const email = String(body.customer.email || "").trim().toLowerCase();
+          paymentSessionToken = newSessionToken();
+          const sessionClient = supabase as unknown as {
+            from: (table: string) => {
+              insert: (values: Record<string, unknown>) => Promise<{ error: { message: string } | null }>;
+            };
+          };
+          const { error: sessionError } = await sessionClient
+            .from("customer_order_status_sessions")
+            .insert({
+              order_id: orderId,
+              email,
+              token_hash: sha256(paymentSessionToken),
+              expires_at: new Date(Date.now() + 20 * 60 * 1000).toISOString(),
+            });
+          if (sessionError) {
+            paymentSessionToken = "";
+            console.error("[checkout] secure payment session could not be created", sessionError.message);
+          } else {
+            paymentSessionReady = true;
           }
-        });
+        }
       }
     }
-    return NextResponse.json({ order: data }, { status: 201 });
+    const response = NextResponse.json({
+      order: data && typeof data === "object" && !Array.isArray(data)
+        ? { ...data, payment_session_ready: paymentSessionReady }
+        : data,
+    }, { status: 201 });
+    if (paymentSessionToken) {
+      response.cookies.set("jq_order_status_session", paymentSessionToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        path: "/api",
+        maxAge: 20 * 60,
+      });
+    }
+    return response;
   } catch {
     return NextResponse.json({ error: "Checkout is temporarily unavailable. Please try again shortly." }, { status: 503 });
   }

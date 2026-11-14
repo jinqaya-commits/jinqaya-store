@@ -35,3 +35,53 @@ jobs:
 
       - name: Check TypeScript
         run: npx tsc --noEmit
+
+      - name: Build Next.js application
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://127.0.0.1:54321
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-build-placeholder-key
+        run: npm run build
+
+  product-image-db-integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: jinqaya_image_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d jinqaya_image_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Expand and execute product image cleanup integration tests
+        run: |
+          container_id="$(docker ps --filter ancestor=postgres:17 --format '{{.ID}}' | head -n 1)"
+          test -n "$container_id"
+          python3 - <<'PY' > /tmp/product-image-cleanup-migration.sql
+          from pathlib import Path
+          import re
+
+          sql = Path("tests/product-image-cleanup-migration.sql").read_text()
+          pattern = re.compile(r"^\\ir ../supabase/migrations/([^\s]+\.sql)\s*$", re.MULTILINE)
+
+          def expand(match):
+              migration = Path("supabase/migrations") / match.group(1)
+              if not migration.is_file():
+                  raise SystemExit(f"Migration include not found: {migration}")
+              return migration.read_text()
+
+          sql = pattern.sub(expand, sql)
+          if "\\ir " in sql:
+              raise SystemExit("Unexpanded migration include remains in SQL test")
+          print(sql)
+          PY
+          docker exec -i "$container_id" psql -U postgres -d jinqaya_image_test -v ON_ERROR_STOP=1 < /tmp/product-image-cleanup-migration.sql

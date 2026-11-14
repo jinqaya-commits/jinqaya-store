@@ -22,15 +22,20 @@ export async function processOrderAction(
   formData: FormData
 ) {
   const supabase = await requireOrderManager();
-  const amountRaw = String(formData.get("shipping_amount") ?? "").trim();
-  const amount = amountRaw === "" ? null : Number(amountRaw);
-  if (amountRaw !== "" && (!Number.isFinite(amount) || Number(amount) < 0)) {
-    return { error: "Enter a valid shipping amount." };
+  const shippingAmountRaw = String(formData.get("shipping_amount") ?? "").trim();
+  if (action === "confirm_quote" && shippingAmountRaw !== "" &&
+      (!/^\d+(?:\.\d{1,2})?$/.test(shippingAmountRaw) ||
+       !Number.isFinite(Number(shippingAmountRaw)) || Number(shippingAmountRaw) < 0 ||
+       Number(shippingAmountRaw) > 99999999.99)) {
+    return { error: "Enter a valid shipping amount with no more than two decimal places." };
   }
   const { data, error } = await supabase.rpc("admin_process_order", {
     p_order_id: orderId,
     p_action: action,
-    p_shipping_amount: amount ?? undefined,
+    p_shipping_amount: (() => {
+      const raw = String(formData.get("shipping_amount") ?? "").trim();
+      return raw === "" ? undefined : Number(raw);
+    })(),
     p_shipping_method: String(formData.get("shipping_method") ?? ""),
     p_carrier_name: String(formData.get("carrier_name") ?? ""),
     p_tracking_number: String(formData.get("tracking_number") ?? ""),
@@ -51,6 +56,26 @@ export async function processOrderAction(
   revalidatePath(`/admin/orders/${orderId}`);
   revalidatePath("/admin/inventory");
   return { success: true, data };
+}
+
+
+export async function resolvePaidOrderStockReviewAction(orderId: string, note: string) {
+  const supabase = await requireOrderManager();
+  if (!/^[0-9a-f-]{36}$/i.test(orderId) || typeof note !== "string" || note.trim().length < 3 || note.length > 1000) {
+    return { error: "Enter an inventory review note of at least 3 characters." };
+  }
+  const typedClient = supabase as unknown as {
+    rpc: (name: string, args: { p_order_id: string; p_note: string }) => Promise<{ error: { message: string } | null }>;
+  };
+  const { error } = await typedClient.rpc("admin_resolve_paid_order_stock_review", {
+    p_order_id: orderId,
+    p_note: note.trim(),
+  });
+  if (error) return { error: error.message };
+  revalidatePath("/admin/orders");
+  revalidatePath("/admin/orders/" + orderId);
+  revalidatePath("/admin/inventory");
+  return { success: true };
 }
 
 export async function retryOrderEmailAction(orderId: string, emailId: string) {
@@ -125,7 +150,7 @@ export async function createPurchaseOrderAction(formData: FormData) {
   try { items = JSON.parse(String(formData.get("items") ?? "[]")); } catch { return { error: "Invalid purchase order items." }; }
   if ((!supplierId && (!supplierName || supplierName.length > 160)) || supplierEmail.length > 254 || supplierPhone.length > 60 ||
       !/^[A-Z]{3}$/.test(currency) || supplierReference.length > 160 || notes.length > 3000 ||
-      (expectedDate && !/^\\d{4}-\\d{2}-\\d{2}$/.test(expectedDate)) ||
+      (expectedDate && !/^\d{4}-\d{2}-\d{2}$/.test(expectedDate)) ||
       !Array.isArray(items) || items.length < 1 || items.length > 100 ||
       items.some((item) => !item || !item.variant_id || !Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 1000000 ||
         item.unit_cost === "" || !Number.isFinite(Number(item.unit_cost)) || Number(item.unit_cost) < 0)) {
@@ -199,8 +224,8 @@ export async function recordPurchaseOrderPaymentAction(purchaseOrderId: string, 
   const reference = String(formData.get("reference_number") ?? "").trim();
   const notes = String(formData.get("notes") ?? "").trim();
 
-  if (!/^\\d+(?:\\.\\d{1,2})?$/.test(amountRaw) || !Number.isFinite(amount) || amount <= 0 ||
-      !/^\\d{4}-\\d{2}-\\d{2}$/.test(paymentDate) ||
+  if (!/^\d+(?:\.\d{1,2})?$/.test(amountRaw) || !Number.isFinite(amount) || amount <= 0 ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(paymentDate) ||
       !["bank_transfer", "cash", "card", "other"].includes(paymentMethod) ||
       reference.length > 160 || notes.length > 2000) {
     return { error: "Check the payment amount, date, method and reference." };

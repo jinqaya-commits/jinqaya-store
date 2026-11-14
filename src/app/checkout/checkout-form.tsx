@@ -4,6 +4,9 @@ import Link from "next/link";
 import { useMemo, useState, useSyncExternalStore, type FormEvent } from "react";
 import { formatCartMoney, getCartSnapshot, parseCartSnapshot, subscribeCart, writeCart } from "@/lib/cart";
 import { CartLink } from "@/components/storefront/cart-link";
+import { PayPalPaymentButton } from "../order-status/paypal-payment-button";
+import { isRestrictedShippingDestination } from "@/lib/shipping-country";
+import { COUNTRY_OPTIONS } from "@/lib/country-options";
 
 type OrderResult = {
   order_id: string;
@@ -15,6 +18,7 @@ type OrderResult = {
   shipping_status: string;
   payment_status: string;
   payment_ready?: boolean;
+  payment_session_ready?: boolean;
   currency: string;
 };
 
@@ -35,6 +39,7 @@ export function CheckoutForm() {
   const [order, setOrder] = useState<OrderResult | null>(null);
   const [requestKey, setRequestKey] = useState("");
   const [countryCode, setCountryCode] = useState("");
+  const [countryName, setCountryName] = useState("");
 
   const currency = items[0]?.currency || "USD";
   const mixedCurrencies = items.some((item) => item.currency !== currency);
@@ -43,7 +48,7 @@ export function CheckoutForm() {
   const shippingCents = Math.round(subtotalCents / 2);
   const shippingEstimate = shippingCents / 100;
   const totalEstimate = (subtotalCents + shippingCents) / 100;
-  const isBlockedCountry = countryCode.toUpperCase() === "KR" || countryCode.toUpperCase() === "BR";
+  const isBlockedCountry = isRestrictedShippingDestination(countryCode, countryName);
   const paymentReady = order ? (order.payment_ready ?? order.status === "pending_payment") : false;
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -103,29 +108,64 @@ export function CheckoutForm() {
       </header>
 
       {order ? (
+        order.payment_status === "paid" || order.status === "paid" ? (
+          <section className="checkout-success checkout-payment-success" aria-live="polite">
+            <div className="payment-success-mark" aria-hidden="true">✓</div>
+            <p className="eyebrow">PAYMENT COMPLETE</p>
+            <h1>Payment successful.</h1>
+            <p>Thank you for your order. Your PayPal payment has been received and confirmed.</p>
+            <div className="checkout-notice">
+              <strong>Order confirmation</strong>
+              <p className="checkout-total"><span>Order number</span><strong>{order.order_number}</strong></p>
+              <p className="checkout-total"><span>Payment status</span><strong className="payment-success-status">Paid</strong></p>
+              <p className="checkout-total"><span>Payment method</span><strong>PayPal</strong></p>
+              <p className="checkout-total"><span>Total paid</span><strong>{formatCartMoney(order.total_amount, order.currency)}</strong></p>
+            </div>
+            <p className="checkout-disclaimer">We’ll send an order confirmation to your checkout email. You can safely close this page. If you need help, contact info@jinqaya.com.</p>
+            <Link className="button button-dark" href="/shop">CONTINUE SHOPPING <span>↗</span></Link>
+          </section>
+        ) : (
         <section className="checkout-success">
-          <p className="eyebrow">REQUEST RECEIVED</p>
-          <h1>Thank you.</h1>
-          <p>Your order request <strong>{order.order_number}</strong> has been recorded.</p>
+          <p className="eyebrow">ORDER RECEIVED</p>
+          <h1>{order.payment_status === "paid" ? "Payment confirmed." : paymentReady ? "Your order is ready." : "Thank you."}</h1>
+          <p>Order <strong>{order.order_number}</strong> has been recorded.</p>
           <div className="checkout-notice">
-            <strong>What happens next</strong>
+            <strong>{paymentReady ? "Confirmed order total" : "Stock confirmation required"}</strong>
             {paymentReady ? (
-              <p>Your items have been reserved for 48 hours. Your order is ready for secure payment. Open Track Order and verify your checkout email to continue with PayPal.</p>
+              <p>Your items are reserved for 48 hours. Complete payment securely below — there’s no need to look up your order or enter a verification code.</p>
             ) : (
-              <p>Shipping is estimated at 50% of the merchandise subtotal. We still need to confirm stock availability, so payment is not available yet.</p>
+              <p>Your order is recorded, but we couldn&apos;t reserve every item from available stock. Payment is not available yet; our team will contact you to confirm availability.</p>
             )}
             <p className="checkout-total"><span>Merchandise</span><strong>{formatCartMoney(order.subtotal, order.currency)}</strong></p>
-            <p className="checkout-pending"><span>Estimated shipping</span><strong>{formatCartMoney(order.shipping_amount, order.currency)}</strong></p>
-            <p className="checkout-total"><span>Estimated total</span><strong>{formatCartMoney(order.total_amount, order.currency)}</strong></p>
+            <p className="checkout-pending"><span>Shipping (50%)</span><strong>{formatCartMoney(order.shipping_amount, order.currency)}</strong></p>
+            <p className="checkout-total"><span>Order total</span><strong>{formatCartMoney(order.total_amount, order.currency)}</strong></p>
           </div>
-          {paymentReady && <Link className="button button-dark" href="/order-status">TRACK ORDER & PAY <span>↗</span></Link>}
+          {paymentReady && order.payment_session_ready === true && (
+            <PayPalPaymentButton
+              currency={order.currency}
+              onPaid={() => {
+                setOrder((current) => current
+                  ? { ...current, status: "paid", payment_status: "paid" }
+                  : current);
+              }}
+            />
+          )}
+          {paymentReady && order.payment_session_ready !== true && (
+            <div className="checkout-notice">
+              <strong>Continue to secure payment</strong>
+              <p>Your order is reserved. To continue, open Track Order and verify the checkout email. You won&apos;t need to place the order again.</p>
+              <Link className="button button-dark" href="/order-status">TRACK ORDER & PAY <span>↗</span></Link>
+            </div>
+          )}
+          <p className="checkout-disclaimer">You will receive an email confirmation. If you leave this page, you can still find your order using your order number and checkout email.</p>
           <Link className="back-link" href="/shop">CONTINUE EXPLORING ↗</Link>
         </section>
+        )
       ) : (
         <section className="checkout-page">
-          <p className="eyebrow">ORDER REQUEST</p>
+          <p className="eyebrow">CHECKOUT</p>
           <h1>Delivery details</h1>
-          <p className="checkout-intro">Enter your delivery details to submit your order. Shipping is estimated at 50% of the item subtotal; your confirmed total is shown after the server checks destination restrictions, current prices and stock.</p>
+          <p className="checkout-intro">Enter your delivery details and review the total, including shipping at 50% of the merchandise subtotal. Product prices, destination eligibility and stock are checked when you submit. If your items can be reserved, you can pay immediately with PayPal on the next screen.</p>
           {items.length === 0 ? (
             <div className="cart-empty"><p>Your bag is empty.</p><Link className="button button-dark" href="/shop">EXPLORE THE COLLECTION <span>↗</span></Link></div>
           ) : (
@@ -143,8 +183,25 @@ export function CheckoutForm() {
                 <section className="checkout-section">
                   <div className="checkout-section-heading"><span>02</span><div><h2>Shipping address</h2><p>Enter the destination where you’d like your order delivered.</p></div></div>
                   <div className="checkout-fields two">
-                    <label className="full">Country / Region<input name="country" autoComplete="country-name" required maxLength={100} placeholder="e.g. United States" /></label>
-                    <label>Country code<input name="country_code" value={countryCode} onChange={(event) => setCountryCode(event.target.value.toUpperCase().slice(0, 2))} required minLength={2} maxLength={2} placeholder="US" /></label>
+                    <label className="full">Country / Region
+                      <select
+                        name="country_code"
+                        autoComplete="country"
+                        value={countryCode}
+                        onChange={(event) => {
+                          const selected = COUNTRY_OPTIONS.find((country) => country.code === event.target.value);
+                          setCountryCode(selected?.code || "");
+                          setCountryName(selected?.name || "");
+                        }}
+                        required
+                      >
+                        <option value="">Select your country or region</option>
+                        {COUNTRY_OPTIONS.map((country) => (
+                          <option key={country.code} value={country.code}>{country.name}</option>
+                        ))}
+                      </select>
+                      <input type="hidden" name="country" value={countryName} />
+                    </label>
                     <label>State / Province<input name="state_region" autoComplete="address-level1" maxLength={100} /></label>
                     <label>City<input name="city" autoComplete="address-level2" required maxLength={100} /></label>
                     <label>Postal code<input name="postal_code" autoComplete="postal-code" maxLength={30} /></label>
@@ -160,9 +217,9 @@ export function CheckoutForm() {
                 {isBlockedCountry && <p className="checkout-error" role="alert">We do not currently ship to this destination.</p>}
                 {error && <p className="checkout-error" role="alert">{error}</p>}
                 <button className="button button-dark checkout-submit" type="submit" disabled={busy || mixedCurrencies || isBlockedCountry}>
-                  {busy ? "SUBMITTING…" : "SUBMIT ORDER REQUEST"} <span>↗</span>
+                  {busy ? "SUBMITTING…" : "CONTINUE TO PAYMENT"} <span>↗</span>
                 </button>
-                <p className="checkout-disclaimer">Submitting this request does not charge your payment method. If all items can be reserved, you can verify your email and continue to PayPal using the confirmed order total. If stock cannot be reserved, payment remains unavailable. By submitting, you acknowledge our <Link href="/policies/terms">Terms of Service</Link> and <Link href="/policies/privacy">Privacy Policy</Link>.</p>
+                <p className="checkout-disclaimer">You won’t be charged when you submit. If all items can be reserved, your order total — including shipping at 50% of the merchandise subtotal — will be ready for secure PayPal payment. Payment is collected only after you approve it in PayPal. By submitting, you acknowledge our <Link href="/policies/terms">Terms of Service</Link> and <Link href="/policies/privacy">Privacy Policy</Link>.</p>
               </form>
 
               <aside className="checkout-summary">
@@ -174,10 +231,10 @@ export function CheckoutForm() {
                     <strong>{formatCartMoney(item.price * item.quantity, item.currency)}</strong>
                   </div>
                 ))}
-                <div className="checkout-total"><span>Estimated subtotal</span><strong>{mixedCurrencies ? "Multiple currencies" : formatCartMoney(estimate, currency)}</strong></div>
-                <div className="checkout-pending"><span>Estimated shipping (50%)</span><strong>{mixedCurrencies ? "—" : formatCartMoney(shippingEstimate, currency)}</strong></div>
-                <div className="checkout-total"><span>Estimated total</span><strong>{mixedCurrencies ? "Multiple currencies" : formatCartMoney(totalEstimate, currency)}</strong></div>
-                <p>Shipping is calculated as 50% of the merchandise subtotal. Product prices are rechecked when you submit. Taxes, if applicable, are not included.</p>
+                <div className="checkout-total"><span>Subtotal</span><strong>{mixedCurrencies ? "Multiple currencies" : formatCartMoney(estimate, currency)}</strong></div>
+                <div className="checkout-pending"><span>Shipping (50%)</span><strong>{mixedCurrencies ? "—" : formatCartMoney(shippingEstimate, currency)}</strong></div>
+                <div className="checkout-total"><span>Total</span><strong>{mixedCurrencies ? "Multiple currencies" : formatCartMoney(totalEstimate, currency)}</strong></div>
+                <p>Shipping is 50% of the merchandise subtotal. Product prices and stock are rechecked when you submit. Taxes, if applicable, are not included.</p>
                 {mixedCurrencies && <p className="checkout-error">Your bag contains different currencies. Please check out separately.</p>}
                 <Link className="back-link" href="/cart">← RETURN TO BAG</Link>
               </aside>

@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
 
   const sessionToken = (await cookies()).get(COOKIE)?.value;
   if (!sessionToken) {
-    return NextResponse.json({ error: "Verify your order email before paying." }, { status: 401 });
+    return NextResponse.json({ error: "Your secure checkout session has expired. Return to checkout or verify your email in Track Order." }, { status: 401 });
   }
 
   let body: unknown;
@@ -129,10 +129,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "PayPal received the payment, but order confirmation needs assistance. Please contact info@jinqaya.com." }, { status: 503 });
     }
 
-    after(async () => {
-      try { await processOrderEmailOutbox({ orderId: order.order_id, limit: 20 }); }
-      catch (emailError) { console.error("[paypal] payment email processing failed", emailError); }
-    });
+    // Only Production sends order emails automatically; Preview keeps test messages queued.
+    if (process.env.VERCEL_ENV === "production") {
+      after(async () => {
+        try { await processOrderEmailOutbox({ orderId: order.order_id, limit: 20 }); }
+        catch (emailError) { console.error("[paypal] payment email processing failed", emailError); }
+      });
+    }
 
     const result = data && typeof data === "object" ? data as Record<string, unknown> : {};
     return NextResponse.json({

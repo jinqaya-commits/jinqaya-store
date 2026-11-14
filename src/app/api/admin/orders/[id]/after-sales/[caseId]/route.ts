@@ -19,7 +19,16 @@ export async function PATCH(request:NextRequest,{params}:{params:Promise<{id:str
  if(previous.refund_status==="confirmed"&&updates.refund_status!==undefined)return NextResponse.json({error:"A confirmed refund cannot be changed."},{status:409});
  const {data:updated,error}=await supabase.from("after_sales_cases").update({...updates,updated_at:new Date().toISOString()}).eq("id",caseId).eq("order_id",id).select("*").single();
  if(error)return NextResponse.json({error:"Unable to update case. Check refund confirmation details."},{status:400});
- const eventType=updates.refund_status?"refund_status_changed":updates.status?"status_changed":"resolution_updated";
- await supabase.from("after_sales_case_events").insert({case_id:caseId,event_type:eventType,description:updates.refund_status?"Manual refund record updated.":updates.status?"Case status updated.":"Resolution notes updated.",old_values:previous,new_values:updates,created_by:claims.claims.sub});
+ // Status changes are audited by a database trigger in the same transaction as the update.
+ // Keep the API event insert for non-status edits only.
+ if(!updates.status){
+  const eventType=updates.refund_status?"refund_status_changed":"resolution_updated";
+  const {error:eventError}=await supabase.from("after_sales_case_events").insert({
+   case_id:caseId,event_type:eventType,
+   description:updates.refund_status?"Manual refund record updated.":"Resolution notes updated.",
+   old_values:previous,new_values:updates,created_by:claims.claims.sub
+  });
+  if(eventError)return NextResponse.json({error:"Case updated, but the activity log could not be saved. Please refresh and contact support."},{status:500});
+ }
  return NextResponse.json({ok:true,case:updated});
 }

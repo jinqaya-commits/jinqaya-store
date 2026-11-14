@@ -290,10 +290,8 @@ export async function addProductImage(productId: string, storagePath: string, al
   });
 
   if (error || !imageId) {
-    const queued = await enqueueProductImageCleanup(supabase, storagePath);
-    if (!queued) {
-      console.error("Unlinked product image could not be queued for cleanup.", { productId, storagePath });
-    }
+    // The upload intent remains pending and the scheduled worker will remove
+    // this object after its signed upload URL has expired.
     return { error: error?.message || "Unable to save product image." };
   }
 
@@ -304,23 +302,6 @@ export async function addProductImage(productId: string, storagePath: string, al
 }
 
 
-async function enqueueProductImageCleanup(supabase: Awaited<ReturnType<typeof createClient>>, storagePath: string): Promise<boolean> {
-  const { error } = await supabase.rpc("admin_enqueue_product_image_cleanup", {
-    p_storage_path: storagePath,
-  });
-  if (error) {
-    console.error("Unable to queue product image cleanup:", error.message);
-    return false;
-  }
-  return true;
-}
-
-async function cleanupUnlinkedProductImage(supabase: Awaited<ReturnType<typeof createClient>>, storagePath: string) {
-  // Do not delete directly: another image row may share this path. The RPC
-  // takes the same advisory lock as image-row writes and queues only unreferenced paths.
-  return enqueueProductImageCleanup(supabase, storagePath);
-}
-
 export async function replaceProductImage(productId: string, imageId: string, storagePath: string) {
   const supabase = await requireCatalogManager();
   const isR2 = storagePath.startsWith("r2://");
@@ -329,37 +310,17 @@ export async function replaceProductImage(productId: string, imageId: string, st
     return { error: "Invalid image storage path." };
   }
 
-  const { data: current, error: readError } = await supabase
-    .from("product_images")
-    .select("storage_path")
-    .eq("id", imageId)
-    .eq("product_id", productId)
-    .maybeSingle();
-  if (readError) {
-    await cleanupUnlinkedProductImage(supabase, storagePath);
-    return { error: readError.message };
-  }
-  if (!current) {
-    await cleanupUnlinkedProductImage(supabase, storagePath);
-    return { error: "Product image not found." };
-  }
-
-  const { data: updatedImage, error: updateError } = await supabase.from("product_images")
-    .update({ storage_path: storagePath })
-    .eq("id", imageId)
-    .eq("product_id", productId)
-    .select("id")
-    .maybeSingle();
-  if (updateError || !updatedImage) {
-    await cleanupUnlinkedProductImage(supabase, storagePath);
-    return { error: updateError?.message || "Product image no longer exists. Refresh and try again." };
-  }
-
-  const oldPath = current.storage_path;
-  if (oldPath && oldPath !== storagePath && !(oldPath.startsWith("https://") || oldPath.startsWith("http://"))) {
-    // Always queue detached objects. The worker rechecks references immediately
-    // before deletion so a path shared by another image is not removed.
-    await enqueueProductImageCleanup(supabase, oldPath);
+  // Replace the row and enqueue its detached previous object in one database
+  // transaction. If queue insertion fails, the image update rolls back too.
+  const { error: replaceError } = await supabase.rpc("admin_replace_product_image", {
+    p_product_id: productId,
+    p_image_id: imageId,
+    p_storage_path: storagePath,
+  });
+  if (replaceError) {
+    // Keep the upload intent pending; the worker waits until the signed URL
+    // has expired before deleting an un-attached object.
+    return { error: replaceError.message };
   }
 
   const { data: product } = await supabase.from("products").select("slug").eq("id", productId).maybeSingle();

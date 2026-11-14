@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 
 process.env.ORDER_EMAIL_FROM = "JINQAYA Test <test@example.test>";
 process.env.RESEND_API_KEY = "re_test_only";
+process.env.VERCEL_ENV = "production";
 
 const { sendOrderStatusVerificationCode } = await import("../src/lib/order-email.ts");
 
@@ -80,5 +81,27 @@ test("verification email uses no-store and a bounded provider timeout", async ()
     assert.ok(captured.signal instanceof AbortSignal);
   } finally {
     restore();
+  }
+});
+
+
+test("email delivery is blocked outside Production without contacting the provider", async () => {
+  const originalEnvironment = process.env.VERCEL_ENV;
+  process.env.VERCEL_ENV = "preview";
+  let providerCalled = false;
+  const restore = mockFetch(async () => {
+    providerCalled = true;
+    return Response.json({ id: "must_not_send" }, { status: 200 });
+  });
+  try {
+    const result = await sendOrderStatusVerificationCode("buyer@example.test", "123456");
+    assert.equal(result.ok, false);
+    assert.equal(result.retryable, false);
+    assert.equal(result.error, "email_delivery_disabled_outside_production");
+    assert.equal(providerCalled, false);
+  } finally {
+    restore();
+    if (originalEnvironment === undefined) delete process.env.VERCEL_ENV;
+    else process.env.VERCEL_ENV = originalEnvironment;
   }
 });
