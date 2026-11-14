@@ -45,9 +45,11 @@ test("inactive variants do not satisfy the publish requirement", () => {
   assert.deepEqual(result.missing, ["Active variant"]);
 });
 
-test("the server action enforces readiness before publishing", async () => {
+test("the shared server-side status helper enforces readiness before publishing", async () => {
   const actions = await readFile(new URL("../src/app/admin/products/actions.ts", import.meta.url), "utf8");
-  const publishAction = actions.slice(actions.indexOf("export async function setProductStatus"));
-  assert.ok(publishAction.indexOf("getProductReadiness") < publishAction.indexOf('.update({'));
-  assert.match(publishAction, /if \(!readiness\.ready\) return \{ error:/);
+  const statusHelper = actions.slice(actions.indexOf("async function applyProductStatus"), actions.indexOf("export async function setProductStatus"));
+  assert.ok(statusHelper.indexOf("getProductReadiness") >= 0);
+  assert.ok(statusHelper.indexOf("getProductReadiness") < statusHelper.indexOf('.update({'));
+  assert.match(statusHelper, /if \(!readiness\.ready\) return/);
+  assert.match(actions, /export async function bulkSetProductStatus[\s\S]*applyProductStatus\(supabase, productId, status\)/);
 });

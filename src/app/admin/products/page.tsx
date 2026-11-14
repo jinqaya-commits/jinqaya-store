@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { setProductStatus } from "./actions";
 import { getProductReadiness } from "@/lib/product-readiness";
 import { resolveProductImageUrls } from "@/lib/product-images";
+import { ProductBulkToolbar, ProductSelectionCheckbox, ProductSelectionHeader, ProductSelectionProvider } from "./product-selection";
 
 export const dynamic = "force-dynamic";
 
@@ -52,12 +53,14 @@ export default async function AdminProductsPage() {
           <div className="admin-panel-heading"><div><p className="admin-kicker">PUBLISHING READINESS</p><h2>Product publishing checklist</h2></div><span>CONTENT QUALITY</span></div>
           <p className="admin-help">Checks are based on product-specific information entered by your team. Generic placeholders do not count as useful image descriptions. A complete checklist helps review the catalog; it does not guarantee search rankings.</p>
         </div>
+        <ProductSelectionProvider products={(products ?? []).map((product) => ({ id: product.id, name: product.name, status: product.status }))}>
         <section className="admin-panel">
           <div className="admin-panel-heading"><div><p className="admin-kicker">YOUR CATALOG</p><h2>All products</h2></div><span>{products?.length ?? 0} ITEMS</span></div>
+          <ProductBulkToolbar />
           {error ? <p className="admin-error">Unable to load products: {error.message}</p> : !products?.length ? (
             <div className="admin-empty"><span>✳</span><h3>Your product catalog starts here.</h3><p>Add your first product to begin building the JINQAYA collection.</p><Link className="admin-primary-button" href="/admin/products/new">Add your first product</Link></div>
           ) : (
-            <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>PRODUCT</th><th>SKU</th><th>PET</th><th>PRICE</th><th>READINESS</th><th>STATUS</th><th>ACTION</th></tr></thead><tbody>
+            <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th><ProductSelectionHeader /></th><th>PRODUCT</th><th>SKU</th><th>PET</th><th>PRICE</th><th>READINESS</th><th>STATUS</th><th>ACTION</th></tr></thead><tbody>
               {products.map((product) => {
                 const variant = Array.isArray(product.product_variants) ? product.product_variants.find((item) => item.is_active) ?? product.product_variants[0] : null;
                 const price = variant?.price == null ? "—" : new Intl.NumberFormat("en-US", { style: "currency", currency: variant.currency || "USD" }).format(Number(variant.price));
@@ -77,11 +80,12 @@ export default async function AdminProductsPage() {
                   }),
                 });
                 const seoReady = readiness.ready;
-                return <tr key={product.id}><td><div className="admin-product-cell">{(() => { const mainImage = imageRows.find((image) => image.is_primary) ?? imageRows[0]; const imageUrl = mainImage?.storage_path ? resolveProductImageUrls(mainImage.storage_path).thumbnailUrl : null; return imageUrl ? <img className="admin-product-thumb" src={imageUrl} alt="" /> : <span className="admin-product-thumb admin-product-thumb-empty">JQ</span>; })()}<div><strong>{product.name}</strong><small>/{product.slug}</small><small><Link href={`/admin/products/${product.id}/edit`}>Edit product →</Link></small></div></div></td><td>{variant?.sku ?? "—"}</td><td>{product.pet_type}</td><td>{price}</td><td><span className={`admin-status ${seoReady ? "status-active" : "status-draft"}`}>{seoReady ? "Complete" : `${readiness.missing.length} missing`}</span>{!seoReady && <small>{readiness.missing.join(" · ")}</small>}</td><td><span className={`admin-status status-${product.status}`}>{product.status}</span></td><td><form action={async () => { "use server"; await setProductStatus(product.id, product.status === "active" ? "draft" : "active"); }}><button className="admin-table-action" type="submit" disabled={product.status !== "active" && !seoReady}>{product.status === "active" ? "Unpublish" : "Publish"}</button></form></td></tr>;
+                return <tr key={product.id}><td><ProductSelectionCheckbox productId={product.id} /></td><td><div className="admin-product-cell">{(() => { const mainImage = imageRows.find((image) => image.is_primary) ?? imageRows[0]; const imageUrl = mainImage?.storage_path ? resolveProductImageUrls(mainImage.storage_path).thumbnailUrl : null; return imageUrl ? <img className="admin-product-thumb" src={imageUrl} alt="" /> : <span className="admin-product-thumb admin-product-thumb-empty">JQ</span>; })()}<div><strong>{product.name}</strong><small>/{product.slug}</small><small><Link href={`/admin/products/${product.id}/edit`}>Edit product →</Link></small></div></div></td><td>{variant?.sku ?? "—"}</td><td>{product.pet_type}</td><td>{price}</td><td><span className={`admin-status ${seoReady ? "status-active" : "status-draft"}`}>{seoReady ? "Complete" : `${readiness.missing.length} missing`}</span>{!seoReady && <small>{readiness.missing.join(" · ")}</small>}</td><td><span className={`admin-status status-${product.status}`}>{product.status}</span></td><td><form action={async () => { "use server"; await setProductStatus(product.id, product.status === "active" ? "draft" : "active"); }}><button className="admin-table-action" type="submit" disabled={product.status !== "active" && !seoReady}>{product.status === "active" ? "Unpublish" : "Publish"}</button></form></td></tr>;
               })}
             </tbody></table></div>
           )}
         </section>
+        </ProductSelectionProvider>
       </section>
     </main>
   );
