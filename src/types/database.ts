@@ -1315,6 +1315,53 @@ export type Database = {
           },
         ]
       }
+      order_shipping_quote_history: {
+        Row: {
+          adjustment_reason: string
+          calculation: string
+          created_at: string
+          created_by: string | null
+          discount_amount: number
+          final_shipping_amount: number
+          id: string
+          order_id: string
+          original_shipping_amount: number
+          unit_count: number
+        }
+        Insert: {
+          adjustment_reason: string
+          calculation: string
+          created_at?: string
+          created_by?: string | null
+          discount_amount: number
+          final_shipping_amount: number
+          id?: string
+          order_id: string
+          original_shipping_amount: number
+          unit_count: number
+        }
+        Update: {
+          adjustment_reason?: string
+          calculation?: string
+          created_at?: string
+          created_by?: string | null
+          discount_amount?: number
+          final_shipping_amount?: number
+          id?: string
+          order_id?: string
+          original_shipping_amount?: number
+          unit_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_shipping_quote_history_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_status_history: {
         Row: {
           changed_by: string | null
