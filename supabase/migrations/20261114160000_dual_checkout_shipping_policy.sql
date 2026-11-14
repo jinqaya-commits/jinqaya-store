@@ -148,6 +148,14 @@ BEGIN
     v_stock_ok := false;
   END;
 
+  IF NOT v_stock_ok THEN
+    UPDATE public.orders
+       SET shipping_quote_snapshot = coalesce(shipping_quote_snapshot,'{}'::jsonb)
+           || jsonb_build_object('checkout_mode','pay_now','stock_review_required',true),
+           updated_at = v_now
+     WHERE id = v_order_id AND status = 'on_hold';
+  END IF;
+
   SELECT * INTO v_order FROM public.orders WHERE id = v_order_id;
   RETURN jsonb_build_object(
     'order_id',v_order.id,'order_number',v_order.order_number,'status',v_order.status,
