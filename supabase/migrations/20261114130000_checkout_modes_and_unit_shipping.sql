@@ -282,6 +282,12 @@ create index if not exists order_shipping_quote_history_order_created_idx
 
 alter table public.order_shipping_quote_history enable row level security;
 
+drop policy if exists order_shipping_quote_history_manager_read on public.order_shipping_quote_history;
+create policy order_shipping_quote_history_manager_read
+  on public.order_shipping_quote_history
+  for select to authenticated
+  using (public.can_manage_catalog());
+
 -- The 9-argument overload records the staff reason and quote history while
 -- delegating the existing permission, stock-reservation and status workflow.
 create or replace function public.admin_process_order(
