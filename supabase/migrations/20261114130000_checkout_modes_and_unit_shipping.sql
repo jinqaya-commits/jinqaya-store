@@ -378,7 +378,7 @@ begin
   if not public.can_manage_catalog() then
     raise exception 'You do not have permission to manage orders.';
   end if;
-  if p_action <> 'confirm_quote' then
+  if p_action is distinct from 'confirm_quote' then
     return public.admin_process_order(
       p_order_id, p_action, p_shipping_amount, p_shipping_method,
       p_carrier_name, p_tracking_number, p_tracking_url, p_note
