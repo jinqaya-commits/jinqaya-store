@@ -155,7 +155,7 @@ jobs:
               return migration.read_text()
 
           sql = pattern.sub(expand, sql)
-          if "\\\\ir " in sql:
+          if "\\ir " in sql:
               raise SystemExit("Unexpanded migration include remains in SQL test")
           if "admin_enqueue_product_image_cleanup" not in sql:
               raise SystemExit("Replacement cleanup migration reference not found")
