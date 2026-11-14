@@ -177,7 +177,7 @@ export function CheckoutForm() {
         <section className="checkout-page">
           <p className="eyebrow">CHECKOUT</p>
           <h1>Delivery details</h1>
-          <p className="checkout-intro">Enter your delivery details, then choose to pay now using the estimated shipping policy or request a shipping quote from our team before paying.</p>
+          <p className="checkout-intro">Enter your delivery details, then choose to pay now using the estimated shipping policy or request a shipping quote from our team before paying. When you choose Pay now and stock is available, you can pay immediately with PayPal on the next screen.</p>
           {items.length === 0 ? (
             <div className="cart-empty"><p>Your bag is empty.</p><Link className="button button-dark" href="/shop">EXPLORE THE COLLECTION <span>↗</span></Link></div>
           ) : (
