@@ -5,6 +5,8 @@ import { readFile } from "node:fs/promises";
 const route = await readFile(new URL("../src/app/api/checkout/route.ts", import.meta.url), "utf8");
 const form = await readFile(new URL("../src/app/checkout/checkout-form.tsx", import.meta.url), "utf8");
 const migration = await readFile(new URL("../supabase/migrations/20261114160000_dual_checkout_shipping_policy.sql", import.meta.url), "utf8");
+const email = await readFile(new URL("../src/lib/order-email.ts", import.meta.url), "utf8");
+const outbox = await readFile(new URL("../src/lib/order-email-outbox.ts", import.meta.url), "utf8");
 
 test("checkout offers both immediate PayPal and manual shipping quote paths", () => {
   assert.match(form, /pay_now/);
@@ -34,4 +36,13 @@ test("manual quote requests do not enable PayPal payment at submission", () => {
   assert.match(migration, /'payment_ready',false/);
   assert.match(migration, /'checkout_mode','request_quote'/);
   assert.match(form, /No payment has been taken/);
+});
+
+test("manual quote requests enqueue staff and customer emails with quote-specific wording", () => {
+  assert.match(migration, /'order_received','customer'/);
+  assert.match(migration, /'order_received','staff'/);
+  assert.match(migration, /'checkoutMode','request_quote'/);
+  assert.match(outbox, /checkoutMode: row\.checkoutMode/);
+  assert.match(email, /Our team will review the delivery cost and contact you with a shipping quote and final order total before payment/);
+  assert.match(email, /No payment has been taken/);
 });
