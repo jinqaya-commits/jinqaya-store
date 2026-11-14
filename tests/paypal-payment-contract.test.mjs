@@ -154,3 +154,14 @@ test("admin UI exposes stock review only for paid PayPal orders flagged by the d
   assert.match(adminOrderActions, /status==="paid"&&!stockReviewRequired/);
   assert.match(adminOrderServerActions, /admin_resolve_paid_order_stock_review/);
 });
+
+
+const shippingSnapshotSql = await readFile(new URL("../supabase/migrations/20261114140000_paypal_shipping_snapshot_validation.sql", import.meta.url), "utf8");
+
+test("PayPal payment RPC validates the exact confirmed shipping snapshot and full order total", () => {
+  assert.match(shippingSnapshotSql, /shipping_quote_snapshot->>'checkout_mode'.*NOT IN \('pay_now','request_quote'\)/);
+  assert.match(shippingSnapshotSql, /shipping_quote_snapshot->>'amount'/);
+  assert.match(shippingSnapshotSql, /v_order\.tax_amount/);
+  assert.match(shippingSnapshotSql, /v_order\.discount_amount/);
+  assert.doesNotMatch(shippingSnapshotSql, /shipping_amount,0\),2\) <> round\(coalesce\(v_order\.subtotal,0\)\*0\.50/);
+});
