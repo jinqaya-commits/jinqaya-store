@@ -222,7 +222,20 @@ export function CheckoutForm() {
                   </div>
                 </section>
                 <section className="checkout-section">
-                  <div className="checkout-section-heading"><span>03</span><div><h2>Additional information</h2><p>Anything we should know about delivery?</p></div></div>
+                  <div className="checkout-section-heading"><span>03</span><div><h2>How would you like to proceed?</h2><p>Choose immediate payment or ask us to confirm your shipping cost first.</p></div></div>
+                  <div className="checkout-mode-options">
+                    <label className={checkoutMode === "pay_now" ? "checkout-mode-option selected" : "checkout-mode-option"}>
+                      <input type="radio" name="checkout_mode" value="pay_now" checked={checkoutMode === "pay_now"} onChange={() => setCheckoutMode("pay_now")} />
+                      <span><strong>Pay now with PayPal</strong><small>Use the shipping estimate shown. Payment is only collected after you approve it in PayPal.</small></span>
+                    </label>
+                    <label className={checkoutMode === "request_quote" ? "checkout-mode-option selected" : "checkout-mode-option"}>
+                      <input type="radio" name="checkout_mode" value="request_quote" checked={checkoutMode === "request_quote"} onChange={() => setCheckoutMode("request_quote")} />
+                      <span><strong>Request a shipping quote</strong><small>Submit your order without paying. Our team can discuss and adjust the shipping cost before sending the final payment amount.</small></span>
+                    </label>
+                  </div>
+                </section>
+                <section className="checkout-section">
+                  <div className="checkout-section-heading"><span>04</span><div><h2>Additional information</h2><p>Anything we should know about delivery?</p></div></div>
                   <label className="checkout-note">Order note <span className="optional">OPTIONAL</span><textarea name="customer_note" rows={3} maxLength={1000} /></label>
                 </section>
                 <label className="checkout-honeypot" aria-hidden="true">Website<input name="website" tabIndex={-1} autoComplete="off" /></label>
