@@ -32,12 +32,13 @@ export function CheckoutSuccessContent() {
   }, []);
 
   useEffect(() => {
-    void refresh();
+    const initial = window.setTimeout(() => { void refresh(); }, 0);
     const interval = window.setInterval(() => {
       void refresh();
     }, 2500);
     const timeout = window.setTimeout(() => window.clearInterval(interval), 30000);
     return () => {
+      window.clearTimeout(initial);
       window.clearInterval(interval);
       window.clearTimeout(timeout);
     };
