@@ -4290,6 +4290,7 @@ export type Database = {
           p_customer: Json
           p_customer_note?: string
           p_honeypot?: string
+          p_checkout_mode?: string
           p_idempotency_key: string
           p_items: Json
           p_shipping_address: Json
