@@ -29,6 +29,10 @@ export async function processOrderAction(
        Number(shippingAmountRaw) > 99999999.99)) {
     return { error: "Enter a valid shipping amount with no more than two decimal places." };
   }
+  const shippingAdjustmentReason = String(formData.get("shipping_adjustment_reason") ?? "").trim();
+  if (action === "confirm_quote" && shippingAdjustmentReason.length > 500) {
+    return { error: "Shipping adjustment reason must be 500 characters or fewer." };
+  }
   const { data, error } = await supabase.rpc("admin_process_order", {
     p_order_id: orderId,
     p_action: action,
@@ -41,6 +45,7 @@ export async function processOrderAction(
     p_tracking_number: String(formData.get("tracking_number") ?? ""),
     p_tracking_url: String(formData.get("tracking_url") ?? ""),
     p_note: String(formData.get("note") ?? ""),
+    p_shipping_adjustment_reason: shippingAdjustmentReason,
   });
   if (error) return { error: error.message };
 
