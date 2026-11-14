@@ -40,7 +40,7 @@ test("order email explains immediate payment and the fallback order lookup", () 
 });
 
 test("Pay now refreshes the queued order email with the server-confirmed shipping amount", async () => {
-  const migration = await readFile(new URL("../supabase/migrations/20261114130000_checkout_modes_and_unit_shipping.sql", import.meta.url), "utf8");
+  const migration = await readFile(new URL("../supabase/migrations/20261114082316_checkout_modes_and_unit_shipping.sql", import.meta.url), "utf8");
   assert.match(migration, /update public\.order_email_outbox[\s\S]*?'shippingAmount', v_shipping/);
   assert.match(migration, /'shippingMethod', 'Standard shipping'/);
 });

@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
-const migration = await readFile(new URL("../supabase/migrations/20261114153000_fix_request_quote_stock_reservations.sql", import.meta.url), "utf8");
+const migration = await readFile(new URL("../supabase/migrations/20261114082325_fix_request_quote_stock_reservations.sql", import.meta.url), "utf8");
 
 test("shipping quote requests release legacy reservations and remain on hold", () => {
   assert.match(migration, /set status = 'released'/i);

@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
-const migration = await readFile(new URL("../supabase/migrations/20261114130000_checkout_modes_and_unit_shipping.sql", import.meta.url), "utf8");
+const migration = await readFile(new URL("../supabase/migrations/20261114082316_checkout_modes_and_unit_shipping.sql", import.meta.url), "utf8");
 const action = await readFile(new URL("../src/app/admin/orders/actions.ts", import.meta.url), "utf8");
 const ui = await readFile(new URL("../src/app/admin/orders/order-actions.tsx", import.meta.url), "utf8");
 const paypalCreate = await readFile(new URL("../src/app/api/paypal/create-order/route.ts", import.meta.url), "utf8");
