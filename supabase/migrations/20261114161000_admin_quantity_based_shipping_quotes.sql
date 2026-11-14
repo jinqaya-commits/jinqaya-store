@@ -32,7 +32,7 @@ begin
    raise exception 'Shipping amount must be a non-negative amount with no more than two decimal places.';
   end if;
   select coalesce(sum(oi.quantity),0)::integer into v_units from public.order_items oi where oi.order_id=p_order_id;\n  v_auto_shipping:=case when v_units<=2 then 50.00 else round(coalesce(v_order.subtotal,0)*0.50,2) end;\n  v_shipping:=round(coalesce(p_shipping_amount,v_auto_shipping),2);\n  v_adjustment:=round(v_shipping-v_auto_shipping,2);
-  v_method:=coalesce(nullif(pg_catalog.trim(coalesce(p_shipping_method,'')),''),case when p_shipping_amount is null then 'Standard shipping (50% estimate)' else 'Custom shipping quote' end);
+  v_method:=coalesce(nullif(pg_catalog.trim(coalesce(p_shipping_method,'')),''),case when v_shipping=v_auto_shipping then 'Standard shipping estimate' else 'Custom shipping quote' end);
   if exists(select 1 from public.stock_reservations where order_id=p_order_id and status='active') then raise exception 'This order already has active stock reservations. Review inventory before continuing.'; end if;
   for v_item in select oi.variant_id,sum(oi.quantity)::integer quantity from public.order_items oi where oi.order_id=p_order_id group by oi.variant_id order by oi.variant_id loop
    if v_item.variant_id is null then raise exception 'An order item has no inventory variant. Please review this order manually.'; end if;
@@ -45,7 +45,7 @@ begin
    v_reserved:=v_reserved+v_item.quantity;
   end loop;
   update public.orders set status='pending_payment',shipping_amount=v_shipping,total_amount=round(coalesce(subtotal,0)+v_shipping+coalesce(tax_amount,0)-coalesce(discount_amount,0),2),shipping_method_name=v_method,
-   shipping_quote_snapshot=jsonb_build_object('status','confirmed','calculation',case when v_units<=2 then 'flat_50_for_1_or_2_units' else '50_percent_of_subtotal_for_3_plus_units' end,'units',v_units,'automatic_amount',v_auto_shipping,'adjustment_amount',v_adjustment,'discount_amount',greatest(v_auto_shipping-v_shipping,0),'custom_amount',p_shipping_amount is not null,'reason',v_note,'amount',v_shipping,'destination_country_code',shipping_address_snapshot->>'country_code'),
+   shipping_quote_snapshot=jsonb_build_object('status','confirmed','calculation',case when v_units<=2 then 'flat_50_for_1_or_2_units' else '50_percent_of_subtotal_for_3_plus_units' end,'units',v_units,'automatic_amount',v_auto_shipping,'adjustment_amount',v_adjustment,'discount_amount',greatest(v_auto_shipping-v_shipping,0),'custom_amount',v_shipping<>v_auto_shipping,'reason',v_note,'amount',v_shipping,'destination_country_code',shipping_address_snapshot->>'country_code'),
    internal_note=case when v_note is null then internal_note else pg_catalog.left(concat_ws(E'\n',nullif(internal_note,''),v_note),2000) end,updated_at=v_now where id=p_order_id;
   v_new_status:='pending_payment';
   insert into public.order_status_history(order_id,old_status,new_status,note,changed_by) values(p_order_id,v_old_status,v_new_status,'Stock reserved for 48 hours. Shipping quote confirmed; awaiting payment.',auth.uid());
