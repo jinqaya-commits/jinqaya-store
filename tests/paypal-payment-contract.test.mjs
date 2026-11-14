@@ -156,7 +156,7 @@ test("admin UI exposes stock review only for paid PayPal orders flagged by the d
 });
 
 
-const shippingValidationSql = await readFile(new URL("../supabase/migrations/20261114120000_fix_paypal_shipping_validation.sql", import.meta.url), "utf8");
+const shippingValidationSql = await readFile(new URL("../supabase/migrations/20261114085003_fix_paypal_shipping_validation.sql", import.meta.url), "utf8");
 
 test("PayPal payment recording accepts each server-confirmed checkout shipping mode and exact final total", () => {
   assert.match(shippingValidationSql, /shipping_quote_snapshot->>'status',''\) <> 'confirmed'/);
