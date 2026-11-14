@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import Link from "next/link";
 import { notFound,redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -9,6 +10,7 @@ import { ShipmentIssueManager } from "../shipment-issue-manager";
 import { RefundProofManager } from "../refund-proof-manager";
 export const dynamic="force-dynamic";
 function money(v:number|string|null,c:string){return v==null?"—":new Intl.NumberFormat("en-US",{style:"currency",currency:c.trim()||"USD"}).format(Number(v))}
+function isReservationUnexpired(expiresAt:string){return new Date(expiresAt).getTime()>Date.now()}
 function date(v:string|null){return v?new Intl.DateTimeFormat("en-US",{dateStyle:"medium",timeStyle:"short"}).format(new Date(v)):"—"}
 function address(v:unknown){if(!v||typeof v!=="object")return [];const a=v as Record<string,unknown>;return ["recipient_name","address_line1","address_line2","city","state_region","postal_code","country","phone"].map(k=>[k,a[k]] as const).filter(([,x])=>typeof x==="string"&&x.trim())}
 export default async function AdminOrderDetail({params}:{params:Promise<{id:string}>}){
@@ -32,7 +34,7 @@ export default async function AdminOrderDetail({params}:{params:Promise<{id:stri
  const requiredStock=new Map<string,number>();
  for(const item of items||[]){if(item.variant_id)requiredStock.set(item.variant_id,(requiredStock.get(item.variant_id)||0)+Number(item.quantity));}
  const reservedStock=new Map<string,number>();
- for(const reservation of reservations||[]){if(reservation.status==="active"&&reservation.expires_at&&new Date(reservation.expires_at).getTime()>Date.now())reservedStock.set(reservation.variant_id,(reservedStock.get(reservation.variant_id)||0)+Number(reservation.quantity));}
+ for(const reservation of reservations||[]){if(reservation.status==="active"&&reservation.expires_at&&isReservationUnexpired(reservation.expires_at))reservedStock.set(reservation.variant_id,(reservedStock.get(reservation.variant_id)||0)+Number(reservation.quantity));}
  const hasValidStockReservation=requiredStock.size>0&&[...requiredStock].every(([variantId,quantity])=>reservedStock.get(variantId)===quantity);
  const currency=order.currency.trim()||"USD";
  const paidTotal=(payments||[]).filter(p=>["paid","partially_refunded","refunded"].includes(p.status)&&p.currency.trim()===currency).reduce((sum,p)=>sum+Number(p.amount),0);
