@@ -30,6 +30,8 @@ begin
     raise exception 'Invalid checkout option.';
   end if;
 
+  perform pg_catalog.pg_advisory_xact_lock(pg_catalog.hashtext(p_idempotency_key));
+
   select o.* into v_order
     from public.orders o
    where o.checkout_idempotency_key = p_idempotency_key
