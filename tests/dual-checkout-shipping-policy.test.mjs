@@ -46,3 +46,18 @@ test("manual quote requests enqueue staff and customer emails with quote-specifi
   assert.match(email, /Our team will review the delivery cost and contact you with a shipping quote and final order total before payment/);
   assert.match(email, /No payment has been taken/);
 });
+
+test("pay-now handles stock reservations already created by the base guest checkout RPC", () => {
+  assert.match(migration, /First-time pay-now submissions can already be pending_payment/i);
+  assert.match(migration, /v_order\.status = 'pending_payment'[\s\S]*?v_order\.shipping_quote_snapshot->>'checkout_mode' IS NULL/i);
+  assert.match(migration, /shipping_amount = v_shipping[\s\S]*?'checkout_mode','pay_now'/i);
+  assert.match(migration, /'payment_ready',v_reservations_valid/);
+});
+
+test("manual quote requests release any stock reservations created by the base guest checkout RPC", () => {
+  assert.match(migration, /Customer requested a manual shipping quote; stock reservations released and payment disabled/i);
+  assert.match(migration, /UPDATE public\.inventory[\s\S]*?reserved = reserved - v_item\.quantity/i);
+  assert.match(migration, /UPDATE public\.stock_reservations[\s\S]*?status = 'released'/i);
+  assert.match(migration, /status = 'on_hold'[\s\S]*?'checkout_mode','request_quote'/i);
+  assert.match(migration, /'payment_ready',false/);
+});
