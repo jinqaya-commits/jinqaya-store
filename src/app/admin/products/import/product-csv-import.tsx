@@ -87,8 +87,8 @@ export function ProductCsvImport({ categories }: { categories: Category[] }) {
 
   async function importRows() {
     setRunning(true); setProgress(0); setError("");
-    const completed: { line: number; name: string; error?: string }[] = [...results];
-    const successfulLines = new Set(results.filter((item) => !item.error).map((item) => item.line));
+    const completed: { line: number; name: string; error?: string }[] = results.filter((item) => !item.error);
+    const successfulLines = new Set(completed.map((item) => item.line));
     const ready = rows.filter((row) => !row.error && !successfulLines.has(row.line));
     for (let index = 0; index < ready.length; index++) {
       const row = ready[index];
