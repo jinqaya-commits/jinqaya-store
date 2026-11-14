@@ -143,8 +143,14 @@ export function CheckoutForm() {
               <p>Your order is recorded, but we couldn&apos;t reserve every item from available stock. Payment is not available yet; our team will contact you to confirm availability.</p>
             )}
             <p className="checkout-total"><span>Merchandise</span><strong>{formatCartMoney(order.subtotal, order.currency)}</strong></p>
-            <p className="checkout-pending"><span>Shipping</span><strong>{formatCartMoney(order.shipping_amount, order.currency)}</strong></p>
-            <p className="checkout-total"><span>Order total</span><strong>{formatCartMoney(order.total_amount, order.currency)}</strong></p>
+            {order.checkout_mode === "request_quote" ? (
+              <p className="checkout-disclaimer">Final shipping and order total will be confirmed by our team before payment.</p>
+            ) : (
+              <>
+                <p className="checkout-pending"><span>Shipping</span><strong>{formatCartMoney(order.shipping_amount, order.currency)}</strong></p>
+                <p className="checkout-total"><span>Order total</span><strong>{formatCartMoney(order.total_amount, order.currency)}</strong></p>
+              </>
+            )}
           </div>
           {paymentReady && order.payment_session_ready === true && (
             <PayPalPaymentButton
