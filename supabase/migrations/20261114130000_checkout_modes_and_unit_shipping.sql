@@ -39,12 +39,17 @@ begin
   v_existing := found;
 
   if v_existing then
+    if lower(v_order.customer_email) <> lower(pg_catalog.trim(coalesce(p_customer->>'email',''))) then
+      raise exception 'This checkout request key has already been used. Please refresh checkout and try again.';
+    end if;
     if coalesce(v_order.shipping_quote_snapshot->>'checkout_mode','') <> p_checkout_mode then
       raise exception 'This checkout request was already submitted with a different checkout option. Please refresh checkout.';
     end if;
     if p_checkout_mode = 'pay_now' then
       if v_order.status <> 'pending_payment'
          or coalesce(v_order.shipping_quote_snapshot->>'status','') <> 'confirmed'
+         or round(v_order.shipping_amount,2) <> round(coalesce((v_order.shipping_quote_snapshot->>'amount')::numeric,-1),2)
+         or round(v_order.total_amount,2) <> round(coalesce(v_order.subtotal,0) + v_order.shipping_amount + coalesce(v_order.tax_amount,0) - coalesce(v_order.discount_amount,0),2)
          or not exists (
            select 1 from public.stock_reservations r
             where r.order_id = v_order.id
