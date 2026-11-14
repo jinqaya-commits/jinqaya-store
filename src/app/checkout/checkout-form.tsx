@@ -143,7 +143,8 @@ export function CheckoutForm() {
             )}
             <p className="checkout-total"><span>Merchandise</span><strong>{formatCartMoney(order.subtotal, order.currency)}</strong></p>
             <p className="checkout-pending"><span>Shipping</span><strong>{order.shipping_status === "quote_required" ? "To be confirmed" : formatCartMoney(order.shipping_amount, order.currency)}</strong></p>
-            <p className="checkout-total"><span>Order total</span><strong>{formatCartMoney(order.total_amount, order.currency)}</strong></p>
+            <p className="checkout-total"><span>{order.checkout_mode === "request_quote" ? "Subtotal before shipping" : "Order total"}</span><strong>{formatCartMoney(order.total_amount, order.currency)}</strong></p>
+            {order.checkout_mode === "request_quote" && <p className="checkout-pending">Final shipping and order total will be confirmed by our team before payment. No payment has been collected.</p>}
           </div>
           {paymentReady && order.payment_session_ready === true && (
             <PayPalPaymentButton
