@@ -160,8 +160,9 @@ export async function setProductStatus(productId: string, status: "draft" | "act
 
 export async function bulkSetProductStatus(productIds: string[], status: "draft" | "active") {
   const supabase = await requireCatalogManager();
-  const ids = [...new Set((Array.isArray(productIds) ? productIds : []).filter((id) => typeof id === "string" && id.length <= 64))];
-  if (ids.length === 0) return { error: "Select at least one product." };
+  if (status !== "active" && status !== "draft") return { error: "Unsupported product status." };
+  const ids = [...new Set((Array.isArray(productIds) ? productIds : []).filter((id) => typeof id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)))];
+  if (ids.length === 0) return { error: "Select at least one valid product." };
   if (ids.length > 300) return { error: "Select no more than 300 products per batch." };
   const results: { productId: string; success: boolean; error?: string }[] = [];
   for (const productId of ids) {
