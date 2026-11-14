@@ -55,8 +55,8 @@ export default async function AdminProductsPage() {
         </div>
         <ProductSelectionProvider products={(products ?? []).map((product) => ({ id: product.id, name: product.name, status: product.status }))}>
         <section className="admin-panel">
-          <div className="admin-panel-heading"><div><p className="admin-kicker">YOUR CATALOG</p><h2>All products</h2></div>
-          <ProductBulkToolbar /><span>{products?.length ?? 0} ITEMS</span></div>
+          <div className="admin-panel-heading"><div><p className="admin-kicker">YOUR CATALOG</p><h2>All products</h2></div><span>{products?.length ?? 0} ITEMS</span></div>
+          <ProductBulkToolbar />
           {error ? <p className="admin-error">Unable to load products: {error.message}</p> : !products?.length ? (
             <div className="admin-empty"><span>✳</span><h3>Your product catalog starts here.</h3><p>Add your first product to begin building the JINQAYA collection.</p><Link className="admin-primary-button" href="/admin/products/new">Add your first product</Link></div>
           ) : (
