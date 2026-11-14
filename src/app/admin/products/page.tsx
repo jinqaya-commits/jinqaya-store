@@ -46,7 +46,7 @@ export default async function AdminProductsPage() {
         <p className="admin-sidebar-note">CATALOG MANAGEMENT</p>
       </aside>
       <section className="admin-main">
-        <header className="admin-topbar"><div><p className="admin-kicker">JINQAYA / CATALOG</p><h1>Products</h1></div><Link className="admin-primary-button" href="/admin/products/new">＋ Add product</Link></header>
+        <header className="admin-topbar"><div><p className="admin-kicker">JINQAYA / CATALOG</p><h1>Products</h1></div><div className="admin-topbar-actions"><Link className="admin-secondary-button" href="/admin/products/import">Import CSV</Link><Link className="admin-primary-button" href="/admin/products/new">＋ Add product</Link></div></header>
         <div className="admin-summary"><div><span>ALL PRODUCTS</span><strong>{products?.length ?? 0}</strong></div><div><span>ACTIVE</span><strong>{products?.filter((p) => p.status === "active").length ?? 0}</strong></div><div><span>DRAFTS</span><strong>{products?.filter((p) => p.status === "draft").length ?? 0}</strong></div><div><span>NEEDS CONTENT</span><strong>{needsContentCount}</strong></div></div>
         <div className="admin-panel" style={{ marginBottom: 24 }}>
           <div className="admin-panel-heading"><div><p className="admin-kicker">PUBLISHING READINESS</p><h2>Product publishing checklist</h2></div><span>CONTENT QUALITY</span></div>
