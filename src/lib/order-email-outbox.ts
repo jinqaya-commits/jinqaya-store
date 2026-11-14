@@ -25,6 +25,7 @@ function parsePayload(value: unknown): OrderEmailOutboxPayload | null {
   if (!eventType) return null;
   return {
     eventType,
+    checkoutMode: row.checkoutMode === "pay_now" || row.checkoutMode === "request_quote" ? row.checkoutMode : undefined,
     orderNumber: row.orderNumber,
     customerName: typeof row.customerName === "string" ? row.customerName : "",
     customerEmail: row.customerEmail,
