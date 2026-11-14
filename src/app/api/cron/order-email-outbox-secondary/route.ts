@@ -9,7 +9,7 @@ function isAuthorized(request: NextRequest) {
   const vercelSecret = process.env.CRON_SECRET;
   if (
     vercelSecret &&
-    request.headers.get("authorization") === \`Bearer \${vercelSecret}\`
+    request.headers.get("authorization") === "Bearer " + vercelSecret
   ) {
     return true;
   }
