@@ -47,9 +47,6 @@ BEGIN
   END IF;
 
   IF v_order.status <> 'pending_payment' THEN RAISE EXCEPTION 'This order is not awaiting payment.'; END IF;
-  -- Validate the server-confirmed shipping snapshot, not a single pricing formula.
-  -- Pay-now orders use $50 for 1–2 units and 50% of subtotal for 3+ units;
-  -- staff-confirmed quote orders may use any audited final shipping amount.
   IF coalesce(v_order.shipping_quote_snapshot->>'status','') <> 'confirmed'
     OR coalesce(v_order.shipping_quote_snapshot->>'checkout_mode','') NOT IN ('pay_now','request_quote')
     OR round(coalesce((v_order.shipping_quote_snapshot->>'amount')::numeric,-1),2)
@@ -72,8 +69,6 @@ BEGIN
      ON i.warehouse_id = r.warehouse_id AND i.variant_id = r.variant_id
    WHERE r.order_id = p_order_id AND r.status = 'active' FOR UPDATE OF i;
 
-  -- A payment may be captured even if the stock hold is missing, expired, partial,
-  -- excessive, or contains a variant not present in the order. Never commit partial stock.
   IF NOT EXISTS (
        SELECT 1 FROM public.stock_reservations r
        WHERE r.order_id = p_order_id AND r.status = 'active'
