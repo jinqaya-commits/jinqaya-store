@@ -10,7 +10,7 @@ type ParsedRow = { line: number; values: Record<string, string>; error?: string 
 const HEADERS = ["name","category_slug","pet_type","short_description","description","material","care_instructions","seo_title","seo_description","sku","variant_name","color","size","price","compare_at_price"];
 const TEMPLATE = [
   HEADERS.join(","),
-  '"Everyday Travel Carrier","walk-travel","both","A practical carrier for everyday outings.","","Polyester","","","","JQ-WT-001-BE","Beige","Beige","One Size","39.99",""',
+  '"Example product","replace-with-active-subcategory-slug","both","Short product introduction","","Material","","","","EXAMPLE-SKU","Standard","","","39.99",""',
 ].join("\r\n");
 
 function parseCsv(source: string): string[][] {
@@ -65,7 +65,7 @@ export function ProductCsvImport({ categories }: { categories: Category[] }) {
         if (!record.name) rowError = "Product name is required.";
         else if (!categoryBySlug.has((record.category_slug || "").toLowerCase())) rowError = "Unknown category_slug. Use an active category slug.";
         else if (record.pet_type && !["cat", "dog", "both", "shared"].includes(record.pet_type.toLowerCase())) rowError = "pet_type must be cat, dog, both or shared.";
-        else if (record.price && (!Number.isFinite(Number(record.price)) || Number(record.price) < 0)) rowError = "Price must be a non-negative number.";
+        else if ((record.price || record.compare_at_price) && !record.sku) rowError = "Add an SKU when importing a price.";\n        else if (record.price && (!Number.isFinite(Number(record.price)) || Number(record.price) < 0)) rowError = "Price must be a non-negative number.";
         else if (record.compare_at_price && (!Number.isFinite(Number(record.compare_at_price)) || Number(record.compare_at_price) < 0)) rowError = "Compare-at price must be a non-negative number.";
         return { line: index + 2, values: record, error: rowError || undefined };
       });
