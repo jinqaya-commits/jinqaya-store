@@ -143,18 +143,23 @@ jobs:
           test -n "$container_id"
           python3 - <<'PY' > /tmp/product-image-cleanup-migration.sql
           from pathlib import Path
+          import re
+
           sql = Path("tests/product-image-cleanup-migration.sql").read_text()
-          migration = Path("supabase/migrations/202611120001_product_image_cleanup_queue.sql").read_text()
-          replacement_migration = Path("supabase/migrations/20261112070000_queue_failed_replacement_image_cleanup.sql").read_text()
-          lines = sql.splitlines()
-          for i, line in enumerate(lines):
-              if "202611120001_product_image_cleanup_queue.sql" in line:
-                  lines[i] = migration
-              elif "20261112070000_queue_failed_replacement_image_cleanup.sql" in line:
-                  lines[i] = replacement_migration
-          if not any("admin_enqueue_product_image_cleanup" in line for line in lines):
+          pattern = re.compile(r"^\\\\ir ../supabase/migrations/([^\\s]+\\.sql)\\s*$", re.MULTILINE)
+
+          def expand(match):
+              migration = Path("supabase/migrations") / match.group(1)
+              if not migration.is_file():
+                  raise SystemExit(f"Migration include not found: {migration}")
+              return migration.read_text()
+
+          sql = pattern.sub(expand, sql)
+          if "\\\\ir " in sql:
+              raise SystemExit("Unexpanded migration include remains in SQL test")
+          if "admin_enqueue_product_image_cleanup" not in sql:
               raise SystemExit("Replacement cleanup migration reference not found")
-          print("\n".join(lines))
+          print(sql)
           PY
           docker exec -i "$container_id" psql -U postgres -d jinqaya_test -v ON_ERROR_STOP=1 < /tmp/product-image-cleanup-migration.sql
       - name: Test concurrent order status verification
