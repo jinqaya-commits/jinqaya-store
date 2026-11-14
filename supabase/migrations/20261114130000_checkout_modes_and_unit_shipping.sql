@@ -262,6 +262,18 @@ begin
          updated_at = v_now
    where id = v_order.id;
 
+  -- The legacy order-created trigger enqueues the initial subtotal before this
+  -- wrapper confirms shipping. Refresh the queued payload before any worker can
+  -- deliver it so customer and staff emails show the server-calculated amount.
+  update public.order_email_outbox
+     set payload = coalesce(payload, '{}'::jsonb)
+       || pg_catalog.jsonb_build_object(
+            'shippingAmount', v_shipping,
+            'shippingMethod', 'Standard shipping'
+          )
+   where order_id = v_order.id
+     and event_type = 'order_received';
+
   insert into public.order_status_history(order_id, old_status, new_status, note, changed_by)
   values(v_order.id, 'on_hold', 'pending_payment', 'Stock reserved for 48 hours; shipping confirmed for immediate PayPal payment.', null);
 
