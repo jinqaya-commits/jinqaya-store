@@ -20,6 +20,7 @@ type OrderResult = {
   payment_ready?: boolean;
   payment_session_ready?: boolean;
   currency: string;
+  checkout_mode?: "pay_now" | "request_quote";
 };
 
 function newRequestKey() {
@@ -40,12 +41,14 @@ export function CheckoutForm() {
   const [requestKey, setRequestKey] = useState("");
   const [countryCode, setCountryCode] = useState("");
   const [countryName, setCountryName] = useState("");
+  const [checkoutMode, setCheckoutMode] = useState<"pay_now" | "request_quote">("pay_now");
 
   const currency = items[0]?.currency || "USD";
   const mixedCurrencies = items.some((item) => item.currency !== currency);
   const estimate = useMemo(() => items.reduce((sum, item) => sum + item.price * item.quantity, 0), [items]);
+  const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
   const subtotalCents = Math.round((estimate + Number.EPSILON) * 100);
-  const shippingCents = Math.round(subtotalCents / 2);
+  const shippingCents = totalQuantity <= 2 ? 5000 : Math.round(subtotalCents / 2);
   const shippingEstimate = shippingCents / 100;
   const totalEstimate = (subtotalCents + shippingCents) / 100;
   const isBlockedCountry = isRestrictedShippingDestination(countryCode, countryName);
@@ -61,6 +64,7 @@ export function CheckoutForm() {
     setRequestKey(idempotencyKey);
     const payload = {
       idempotency_key: idempotencyKey,
+      checkout_mode: checkoutMode,
       customer: {
         first_name: String(data.get("first_name") || ""),
         last_name: String(data.get("last_name") || ""),
@@ -127,7 +131,7 @@ export function CheckoutForm() {
         ) : (
         <section className="checkout-success">
           <p className="eyebrow">ORDER RECEIVED</p>
-          <h1>{order.payment_status === "paid" ? "Payment confirmed." : paymentReady ? "Your order is ready." : "Thank you."}</h1>
+          <h1>{order.payment_status === "paid" ? "Payment confirmed." : order.checkout_mode === "request_quote" ? "Shipping quote requested." : paymentReady ? "Your order is ready." : "Thank you."}</h1>
           <p>Order <strong>{order.order_number}</strong> has been recorded.</p>
           <div className="checkout-notice">
             <strong>{paymentReady ? "Confirmed order total" : "Stock confirmation required"}</strong>
@@ -137,7 +141,7 @@ export function CheckoutForm() {
               <p>Your order is recorded, but we couldn&apos;t reserve every item from available stock. Payment is not available yet; our team will contact you to confirm availability.</p>
             )}
             <p className="checkout-total"><span>Merchandise</span><strong>{formatCartMoney(order.subtotal, order.currency)}</strong></p>
-            <p className="checkout-pending"><span>Shipping (50%)</span><strong>{formatCartMoney(order.shipping_amount, order.currency)}</strong></p>
+            <p className="checkout-pending"><span>Shipping</span><strong>{formatCartMoney(order.shipping_amount, order.currency)}</strong></p>
             <p className="checkout-total"><span>Order total</span><strong>{formatCartMoney(order.total_amount, order.currency)}</strong></p>
           </div>
           {paymentReady && order.payment_session_ready === true && (
@@ -165,7 +169,7 @@ export function CheckoutForm() {
         <section className="checkout-page">
           <p className="eyebrow">CHECKOUT</p>
           <h1>Delivery details</h1>
-          <p className="checkout-intro">Enter your delivery details and review the total, including shipping at 50% of the merchandise subtotal. Product prices, destination eligibility and stock are checked when you submit. If your items can be reserved, you can pay immediately with PayPal on the next screen.</p>
+          <p className="checkout-intro">Enter your delivery details, then choose to pay now using the estimated shipping policy or request a shipping quote from our team before paying.</p>
           {items.length === 0 ? (
             <div className="cart-empty"><p>Your bag is empty.</p><Link className="button button-dark" href="/shop">EXPLORE THE COLLECTION <span>↗</span></Link></div>
           ) : (
@@ -217,9 +221,9 @@ export function CheckoutForm() {
                 {isBlockedCountry && <p className="checkout-error" role="alert">We do not currently ship to this destination.</p>}
                 {error && <p className="checkout-error" role="alert">{error}</p>}
                 <button className="button button-dark checkout-submit" type="submit" disabled={busy || mixedCurrencies || isBlockedCountry}>
-                  {busy ? "SUBMITTING…" : "CONTINUE TO PAYMENT"} <span>↗</span>
+                  {busy ? "SUBMITTING…" : checkoutMode === "pay_now" ? "CONTINUE TO PAYPAL" : "REQUEST SHIPPING QUOTE"} <span>↗</span>
                 </button>
-                <p className="checkout-disclaimer">You won’t be charged when you submit. If all items can be reserved, your order total — including shipping at 50% of the merchandise subtotal — will be ready for secure PayPal payment. Payment is collected only after you approve it in PayPal. By submitting, you acknowledge our <Link href="/policies/terms">Terms of Service</Link> and <Link href="/policies/privacy">Privacy Policy</Link>.</p>
+                <p className="checkout-disclaimer">You won’t be charged when you submit. For 1–2 items, estimated shipping is USD 50; for 3 or more items, it is 50% of the merchandise subtotal. For a quote request, we will confirm the final shipping amount before payment. By submitting, you acknowledge our <Link href="/policies/terms">Terms of Service</Link> and <Link href="/policies/privacy">Privacy Policy</Link>.</p>
               </form>
 
               <aside className="checkout-summary">
@@ -232,9 +236,9 @@ export function CheckoutForm() {
                   </div>
                 ))}
                 <div className="checkout-total"><span>Subtotal</span><strong>{mixedCurrencies ? "Multiple currencies" : formatCartMoney(estimate, currency)}</strong></div>
-                <div className="checkout-pending"><span>Shipping (50%)</span><strong>{mixedCurrencies ? "—" : formatCartMoney(shippingEstimate, currency)}</strong></div>
+                <div className="checkout-pending"><span>Estimated shipping</span><strong>{mixedCurrencies ? "—" : formatCartMoney(shippingEstimate, currency)}</strong></div>
                 <div className="checkout-total"><span>Total</span><strong>{mixedCurrencies ? "Multiple currencies" : formatCartMoney(totalEstimate, currency)}</strong></div>
-                <p>Shipping is 50% of the merchandise subtotal. Product prices and stock are rechecked when you submit. Taxes, if applicable, are not included.</p>
+                <p>{totalQuantity <= 2 ? "Flat USD 50 for 1–2 items." : "50% of the merchandise subtotal for 3 or more items."} Product prices and stock are rechecked when you submit. Taxes, if applicable, are not included.</p>
                 {mixedCurrencies && <p className="checkout-error">Your bag contains different currencies. Please check out separately.</p>}
                 <Link className="back-link" href="/cart">← RETURN TO BAG</Link>
               </aside>
