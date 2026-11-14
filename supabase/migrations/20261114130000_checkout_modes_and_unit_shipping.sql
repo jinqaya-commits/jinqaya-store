@@ -21,6 +21,8 @@ declare
   v_item record;
   v_inventory public.inventory%rowtype;
   v_reservation_count integer := 0;
+  v_remaining integer := 0;
+  v_take integer := 0;
   v_total_units integer := 0;
   v_shipping numeric(12,2);
   v_now timestamptz := pg_catalog.now();
@@ -176,44 +178,60 @@ begin
       raise exception 'An item in your bag has no inventory variant. Please contact support.';
     end if;
 
-    select i.* into v_inventory
-      from public.inventory i
-     where i.variant_id = v_item.variant_id
-       and i.on_hand - i.reserved - i.damaged >= v_item.quantity
-     order by i.warehouse_id
-     limit 1
-     for update;
+    -- Allocate across warehouses when no single warehouse holds the full
+    -- quantity. Each eligible inventory row is locked before its available
+    -- quantity is read and reserved.
+    v_remaining := v_item.quantity;
 
-    if not found then
+    for v_inventory in
+      select i.*
+        from public.inventory i
+       where i.variant_id = v_item.variant_id
+         and i.on_hand - i.reserved - i.damaged > 0
+       order by i.warehouse_id
+       for update
+    loop
+      exit when v_remaining <= 0;
+
+      v_take := least(
+        v_remaining,
+        greatest(v_inventory.on_hand - v_inventory.reserved - v_inventory.damaged, 0)
+      );
+
+      if v_take > 0 then
+        update public.inventory
+           set reserved = reserved + v_take,
+               updated_at = v_now
+         where id = v_inventory.id
+           and on_hand - reserved - damaged >= v_take;
+
+        if not found then
+          raise exception 'Inventory changed while reserving stock. Please retry.';
+        end if;
+
+        insert into public.stock_reservations(
+          order_id, warehouse_id, variant_id, quantity, status, expires_at
+        ) values (
+          v_order.id, v_inventory.warehouse_id, v_item.variant_id,
+          v_take, 'active', v_now + interval '48 hours'
+        );
+
+        insert into public.inventory_movements(
+          warehouse_id, variant_id, movement_type, quantity_change, reserved_change,
+          reference_type, reference_id, notes, created_by
+        ) values (
+          v_inventory.warehouse_id, v_item.variant_id, 'reservation', 0, v_take,
+          'order', v_order.id, 'Stock reserved for 48-hour customer PayPal checkout.', null
+        );
+
+        v_remaining := v_remaining - v_take;
+        v_reservation_count := v_reservation_count + v_take;
+      end if;
+    end loop;
+
+    if v_remaining > 0 then
       raise exception 'Insufficient stock for one or more items. Choose the shipping quote option or contact support.';
     end if;
-
-    update public.inventory
-       set reserved = reserved + v_item.quantity,
-           updated_at = v_now
-     where id = v_inventory.id
-       and on_hand - reserved - damaged >= v_item.quantity;
-
-    if not found then
-      raise exception 'Inventory changed while reserving stock. Please retry.';
-    end if;
-
-    insert into public.stock_reservations(
-      order_id, warehouse_id, variant_id, quantity, status, expires_at
-    ) values (
-      v_order.id, v_inventory.warehouse_id, v_item.variant_id,
-      v_item.quantity, 'active', v_now + interval '48 hours'
-    );
-
-    insert into public.inventory_movements(
-      warehouse_id, variant_id, movement_type, quantity_change, reserved_change,
-      reference_type, reference_id, notes, created_by
-    ) values (
-      v_inventory.warehouse_id, v_item.variant_id, 'reservation', 0, v_item.quantity,
-      'order', v_order.id, 'Stock reserved for 48-hour customer PayPal checkout.', null
-    );
-
-    v_reservation_count := v_reservation_count + v_item.quantity;
   end loop;
 
   update public.orders
