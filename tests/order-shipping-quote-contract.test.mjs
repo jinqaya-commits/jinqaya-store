@@ -48,3 +48,8 @@ test("PayPal create and capture continue using the stored order total, not a cli
   assert.doesNotMatch(paypalCreate, /body\.amount/);
   assert.doesNotMatch(paypalCapture, /body\.amount/);
 });
+
+test("staff quote confirmation refuses to double-reserve stock already held for the order", () => {
+  assert.match(migration, /This order already has active stock reservations/);
+  assert.match(migration, /where order_id = p_order_id and status = 'active'/);
+});
