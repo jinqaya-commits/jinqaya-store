@@ -76,19 +76,23 @@ export function ProductBulkToolbar() {
     if (!window.confirm(`You are about to ${action} ${ids.length} selected product(s). ${status === "active" ? "Products that fail the publishing checklist will remain unpublished." : "Selected products will be removed from the storefront."} Continue?`)) return;
     setReport(null);
     startTransition(async () => {
-      const result = await bulkSetProductStatus(ids, status);
-      if (result.error) {
-        setReport({ success: 0, failures: [{ name: "Batch", error: result.error }] });
-        return;
+      try {
+        const result = await bulkSetProductStatus(ids, status);
+        if (result.error) {
+          setReport({ success: 0, failures: [{ name: "Batch", error: result.error }] });
+          return;
+        }
+        const rows = result.results ?? [];
+        const failures = rows.filter((row) => !row.success).map((row) => ({
+          name: names.get(row.productId) ?? row.productId,
+          error: row.error ?? "Update failed.",
+        }));
+        setReport({ success: rows.filter((row) => row.success).length, failures });
+        replaceSelection(rows.filter((row) => !row.success).map((row) => row.productId));
+        router.refresh();
+      } catch (caught) {
+        setReport({ success: 0, failures: [{ name: "Batch", error: caught instanceof Error ? caught.message : "Unable to update selected products." }] });
       }
-      const rows = result.results ?? [];
-      const failures = rows.filter((row) => !row.success).map((row) => ({
-        name: names.get(row.productId) ?? row.productId,
-        error: row.error ?? "Update failed.",
-      }));
-      setReport({ success: rows.filter((row) => row.success).length, failures });
-      replaceSelection(rows.filter((row) => !row.success).map((row) => row.productId));
-      router.refresh();
     });
   }
 
