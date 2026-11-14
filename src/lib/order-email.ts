@@ -166,17 +166,21 @@ export async function sendOrderOutboxEmail(
       subject: `JINQAYA received your order request ${order.orderNumber}`,
       html: shell("We’ve received your request.", `<p>Hello ${safeName},</p><p>Your order request <strong>${escapeHtml(order.orderNumber)}</strong> has been received.</p>
         <p><strong>Item subtotal:</strong> ${escapeHtml(subtotal)}</p>
-        <p><strong>Estimated shipping:</strong> ${escapeHtml(money(order.shippingAmount, order.currency))}</p>
+        <p><strong>Shipping:</strong> ${escapeHtml(money(order.shippingAmount, order.currency))}</p>
         <p>Your checkout page shows the confirmed order total. If all items were reserved, you can pay securely with PayPal directly on that page. This order is not paid until PayPal confirms payment.</p>
         <p>If you leave checkout before paying, you can still find your order using your order number and checkout email on our Track Order page.</p>`),
-      text: `Hello ${order.customerName || "there"},\n\nWe received order ${order.orderNumber}. Item subtotal: ${subtotal}. Estimated shipping: ${money(order.shippingAmount, order.currency)}. If all items were reserved, you can pay securely with PayPal directly on the checkout page. This order is not paid until PayPal confirms payment. If you leave checkout, you can find your order using your order number and checkout email on our Track Order page.\n\nJINQAYA`,
+      text: `Hello ${order.customerName || "there"},\n\nWe received order ${order.orderNumber}. Item subtotal: ${subtotal}. Shipping: ${money(order.shippingAmount, order.currency)}. If all items were reserved, you can pay securely with PayPal directly on the checkout page. This order is not paid until PayPal confirms payment. If you leave checkout, you can find your order using your order number and checkout email on our Track Order page.\n\nJINQAYA`,
     }, idempotencyKey);
   }
+  const shippingConfirmed = order.shippingAmount !== null && order.shippingAmount !== undefined;
+  const shippingSummary = shippingConfirmed
+    ? `Shipping: ${money(order.shippingAmount, order.currency)}. Stock is reserved for 48 hours while the customer completes PayPal payment.`
+    : "Shipping is not yet quoted and payment has not been collected.";
   return send({
     to: recipientEmail,
-    subject: `New order request: ${order.orderNumber}`,
-    html: shell("New order request.", `<p><strong>Order:</strong> ${escapeHtml(order.orderNumber)}</p><p><strong>Customer:</strong> ${safeName} (${escapeHtml(order.customerEmail)})</p><p><strong>Item subtotal:</strong> ${escapeHtml(subtotal)}</p><p>Please review the order in the JINQAYA admin dashboard. Shipping is not yet quoted and payment has not been collected.</p>`),
-    text: `New order request ${order.orderNumber}. Customer: ${order.customerName} (${order.customerEmail}). Item subtotal: ${subtotal}. Review in admin; no payment collected.`,
+    subject: `${shippingConfirmed ? "New order awaiting PayPal payment" : "New order request"}: ${order.orderNumber}`,
+    html: shell(shippingConfirmed ? "New order awaiting payment." : "New order request.", `<p><strong>Order:</strong> ${escapeHtml(order.orderNumber)}</p><p><strong>Customer:</strong> ${safeName} (${escapeHtml(order.customerEmail)})</p><p><strong>Item subtotal:</strong> ${escapeHtml(subtotal)}</p><p>${escapeHtml(shippingSummary)}</p><p>Please review the order in the JINQAYA admin dashboard.</p>`),
+    text: `${shippingConfirmed ? "New order awaiting PayPal payment" : "New order request"} ${order.orderNumber}. Customer: ${order.customerName} (${order.customerEmail}). Item subtotal: ${subtotal}. ${shippingSummary} Review in admin.`,
   }, idempotencyKey);
 }
 
