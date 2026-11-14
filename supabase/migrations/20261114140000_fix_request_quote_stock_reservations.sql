@@ -18,7 +18,7 @@ $old$;
   v_existing boolean := false;
   v_reservation public.stock_reservations%rowtype;
 $new$;
-  if pg_catalog.position(v_old in v_definition) > 0 then
+  if pg_catalog.strpos(v_definition, v_old) > 0 then
     v_definition := pg_catalog.replace(v_definition, v_old, v_new);
   elsif pg_catalog.position(v_new in v_definition) = 0 then
     raise exception 'Could not locate checkout-mode function declaration; migration stopped.';
@@ -32,7 +32,7 @@ $old$;
 
   v_result := public.submit_guest_order(
 $new$;
-  if pg_catalog.position(v_old in v_definition) > 0 then
+  if pg_catalog.strpos(v_definition, v_old) > 0 then
     v_definition := pg_catalog.replace(v_definition, v_old, v_new);
   elsif pg_catalog.position(v_new in v_definition) = 0 then
     raise exception 'Could not locate legacy guest-order call; migration stopped.';
@@ -145,7 +145,7 @@ $old$;
     );
   end if;
 $new$;
-  if pg_catalog.position(v_old in v_definition) > 0 then
+  if pg_catalog.strpos(v_definition, v_old) > 0 then
     v_definition := pg_catalog.replace(v_definition, v_old, v_new);
   elsif pg_catalog.position(v_new in v_definition) = 0 then
     raise exception 'Could not locate quote-request branch; migration stopped.';
@@ -178,7 +178,7 @@ begin
   end if;
   if new.status is not distinct from old.status then
 $new$;
-  if pg_catalog.position(v_old in v_definition) > 0 then
+  if pg_catalog.strpos(v_definition, v_old) > 0 then
     v_definition := pg_catalog.replace(v_definition, v_old, v_new);
   elsif pg_catalog.position(v_new in v_definition) = 0 then
     raise exception 'Could not locate order email trigger guard; migration stopped.';
