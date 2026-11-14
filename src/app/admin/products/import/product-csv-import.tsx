@@ -65,7 +65,8 @@ export function ProductCsvImport({ categories }: { categories: Category[] }) {
         if (!record.name) rowError = "Product name is required.";
         else if (!categoryBySlug.has((record.category_slug || "").toLowerCase())) rowError = "Unknown category_slug. Use an active category slug.";
         else if (record.pet_type && !["cat", "dog", "both", "shared"].includes(record.pet_type.toLowerCase())) rowError = "pet_type must be cat, dog, both or shared.";
-        else if ((record.price || record.compare_at_price) && !record.sku) rowError = "Add an SKU when importing a price.";\n        else if (record.price && (!Number.isFinite(Number(record.price)) || Number(record.price) < 0)) rowError = "Price must be a non-negative number.";
+        else if ((record.price || record.compare_at_price) && !record.sku) rowError = "Add an SKU when importing a price.";
+        else if (record.price && (!Number.isFinite(Number(record.price)) || Number(record.price) < 0)) rowError = "Price must be a non-negative number.";
         else if (record.compare_at_price && (!Number.isFinite(Number(record.compare_at_price)) || Number(record.compare_at_price) < 0)) rowError = "Compare-at price must be a non-negative number.";
         return { line: index + 2, values: record, error: rowError || undefined };
       });
