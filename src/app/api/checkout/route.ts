@@ -13,7 +13,7 @@ type CheckoutBody = {
     address_line1?: string; address_line2?: string; postal_code?: string;
   };
   items?: Array<{ variant_id?: string; quantity?: number }>;
-  customer_note?: string; idempotency_key?: string; website?: string;
+  customer_note?: string; idempotency_key?: string; website?: string; checkout_mode?: string;
 };
 
 export async function POST(request: Request) {
@@ -28,6 +28,10 @@ export async function POST(request: Request) {
 
   if (!body.customer || !body.shipping_address || !Array.isArray(body.items) || !body.idempotency_key) {
     return NextResponse.json({ error: "Please complete your contact and shipping details." }, { status: 400 });
+  }
+  const checkoutMode = body.checkout_mode ?? "direct_payment";
+  if (checkoutMode !== "direct_payment" && checkoutMode !== "manual_quote") {
+    return NextResponse.json({ error: "Please choose a valid checkout option." }, { status: 400 });
   }
   // Enforce destination restrictions against both fields. Never trust a customer-entered
   // country code alone: a mismatched country name must not bypass the shipping policy.
@@ -67,6 +71,7 @@ export async function POST(request: Request) {
       p_items: items,
       p_customer_note: String(body.customer_note || ""),
       p_honeypot: String(body.website || ""),
+      p_checkout_mode: checkoutMode,
     });
 
     if (error) {
