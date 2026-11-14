@@ -53,6 +53,24 @@ BEGIN
              || jsonb_build_object('checkout_mode','request_quote'),
              updated_at = v_now
        WHERE id = v_order_id;
+
+      INSERT INTO public.order_email_outbox(order_id,event_type,recipient_type,recipient_email,payload)
+      VALUES
+        (v_order_id,'order_received','customer',v_order.customer_email,
+         jsonb_build_object('eventType','order_received','checkoutMode','request_quote',
+           'orderNumber',v_order.order_number,'customerName',coalesce(v_order.shipping_address_snapshot->>'recipient_name',''),
+           'customerEmail',v_order.customer_email,'subtotal',v_order.subtotal,'currency',v_order.currency,
+           'shippingAmount',null,'shippingMethod',null))
+      ON CONFLICT (order_id,event_type,recipient_type) DO NOTHING;
+
+      INSERT INTO public.order_email_outbox(order_id,event_type,recipient_type,recipient_email,payload)
+      VALUES
+        (v_order_id,'order_received','staff','jinqaya@gmail.com',
+         jsonb_build_object('eventType','order_received','checkoutMode','request_quote',
+           'orderNumber',v_order.order_number,'customerName',coalesce(v_order.shipping_address_snapshot->>'recipient_name',''),
+           'customerEmail',v_order.customer_email,'subtotal',v_order.subtotal,'currency',v_order.currency,
+           'shippingAmount',null,'shippingMethod',null))
+      ON CONFLICT (order_id,event_type,recipient_type) DO NOTHING;
     END IF;
     SELECT * INTO v_order FROM public.orders WHERE id = v_order_id;
     RETURN jsonb_build_object(
