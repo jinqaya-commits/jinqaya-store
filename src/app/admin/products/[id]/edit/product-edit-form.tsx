@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { updateProduct, updateVariant, removeVariant, reorderImages, removeImage, addProductImage, updateProductImageAlt, replaceProductImage } from "../../actions";
+import { updateProduct, updateVariant, removeVariant, reorderImages, removeImage, addProductImage, updateProductImageAlt, updateProductImageAltBatch, replaceProductImage } from "../../actions";
 
 type Category = {id:string;parent_id:string|null;name:string;slug:string;sort_order:number;is_active:boolean};
 type Product = { id:string; name:string; pet_type:"cat"|"dog"|"both"|"shared"; short_description:string|null; description:string|null; material:string|null; care_instructions:string|null; seo_title:string|null; seo_description:string|null; status:"draft"|"active"|"archived" };
@@ -29,7 +29,7 @@ export function ProductEditForm({product,categoryIds,primaryCategoryId,categorie
  const [images,setImages]=useState([...initialImages].sort((a,b)=>a.sort_order-b.sort_order));
  const [draggedImageId,setDraggedImageId]=useState<string|null>(null);
  const [selectedImageId,setSelectedImageId]=useState<string|null>(initialImages[0]?.id??null);
- const [error,setError]=useState(""); const [busy,setBusy]=useState(false); const [uploadBusy,setUploadBusy]=useState(false); const [pendingFiles,setPendingFiles]=useState<File[]>([]); const [uploadProgress,setUploadProgress]=useState<{completed:number;total:number}|null>(null); const [draggingFiles,setDraggingFiles]=useState(false); const router=useRouter();
+ const [error,setError]=useState(""); const [busy,setBusy]=useState(false); const [uploadBusy,setUploadBusy]=useState(false); const [altSaving,setAltSaving]=useState(false); const [pendingFiles,setPendingFiles]=useState<File[]>([]); const [uploadProgress,setUploadProgress]=useState<{completed:number;total:number}|null>(null); const [draggingFiles,setDraggingFiles]=useState(false); const router=useRouter();
  async function run(action:()=>Promise<{error?:string;success?:boolean}>) {setBusy(true);setError("");try{const result=await action();if(result.error){setError(result.error);setBusy(false);return false;}setBusy(false);router.refresh();return true;}catch(e){setError(e instanceof Error?e.message:"Unable to save.");setBusy(false);return false;}}
  async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();await run(()=>updateProduct(product.id,{...fields,categoryIds:selectedCategoryIds,primaryCategoryId:selectedPrimaryCategoryId}));}
  function toggleCategory(categoryId:string,checked:boolean) {
@@ -48,6 +48,20 @@ export function ProductEditForm({product,categoryIds,primaryCategoryId,categorie
  async function dropImageOn(targetId:string){if(!draggedImageId||draggedImageId===targetId)return;const next=[...images];const from=next.findIndex(image=>image.id===draggedImageId);const to=next.findIndex(image=>image.id===targetId);if(from<0||to<0)return;const [moved]=next.splice(from,1);next.splice(to,0,moved);setDraggedImageId(null);await persistImageOrder(next);}
  async function dropImage(img:Image){const ok=await run(()=>removeImage(product.id,img.id,img.storage_path));if(ok){const next=images.filter(x=>x.id!==img.id);setImages(next);if(selectedImageId===img.id)setSelectedImageId(next[0]?.id??null);}}
  async function saveImageAlt(img:Image){const ok=await run(()=>updateProductImageAlt(product.id,img.id,img.alt_text??""));if(ok)router.refresh();}
+ async function saveAllImageAlt(){
+  if(!images.length)return;
+  const missing=images.filter(img=>!img.alt_text?.trim());
+  if(missing.length){setError(`Add a description to all ${missing.length} remaining image(s) before saving the batch.`);return;}
+  setAltSaving(true);setError("");
+  try{
+   const result=await updateProductImageAltBatch(product.id,images.map(img=>({imageId:img.id,altText:img.alt_text??""})));
+   if("error" in result&&result.error){setError(result.error);return;}
+   const failures="failures" in result?result.failures:[];
+   if(failures.length){setError(`${result.updated} description(s) saved; ${failures.length} failed. Save the failed descriptions again.`);return;}
+   router.refresh();
+  }catch(err){setError(err instanceof Error?err.message:"Unable to save image descriptions.");}
+  finally{setAltSaving(false);}
+ }
  function previewUrlFor(storagePath:string){const key=storagePath.startsWith("r2://")?storagePath.slice(5):storagePath;return "https://images.jinqaya.com/"+key.split("/").map(encodeURIComponent).join("/");}
  async function replaceImage(img:Image,file?:File){
   if(!file)return;
@@ -146,6 +160,7 @@ export function ProductEditForm({product,categoryIds,primaryCategoryId,categorie
    {uploadBusy&&uploadProgress&&<p className="admin-help">Uploading images: {uploadProgress.completed} of {uploadProgress.total} complete…</p>}
    {!uploadBusy&&pendingFiles.length>0&&<div className="admin-selected-images"><p className="admin-help">{pendingFiles.length} image(s) still waiting to upload. Successfully saved images will not be uploaded again.</p><button type="button" className="admin-secondary-button" disabled={busy} onClick={()=>void uploadImages(pendingFiles)}>Retry remaining images</button></div>}
    <div className="admin-image-summary"><strong>{images.length} {images.length===1?"image":"images"}</strong><span>Drag to reorder · Select a photo to edit</span></div>
+   {images.length>0&&<div className="admin-form-actions"><button type="button" className="admin-secondary-button" disabled={busy||uploadBusy||altSaving} onClick={()=>void saveAllImageAlt()}>{altSaving?"Saving descriptions…":"Save all image descriptions"}</button><span className="admin-help">Save every image description together; all images must have text.</span></div>}
    {images.length===0?<p className="admin-help">No images uploaded.</p>:<>
     <div className="admin-image-grid">
      {images.map((img,i)=><div className={"admin-image-tile"+(selectedImageId===img.id?" is-selected":"")+(draggedImageId===img.id?" is-dragging":"")} key={img.id} draggable={!busy&&!uploadBusy} onDragStart={event=>{setDraggedImageId(img.id);event.dataTransfer.effectAllowed="move";event.dataTransfer.setData("text/plain",img.id);}} onDragOver={event=>{event.preventDefault();event.dataTransfer.dropEffect="move";}} onDrop={event=>{event.preventDefault();void dropImageOn(img.id);}} onDragEnd={()=>setDraggedImageId(null)}>
