@@ -123,7 +123,11 @@ async function applyProductStatus(
     }
     if (!product) return "Product not found.";
     const readiness = getProductReadiness({
-      ...product,
+      shortDescription: product.short_description,
+      description: product.description,
+      material: product.material,
+      seoTitle: product.seo_title,
+      seoDescription: product.seo_description,
       images: images ?? [],
       variants: variants ?? [],
       categories: (categoryLinks ?? []).map((link) => {
