@@ -111,6 +111,7 @@ function money(amount: number | string | null | undefined, currency: string) {
 }
 
 export type OrderEmailOutboxPayload = {
+  checkoutMode?: "pay_now" | "request_quote";
   eventType?: "order_received" | "quote_confirmed" | "payment_received" | "shipped" | "delivered" | "cancelled" | "reservation_expired" | "after_sales_submitted" | "after_sales_under_review" | "after_sales_approved" | "after_sales_rejected" | "after_sales_resolved" | "after_sales_refund_recorded";
   orderNumber: string;
   customerName: string;
@@ -161,15 +162,23 @@ export async function sendOrderOutboxEmail(
   }
   const subtotal = money(order.subtotal, order.currency);
   if (recipientType === "customer") {
+    const quoteRequested = order.checkoutMode === "request_quote";
+    const customerCopy = quoteRequested
+      ? "Our team will review the delivery cost and contact you with a shipping quote and final order total before payment. No payment has been taken."
+      : "Your checkout page shows the confirmed order total. If all items were reserved, you can pay securely with PayPal directly on that page. This order is not paid until PayPal confirms payment.";
+    const shippingLine = quoteRequested ? "" : `<p><strong>Estimated shipping:</strong> ${escapeHtml(money(order.shippingAmount, order.currency))}</p>`;
+    const textShipping = quoteRequested ? "" : ` Estimated shipping: ${money(order.shippingAmount, order.currency)}.`;
     return send({
       to: recipientEmail,
-      subject: `JINQAYA received your order request ${order.orderNumber}`,
-      html: shell("We’ve received your request.", `<p>Hello ${safeName},</p><p>Your order request <strong>${escapeHtml(order.orderNumber)}</strong> has been received.</p>
+      subject: quoteRequested
+        ? `JINQAYA received your shipping quote request ${order.orderNumber}`
+        : `JINQAYA received your order request ${order.orderNumber}`,
+      html: shell(quoteRequested ? "Your shipping quote request is with us." : "We’ve received your request.", `<p>Hello ${safeName},</p><p>Your order request <strong>${escapeHtml(order.orderNumber)}</strong> has been received.</p>
         <p><strong>Item subtotal:</strong> ${escapeHtml(subtotal)}</p>
-        <p><strong>Estimated shipping:</strong> ${escapeHtml(money(order.shippingAmount, order.currency))}</p>
-        <p>Your checkout page shows the confirmed order total. If all items were reserved, you can pay securely with PayPal directly on that page. This order is not paid until PayPal confirms payment.</p>
-        <p>If you leave checkout before paying, you can still find your order using your order number and checkout email on our Track Order page.</p>`),
-      text: `Hello ${order.customerName || "there"},\n\nWe received order ${order.orderNumber}. Item subtotal: ${subtotal}. Estimated shipping: ${money(order.shippingAmount, order.currency)}. If all items were reserved, you can pay securely with PayPal directly on the checkout page. This order is not paid until PayPal confirms payment. If you leave checkout, you can find your order using your order number and checkout email on our Track Order page.\n\nJINQAYA`,
+        ${shippingLine}
+        <p>${escapeHtml(customerCopy)}</p>
+        <p>If you need to return to your order, you can use your order number and checkout email on our Track Order page.</p>`),
+      text: `Hello ${order.customerName || "there"},\n\nWe received order ${order.orderNumber}. Item subtotal: ${subtotal}.${textShipping} ${customerCopy} If you need to return to your order, use your order number and checkout email on our Track Order page.\n\nJINQAYA`,
     }, idempotencyKey);
   }
   return send({
