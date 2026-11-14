@@ -33,7 +33,7 @@ test("checkout confirmation shows immediate PayPal payment for reserved stock an
 });
 
 test("checkout copy explains that customers can pay immediately without looking up the order", () => {
-  assert.match(checkoutForm, /pay immediately with PayPal on the next screen/);
+  assert.match(checkoutForm, /choose whether to pay immediately or request a shipping quote/);
   assert.match(checkoutForm, /no need to look up your order or enter a verification code/);
   assert.match(checkoutForm, /Payment is not available yet/);
   assert.match(checkoutForm, /You won’t be charged when you submit/);
