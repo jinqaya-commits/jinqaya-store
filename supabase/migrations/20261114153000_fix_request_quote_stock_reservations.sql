@@ -170,7 +170,7 @@ begin
   v_new := pg_catalog.regexp_replace(
     v_definition,
     'BEGIN\s+IF\s+NEW\.status\s+IS\s+NOT\s+DISTINCT\s+FROM\s+OLD\.status\s+THEN\s+RETURN\s+NEW;\s+END\s+IF;',
-    'BEGIN IF pg_catalog.current_setting(''app.checkout_mode'', true) = ''request_quote'' THEN RETURN NEW; END IF; IF NEW.status IS NOT DISTINCT FROM OLD.status THEN RETURN NEW; END IF;',
+    'BEGIN IF pg_catalog.current_setting(''app.checkout_mode'', true) in (''request_quote'', ''pay_now'') THEN RETURN NEW; END IF; IF NEW.status IS NOT DISTINCT FROM OLD.status THEN RETURN NEW; END IF;',
     'i'
   );
   if v_new = v_definition then
