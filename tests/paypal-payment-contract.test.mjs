@@ -154,3 +154,14 @@ test("admin UI exposes stock review only for paid PayPal orders flagged by the d
   assert.match(adminOrderActions, /status==="paid"&&!stockReviewRequired/);
   assert.match(adminOrderServerActions, /admin_resolve_paid_order_stock_review/);
 });
+
+
+const shippingValidationSql = await readFile(new URL("../supabase/migrations/20261114120000_fix_paypal_shipping_validation.sql", import.meta.url), "utf8");
+
+test("PayPal payment recording accepts each server-confirmed checkout shipping mode and exact final total", () => {
+  assert.match(shippingValidationSql, /shipping_quote_snapshot->>'status',''\) <> 'confirmed'/);
+  assert.match(shippingValidationSql, /shipping_quote_snapshot->>'checkout_mode',''\) NOT IN \('pay_now','request_quote'\)/);
+  assert.match(shippingValidationSql, /shipping_quote_snapshot->>'amount'\)::numeric,-1\),2\)/);
+  assert.match(shippingValidationSql, /coalesce\(v_order\.tax_amount,0\) - coalesce\(v_order\.discount_amount,0\)/);
+  assert.doesNotMatch(shippingValidationSql, /shipping_amount,0\),2\) <> round\(coalesce\(v_order\.subtotal,0\)\*0\.50/);
+});
