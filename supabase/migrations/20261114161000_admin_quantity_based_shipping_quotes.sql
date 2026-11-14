@@ -31,7 +31,10 @@ begin
   if p_shipping_amount is not null and (p_shipping_amount<0 or p_shipping_amount>99999999.99 or p_shipping_amount<>round(p_shipping_amount,2)) then
    raise exception 'Shipping amount must be a non-negative amount with no more than two decimal places.';
   end if;
-  select coalesce(sum(oi.quantity),0)::integer into v_units from public.order_items oi where oi.order_id=p_order_id;\n  v_auto_shipping:=case when v_units<=2 then 50.00 else round(coalesce(v_order.subtotal,0)*0.50,2) end;\n  v_shipping:=round(coalesce(p_shipping_amount,v_auto_shipping),2);\n  v_adjustment:=round(v_shipping-v_auto_shipping,2);
+  select coalesce(sum(oi.quantity),0)::integer into v_units from public.order_items oi where oi.order_id=p_order_id;
+  v_auto_shipping:=case when v_units<=2 then 50.00 else round(coalesce(v_order.subtotal,0)*0.50,2) end;
+  v_shipping:=round(coalesce(p_shipping_amount,v_auto_shipping),2);
+  v_adjustment:=round(v_shipping-v_auto_shipping,2);
   v_method:=coalesce(nullif(pg_catalog.trim(coalesce(p_shipping_method,'')),''),case when v_shipping=v_auto_shipping then 'Standard shipping estimate' else 'Custom shipping quote' end);
   if exists(select 1 from public.stock_reservations where order_id=p_order_id and status='active') then raise exception 'This order already has active stock reservations. Review inventory before continuing.'; end if;
   for v_item in select oi.variant_id,sum(oi.quantity)::integer quantity from public.order_items oi where oi.order_id=p_order_id group by oi.variant_id order by oi.variant_id loop
