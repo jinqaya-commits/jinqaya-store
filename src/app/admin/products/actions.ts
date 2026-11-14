@@ -395,3 +395,47 @@ export async function updateProductImageAlt(productId: string, imageId: string, 
   revalidatePath("/shop");
   return { success: true };
 }
+
+export async function updateProductImageAltBatch(
+  productId: string,
+  updates: { imageId: string; altText: string }[],
+) {
+  const supabase = await requireCatalogManager();
+  if (!Array.isArray(updates) || updates.length === 0) return { error: "There are no image descriptions to save." };
+  if (updates.length > 100) return { error: "Save no more than 100 image descriptions at a time." };
+
+  const normalized = updates.map((item) => ({
+    imageId: typeof item?.imageId === "string" ? item.imageId : "",
+    altText: typeof item?.altText === "string" ? item.altText.trim() : "",
+  }));
+  const ids = normalized.map((item) => item.imageId);
+  if (ids.some((id) => !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id)) ||
+      new Set(ids).size !== ids.length) {
+    return { error: "The image selection is invalid. Refresh the page and try again." };
+  }
+  if (normalized.some((item) => !item.altText || item.altText.length > 180)) {
+    return { error: "Every image needs a description between 1 and 180 characters." };
+  }
+
+  const { data: ownedImages, error: readError } = await supabase
+    .from("product_images").select("id").eq("product_id", productId).in("id", ids);
+  if (readError) return { error: readError.message };
+  if ((ownedImages ?? []).length !== ids.length) return { error: "One or more images no longer belong to this product. Refresh and try again." };
+
+  const results = await Promise.all(normalized.map(async (item) => {
+    const { error } = await supabase.from("product_images")
+      .update({ alt_text: item.altText })
+      .eq("id", item.imageId)
+      .eq("product_id", productId);
+    return { imageId: item.imageId, error: error?.message };
+  }));
+  const failures = results.filter((item) => item.error);
+  const updated = results.length - failures.length;
+  if (updated > 0) {
+    const { data: product } = await supabase.from("products").select("slug").eq("id", productId).maybeSingle();
+    revalidatePath("/admin/products");
+    revalidatePath("/shop");
+    if (product?.slug) revalidatePath(`/products/${product.slug}`);
+  }
+  return { updated, failures };
+}
