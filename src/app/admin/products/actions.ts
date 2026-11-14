@@ -27,6 +27,15 @@ function slugify(value: string) {
     .replace(/^-|-$/g, "");
 }
 
+export type CreateProductVariantInput = {
+  sku: string;
+  variantName: string;
+  color: string;
+  size: string;
+  price: string;
+  compareAtPrice: string;
+};
+
 export type CreateProductInput = {
   name: string;
   categoryIds: string[];
@@ -38,14 +47,83 @@ export type CreateProductInput = {
   careInstructions: string;
   seoTitle: string;
   seoDescription: string;
-  sku: string;
-  variantName: string;
-  color: string;
-  size: string;
-  price: string;
-  compareAtPrice: string;
+  variants: CreateProductVariantInput[];
   status: "draft" | "active";
 };
+
+function prepareProductVariants(variants: CreateProductVariantInput[]) {
+  if (!Array.isArray(variants) || variants.length > 100) {
+    return { error: "Add no more than 100 SKU variants at a time." } as const;
+  }
+  const rows: { sku: string; variant_name: string | null; color: string | null; size: string | null; price: number | null; compare_at_price: number | null; currency: string }[] = [];
+  const seen = new Set<string>();
+  for (const variant of variants) {
+    const sku = typeof variant?.sku === "string" ? variant.sku.trim() : "";
+    const variantName = typeof variant?.variantName === "string" ? variant.variantName.trim() : "";
+    const color = typeof variant?.color === "string" ? variant.color.trim() : "";
+    const size = typeof variant?.size === "string" ? variant.size.trim() : "";
+    const rawPrice = typeof variant?.price === "string" ? variant.price.trim() : "";
+    const rawCompare = typeof variant?.compareAtPrice === "string" ? variant.compareAtPrice.trim() : "";
+    if (!sku && !variantName && !color && !size && !rawPrice && !rawCompare) continue;
+    if (!sku) return { error: "Every variant row with details must have a SKU." } as const;
+    if (sku.length > 100) return { error: "SKU must be 100 characters or fewer." } as const;
+    const key = sku.toLocaleLowerCase();
+    if (seen.has(key)) return { error: `Duplicate SKU in this product: ${sku}.` } as const;
+    seen.add(key);
+    const price = rawPrice ? Number(rawPrice) : null;
+    const compareAtPrice = rawCompare ? Number(rawCompare) : null;
+    if ((price !== null && (!Number.isFinite(price) || price < 0)) ||
+        (compareAtPrice !== null && (!Number.isFinite(compareAtPrice) || compareAtPrice < 0))) {
+      return { error: `Enter valid non-negative prices for SKU ${sku}.` } as const;
+    }
+    rows.push({
+      sku,
+      variant_name: variantName || null,
+      color: color || null,
+      size: size || null,
+      price,
+      compare_at_price: compareAtPrice,
+      currency: "USD",
+    });
+  }
+  return { rows } as const;
+}
+
+async function insertMissingProductVariants(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  productId: string,
+  variants: CreateProductVariantInput[],
+) {
+  const prepared = prepareProductVariants(variants);
+  if ("error" in prepared) return prepared.error;
+  if (!prepared.rows.length) return null;
+  const { data: existing, error: readError } = await supabase
+    .from("product_variants").select("sku").eq("product_id", productId);
+  if (readError) return readError.message;
+  const existingSkus = new Set((existing ?? []).map((item) => item.sku.toLocaleLowerCase()));
+  const missing = prepared.rows.filter((item) => !existingSkus.has(item.sku.toLocaleLowerCase()));
+  if (!missing.length) return null;
+  const { error } = await supabase.from("product_variants").insert(
+    missing.map((variant) => ({ ...variant, product_id: productId })),
+  );
+  return error?.message ?? null;
+}
+
+export async function saveProductVariants(productId: string, variants: CreateProductVariantInput[]) {
+  const supabase = await requireCatalogManager();
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(productId)) {
+    return { error: "Invalid product." };
+  }
+  const { data: product, error: productError } = await supabase
+    .from("products").select("id").eq("id", productId).maybeSingle();
+  if (productError) return { error: productError.message };
+  if (!product) return { error: "Product not found." };
+  const error = await insertMissingProductVariants(supabase, productId, variants);
+  if (error) return { error };
+  revalidatePath("/admin/products");
+  revalidatePath("/shop");
+  return { success: true };
+}
 
 export async function createProduct(input: CreateProductInput) {
   const supabase = await requireCatalogManager();
@@ -64,12 +142,9 @@ export async function createProduct(input: CreateProductInput) {
   }
   if (input.status === "active") return { error: "New products are created as drafts. Complete the product information, add images and a priced SKU, then publish from the product list." };
 
-  const price = input.sku.trim() && input.price.trim() ? Number(input.price) : null;
-  const compareAtPrice = input.sku.trim() && input.compareAtPrice.trim() ? Number(input.compareAtPrice) : null;
-  if ((price !== null && (!Number.isFinite(price) || price < 0)) ||
-      (compareAtPrice !== null && (!Number.isFinite(compareAtPrice) || compareAtPrice < 0))) {
-    return { error: "Enter valid non-negative prices." };
-  }
+  const prepared = prepareProductVariants(input.variants ?? []);
+  if ("error" in prepared) return { error: prepared.error };
+  const firstVariant = prepared.rows[0] ?? null;
 
   const { data: existing, error: slugReadError } = await supabase
     .from("products").select("id").eq("slug", slug).maybeSingle();
@@ -90,21 +165,24 @@ export async function createProduct(input: CreateProductInput) {
     },
     p_category_ids: categoryIds,
     p_primary_category_id: input.primaryCategoryId,
-    p_variant: input.sku.trim() ? {
-      sku: input.sku.trim(),
-      variant_name: input.variantName.trim() || null,
-      color: input.color.trim() || null,
-      size: input.size.trim() || null,
-      price,
-      compare_at_price: compareAtPrice,
+    p_variant: firstVariant ? {
+      sku: firstVariant.sku,
+      variant_name: firstVariant.variant_name,
+      color: firstVariant.color,
+      size: firstVariant.size,
+      price: firstVariant.price,
+      compare_at_price: firstVariant.compare_at_price,
     } : null,
   });
   if (error || !productId) return { error: error?.message || "Unable to create product." };
 
+  const variantError = await insertMissingProductVariants(supabase, productId, input.variants ?? []);
   revalidatePath("/admin/products");
   revalidatePath("/shop");
   revalidatePath("/collections");
-  return { productId };
+  return variantError
+    ? { productId, error: `Product created, but some SKUs could not be saved: ${variantError}. Retry saving the SKU list.` }
+    : { productId };
 }
 async function applyProductStatus(
   supabase: Awaited<ReturnType<typeof createClient>>,

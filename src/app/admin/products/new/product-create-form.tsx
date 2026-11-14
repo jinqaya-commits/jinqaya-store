@@ -2,18 +2,18 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { addProductImage, createProduct, type CreateProductInput } from "../actions";
+import { addProductImage, createProduct, saveProductVariants, type CreateProductInput, type CreateProductVariantInput } from "../actions";
 
 type Category = { id: string; parent_id: string|null; name: string; slug:string; sort_order:number };
 
 const initialValues: CreateProductInput = {
   name: "", categoryIds: [], primaryCategoryId: "", petType: "both", shortDescription: "", description: "",
-  material: "", careInstructions: "", seoTitle: "", seoDescription: "", sku: "", variantName: "", color: "", size: "",
-  price: "", compareAtPrice: "", status: "draft",
+  material: "", careInstructions: "", seoTitle: "", seoDescription: "", variants: [], status: "draft",
 };
 
 export function ProductCreateForm({ categories }: { categories: Category[] }) {
   const [values, setValues] = useState(initialValues);
+  const [variants, setVariants] = useState<CreateProductVariantInput[]>([{ sku: "", variantName: "", color: "", size: "", price: "", compareAtPrice: "" }]);
   const [files, setFiles] = useState<File[]>([]);
   const [createdProductId, setCreatedProductId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -65,14 +65,19 @@ export function ProductCreateForm({ categories }: { categories: Category[] }) {
 
       let productId = createdProductId;
       if (!productId) {
-        const result = await createProduct(values);
-        if (result.error || !result.productId) {
+        const result = await createProduct({ ...values, variants });
+        if (result.productId) {
+          productId = result.productId;
+          setCreatedProductId(productId);
+        }
+        if (result.error || !productId) {
           setError(result.error || "Unable to save this product.");
           setBusy(false);
           return;
         }
-        productId = result.productId;
-        setCreatedProductId(productId);
+      } else {
+        const savedVariants = await saveProductVariants(productId, variants);
+        if (savedVariants.error) throw new Error(savedVariants.error);
       }
       if (!productId) throw new Error("Product could not be created.");
 
@@ -120,11 +125,21 @@ export function ProductCreateForm({ categories }: { categories: Category[] }) {
       <div className="admin-form-grid"><label>Material<input value={values.material} onChange={(e) => update("material", e.target.value)} placeholder="e.g. Cotton canvas" /></label><label>Care instructions<input value={values.careInstructions} onChange={(e) => update("careInstructions", e.target.value)} placeholder="e.g. Wipe clean with a damp cloth" /></label></div>
       <div className="admin-form-section"><div className="admin-form-heading"><span>SEO</span><div><h2>Search appearance</h2><p>Optional. Leave blank to use the product name and description automatically.</p></div></div><label>SEO title<input maxLength={65} value={values.seoTitle} onChange={(e) => update("seoTitle", e.target.value)} placeholder="Product name | JINQAYA" /></label><p className="admin-help">{values.seoTitle.length}/65 characters</p><label>SEO description<textarea rows={3} maxLength={160} value={values.seoDescription} onChange={(e) => update("seoDescription", e.target.value)} placeholder="What it is, who it is for and its useful details." /></label><p className="admin-help">{values.seoDescription.length}/160 characters</p></div>
     </section>
-    <section className="admin-form-section"><div className="admin-form-heading"><span>02</span><div><h2>Variant & pricing</h2><p>Add an initial SKU. More variants can be managed in the next catalog update.</p></div></div>
-      <label>SKU<input value={values.sku} onChange={(e) => update("sku", e.target.value)} placeholder="e.g. JQ-WT-001-BE" /></label>
-      <div className="admin-form-grid"><label>Variant name<input value={values.variantName} onChange={(e) => update("variantName", e.target.value)} placeholder="e.g. Beige / Small" /></label><label>Color<input value={values.color} onChange={(e) => update("color", e.target.value)} placeholder="Color" /></label><label>Size<input value={values.size} onChange={(e) => update("size", e.target.value)} placeholder="Size" /></label></div>
-      <div className="admin-form-grid"><label>Price (USD)<input type="number" min="0" step="0.01" value={values.price} onChange={(e) => update("price", e.target.value)} placeholder="0.00" /></label><label>Compare-at price (USD)<input type="number" min="0" step="0.01" value={values.compareAtPrice} onChange={(e) => update("compareAtPrice", e.target.value)} placeholder="Optional" /></label></div>
-      <p className="admin-help">Leave SKU blank to create the product first without a purchasable variant. Stock, shipping and the final order total are confirmed after the customer submits an order request.</p>
+    <section className="admin-form-section"><div className="admin-form-heading"><span>02</span><div><h2>Variants & pricing</h2><p>Add every color and size combination here. Each row becomes a separate SKU with its own price.</p></div></div>
+      {variants.map((variant, index) => <div className="admin-form-section" key={index}>
+        <div className="admin-form-heading"><span>SKU {String(index + 1).padStart(2, "0")}</span><div><h3>Variant {index + 1}</h3></div></div>
+        <label>SKU<input value={variant.sku} onChange={(e) => setVariants(current => current.map((item, i) => i === index ? { ...item, sku: e.target.value } : item))} placeholder="e.g. JQ-WT-001-BE" /></label>
+        <div className="admin-form-grid">
+          <label>Variant name<input value={variant.variantName} onChange={(e) => setVariants(current => current.map((item, i) => i === index ? { ...item, variantName: e.target.value } : item))} placeholder="e.g. Beige / Small" /></label>
+          <label>Color<input value={variant.color} onChange={(e) => setVariants(current => current.map((item, i) => i === index ? { ...item, color: e.target.value } : item))} placeholder="Color" /></label>
+          <label>Size<input value={variant.size} onChange={(e) => setVariants(current => current.map((item, i) => i === index ? { ...item, size: e.target.value } : item))} placeholder="Size" /></label>
+          <label>Price (USD)<input type="number" min="0" step="0.01" value={variant.price} onChange={(e) => setVariants(current => current.map((item, i) => i === index ? { ...item, price: e.target.value } : item))} placeholder="0.00" /></label>
+          <label>Compare-at price (USD)<input type="number" min="0" step="0.01" value={variant.compareAtPrice} onChange={(e) => setVariants(current => current.map((item, i) => i === index ? { ...item, compareAtPrice: e.target.value } : item))} placeholder="Optional" /></label>
+        </div>
+        {variants.length > 1 && <button type="button" className="admin-secondary-button" disabled={busy} onClick={() => setVariants(current => current.filter((_, i) => i !== index))}>Remove this variant</button>}
+      </div>)}
+      <button type="button" className="admin-secondary-button" disabled={busy || variants.length >= 100} onClick={() => setVariants(current => [...current, { sku: "", variantName: "", color: "", size: "", price: "", compareAtPrice: "" }])}>＋ Add another SKU</button>
+      <p className="admin-help">You can create a draft without any SKU. If you add details to a variant row, its SKU is required. Maximum 100 variants per product creation. Stock, shipping and the final order total are confirmed separately.</p>
     </section>
     <section className="admin-form-section"><div className="admin-form-heading"><span>03</span><div><h2>Product images</h2><p>Upload real product photos. After saving, add a specific alt description for each image in the product editor; generic image labels are not accepted as complete.</p></div></div>
       <label className="admin-upload">Choose product images<input type="file" accept="image/jpeg,image/png,image/webp,image/avif" multiple onChange={(e) => {
@@ -141,7 +156,7 @@ export function ProductCreateForm({ categories }: { categories: Category[] }) {
       <p className="admin-help">New products are saved as drafts. Complete the product checklist, add specific image descriptions and a priced SKU, then publish from the product list.</p>
     </section>
     {error && <p className="admin-error" role="alert">{error}</p>}
-    <div className="admin-form-actions"><button type="button" className="admin-secondary-button" disabled={busy} onClick={() => router.push("/admin/products")}>Cancel</button><button type="submit" className="admin-primary-button" disabled={busy || categories.length === 0 || values.categoryIds.length === 0 || !values.primaryCategoryId}>{busy ? "Saving product…" : createdProductId ? "Retry remaining image uploads" : "Save product"}</button></div>
+    <div className="admin-form-actions"><button type="button" className="admin-secondary-button" disabled={busy} onClick={() => router.push("/admin/products")}>Cancel</button><button type="submit" className="admin-primary-button" disabled={busy || categories.length === 0 || values.categoryIds.length === 0 || !values.primaryCategoryId}>{busy ? "Saving product…" : createdProductId ? "Retry SKU & image saving" : "Save product"}</button></div>
     {categories.length === 0 && <p className="admin-error">No active collections found. Add or activate a category before creating a product.</p>}
   </form>;
 }
