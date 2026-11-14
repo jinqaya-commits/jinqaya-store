@@ -16,9 +16,10 @@ create or replace function public.can_manage_catalog() returns boolean language 
 create type public.image_kind as enum ('main', 'gallery');
 create table public.products (id uuid primary key);
 create table public.product_images (
-  id uuid primary key,
+  id uuid primary key default gen_random_uuid(),
   product_id uuid not null references public.products(id),
   storage_path text,
+  alt_text text,
   sort_order integer not null default 0,
   is_primary boolean not null default false,
   image_type public.image_kind not null default 'gallery'
@@ -124,3 +125,149 @@ end
 $$;
 
 select 'product image cleanup migration and safety tests passed' as result;
+
+
+-- Image replacement and cleanup enqueue must commit or roll back together.
+\ir ../supabase/migrations/20261113125359_admin_replace_product_image_atomic_cleanup.sql
+\ir ../supabase/migrations/20261113125417_tighten_atomic_image_replacement_path_validation.sql
+
+create or replace function public.reject_cleanup_queue_insert()
+returns trigger language plpgsql as $$
+begin
+  if new.storage_path = 'old/force-queue-failure.jpg' then
+    raise exception 'simulated cleanup queue failure';
+  end if;
+  return new;
+end
+$$;
+
+do $$
+declare
+  v_product uuid := '00000000-0000-0000-0000-000000000201';
+  v_image uuid := '00000000-0000-0000-0000-000000000202';
+  v_path text;
+begin
+  insert into public.products(id) values (v_product);
+  insert into public.product_images(id, product_id, storage_path)
+  values (v_image, v_product, 'old/previous-image.jpg');
+
+  perform public.admin_replace_product_image(
+    v_product, v_image, 'r2://' || v_product::text || '/replacement.webp'
+  );
+
+  select storage_path into v_path from public.product_images where id = v_image;
+  if v_path <> 'r2://' || v_product::text || '/replacement.webp' then
+    raise exception 'Image replacement did not persist';
+  end if;
+  if not exists (
+    select 1 from public.product_image_cleanup_queue
+    where storage_path = 'old/previous-image.jpg'
+  ) then
+    raise exception 'Previous image was not queued in the replacement transaction';
+  end if;
+
+  update public.product_images
+  set storage_path = 'old/force-queue-failure.jpg'
+  where id = v_image;
+  create trigger reject_cleanup_queue_insert
+    before insert on public.product_image_cleanup_queue
+    for each row execute function public.reject_cleanup_queue_insert();
+
+  begin
+    perform public.admin_replace_product_image(
+      v_product, v_image, 'r2://' || v_product::text || '/replacement-2.webp'
+    );
+    raise exception 'Expected cleanup queue failure to abort image replacement';
+  exception when raise_exception then
+    if sqlerrm = 'Expected cleanup queue failure to abort image replacement' then raise; end if;
+  end;
+
+  select storage_path into v_path from public.product_images where id = v_image;
+  if v_path <> 'old/force-queue-failure.jpg' then
+    raise exception 'Image row changed even though cleanup enqueue failed';
+  end if;
+
+  drop trigger reject_cleanup_queue_insert on public.product_image_cleanup_queue;
+
+  begin
+    perform public.admin_replace_product_image(
+      v_product, v_image, 'r2://another-product/not-owned.webp'
+    );
+    raise exception 'Expected cross-product storage path to be rejected';
+  exception when raise_exception then
+    if sqlerrm = 'Expected cross-product storage path to be rejected' then raise; end if;
+  end;
+end
+$$;
+
+drop function public.reject_cleanup_queue_insert();
+select 'atomic product image replacement tests passed' as result;
+
+\ir ../supabase/migrations/20261113170002_track_product_image_upload_intents.sql
+\ir ../supabase/migrations/20261113171000_require_r2_upload_intents.sql
+
+-- Uploads are registered before a signed URL is issued. Attaching consumes the
+-- intent transactionally; expired unattached intents become claimable by cron.
+do $$
+declare
+  v_product uuid := '00000000-0000-0000-0000-000000000301';
+  v_image uuid;
+  v_intent uuid;
+  v_path text;
+  v_claimed uuid;
+begin
+  insert into public.products(id) values (v_product);
+
+  v_path := 'r2://' || v_product::text || '/new-upload.webp';
+  v_intent := public.admin_create_product_image_upload_intent(v_product, v_path);
+  if not exists (
+    select 1 from public.product_image_upload_intents
+    where id = v_intent and status = 'pending'
+  ) then
+    raise exception 'Upload intent was not registered';
+  end if;
+
+  v_image := public.admin_add_product_image(v_product, v_path, 'test alt');
+  if not exists (select 1 from public.product_images where id = v_image and storage_path = v_path) then
+    raise exception 'Image row was not attached';
+  end if;
+  if exists (select 1 from public.product_image_upload_intents where id = v_intent) then
+    raise exception 'Successful image attach did not consume its upload intent';
+  end if;
+
+  v_path := 'r2://' || v_product::text || '/replacement-upload.webp';
+  v_intent := public.admin_create_product_image_upload_intent(v_product, v_path);
+  perform public.admin_replace_product_image(v_product, v_image, v_path);
+  if exists (select 1 from public.product_image_upload_intents where id = v_intent) then
+    raise exception 'Successful image replacement did not consume its upload intent';
+  end if;
+  if not exists (select 1 from public.product_images where id = v_image and storage_path = v_path) then
+    raise exception 'Image replacement did not attach the new object';
+  end if;
+
+  v_path := 'r2://' || v_product::text || '/abandoned-upload.webp';
+  v_intent := public.admin_create_product_image_upload_intent(v_product, v_path);
+  update public.product_image_upload_intents
+  set expires_at = now() - interval '1 minute'
+  where id = v_intent;
+
+  select id into v_claimed
+  from public.claim_product_image_upload_cleanup(50)
+  where id = v_intent;
+  if v_claimed is null then raise exception 'Expired upload intent was not claimable'; end if;
+
+  begin
+    perform public.admin_add_product_image(v_product, v_path, 'too late');
+    raise exception 'Expected claimed upload intent to reject attachment';
+  exception when raise_exception then
+    if sqlerrm = 'Expected claimed upload intent to reject attachment' then raise; end if;
+  end;
+
+  perform public.complete_product_image_upload_cleanup(v_intent);
+  if exists (select 1 from public.product_image_upload_intents where id = v_intent) then
+    raise exception 'Completed orphan cleanup did not remove upload intent';
+  end if;
+end
+$$;
+
+select 'product image upload intent tests passed' as result;

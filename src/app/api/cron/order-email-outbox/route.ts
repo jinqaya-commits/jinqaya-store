@@ -6,6 +6,11 @@ export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
+  // This worker can release reservations and send queued emails. Never run it in Preview.
+  if (process.env.VERCEL_ENV !== "production") {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
   const secret = process.env.CRON_SECRET;
   if (!secret || request.headers.get("authorization") !== `Bearer ${secret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

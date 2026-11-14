@@ -12,6 +12,16 @@ export async function GET(_request:Request,{params}:{params:Promise<{id:string;c
  const {data:record,error}=await supabase.from("after_sales_cases").select("evidence_urls").eq("id",caseId).eq("order_id",id).maybeSingle();
  if(error||!record)return NextResponse.json({error:"Case not found"},{status:404});
  const keys=Array.isArray(record.evidence_urls)?record.evidence_urls.filter((x:string)=>typeof x==="string"&&x.startsWith(`after-sales/${id}/`)): [];
- try{const evidence=await Promise.all(keys.map(async(key:string)=>({key,url:await createEvidenceReadUrl(key),name:key.split("/").pop()||"Evidence"})));return NextResponse.json({evidence});}
- catch{return NextResponse.json({error:"Unable to load private evidence files."},{status:500});}
+ try{
+  const evidence=await Promise.all(keys.map(async(key:string)=>({key,url:await createEvidenceReadUrl(key),name:key.split("/").pop()||"Evidence"})));
+  const {error:auditError}=await supabase.from("after_sales_case_events").insert({
+   case_id:caseId,
+   event_type:"evidence_accessed",
+   description:"Authorized staff generated temporary private evidence links.",
+   new_values:{evidence_count:evidence.length,link_ttl_seconds:300},
+   created_by:claims.claims.sub
+  });
+  if(auditError)return NextResponse.json({error:"Evidence access could not be audited. Please try again."},{status:500});
+  return NextResponse.json({evidence});
+ }catch{return NextResponse.json({error:"Unable to load private evidence files."},{status:500});}
 }

@@ -11,7 +11,7 @@ export function CategoryTreeManager({ categories }: { categories:Category[] }) {
   const [name,setName] = useState("");
   const [parentId,setParentId] = useState("");
   const [description,setDescription] = useState("");
-  const [drafts,setDrafts] = useState<Record<string,{name:string;sortOrder:string}>>({});
+  const [drafts,setDrafts] = useState<Record<string,{name:string;sortOrder:string;description:string}>>({});
   const [error,setError] = useState("");
   const [busy,setBusy] = useState(false);
   async function submit(e:FormEvent) {
@@ -22,9 +22,9 @@ export function CategoryTreeManager({ categories }: { categories:Category[] }) {
     setBusy(false);
   }
   async function save(category:Category) {
-    const draft=drafts[category.id]??{name:category.name,sortOrder:String(category.sort_order)};
+    const draft=drafts[category.id]??{name:category.name,sortOrder:String(category.sort_order),description:category.description??""};
     setBusy(true);setError("");
-    const result=await updateCategory(category.id,{name:draft.name,sortOrder:Number(draft.sortOrder)});
+    const result=await updateCategory(category.id,{name:draft.name,sortOrder:Number(draft.sortOrder),description:draft.description});
     if(result.error)setError(result.error);
     else {setDrafts(current=>{const next={...current};delete next[category.id];return next;});router.refresh();}
     setBusy(false);
@@ -38,11 +38,12 @@ export function CategoryTreeManager({ categories }: { categories:Category[] }) {
   const children=(parent:string|null)=>categories.filter(c=>c.parent_id===parent);
   function render(parent:string|null,depth:number):ReactNode {
     return children(parent).map(c=>{
-      const draft=drafts[c.id]??{name:c.name,sortOrder:String(c.sort_order)};
+      const draft=drafts[c.id]??{name:c.name,sortOrder:String(c.sort_order),description:c.description??""};
       return <div key={c.id} style={{marginLeft:depth*22,padding:"12px 0",borderBottom:"1px solid var(--admin-border, #e5e5e5)"}}>
         <div className="admin-form-grid" style={{alignItems:"end"}}>
           <label>Category name<input value={draft.name} onChange={e=>setDrafts(current=>({...current,[c.id]:{...draft,name:e.target.value}}))}/></label>
           <label>Sort order<input type="number" min="0" step="1" value={draft.sortOrder} onChange={e=>setDrafts(current=>({...current,[c.id]:{...draft,sortOrder:e.target.value}}))}/></label>
+          <label className="full">Customer-facing description<textarea rows={2} maxLength={500} value={draft.description} onChange={e=>setDrafts(current=>({...current,[c.id]:{...draft,description:e.target.value}}))} placeholder="A short, accurate explanation of this category."/></label>
           <div className="admin-form-actions">
             <button type="button" className="admin-primary-button" disabled={busy||!draft.name.trim()} onClick={()=>void save(c)}>Save</button>
             <button type="button" className="admin-secondary-button" disabled={busy} onClick={()=>void toggle(c)}>{c.is_active?"Deactivate":"Activate"}</button>

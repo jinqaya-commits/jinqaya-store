@@ -27,6 +27,11 @@ function shell(title: string, body: string) {
 }
 
 async function send(message: MailMessage, idempotencyKey?: string): Promise<SendResult> {
+  // Final safety boundary: Preview and local environments must never send customer or staff email.
+  if (process.env.VERCEL_ENV !== "production") {
+    return { ok: false, retryable: false, providerMessageId: null, error: "email_delivery_disabled_outside_production" };
+  }
+
   if (!RESEND_API_KEY || !FROM) {
     return {
       ok: false,
@@ -160,17 +165,22 @@ export async function sendOrderOutboxEmail(
       to: recipientEmail,
       subject: `JINQAYA received your order request ${order.orderNumber}`,
       html: shell("We’ve received your request.", `<p>Hello ${safeName},</p><p>Your order request <strong>${escapeHtml(order.orderNumber)}</strong> has been received.</p>
-        <p><strong>Estimated item subtotal:</strong> ${escapeHtml(subtotal)}</p>
-        <p>We’ll review availability and confirm shipping options, delivery cost and the final total before requesting payment. This request is not paid and does not mean your order has been dispatched.</p>
-        <p>We’ll be in touch soon.</p>`),
-      text: `Hello ${order.customerName || "there"},\n\nWe received order request ${order.orderNumber}. Estimated item subtotal: ${subtotal}. We’ll confirm availability, shipping and the final total before requesting payment. This request is not paid or dispatched.\n\nJINQAYA`,
+        <p><strong>Item subtotal:</strong> ${escapeHtml(subtotal)}</p>
+        <p><strong>Shipping:</strong> ${escapeHtml(money(order.shippingAmount, order.currency))}</p>
+        <p>Your checkout page shows the confirmed order total. If all items were reserved, you can pay securely with PayPal directly on that page. This order is not paid until PayPal confirms payment.</p>
+        <p>If you leave checkout before paying, you can still find your order using your order number and checkout email on our Track Order page.</p>`),
+      text: `Hello ${order.customerName || "there"},\n\nWe received order ${order.orderNumber}. Item subtotal: ${subtotal}. Shipping: ${money(order.shippingAmount, order.currency)}. If all items were reserved, you can pay securely with PayPal directly on the checkout page. This order is not paid until PayPal confirms payment. If you leave checkout, you can find your order using your order number and checkout email on our Track Order page.\n\nJINQAYA`,
     }, idempotencyKey);
   }
+  const shippingConfirmed = order.shippingAmount !== null && order.shippingAmount !== undefined;
+  const shippingSummary = shippingConfirmed
+    ? `Shipping: ${money(order.shippingAmount, order.currency)}. Stock is reserved for 48 hours while the customer completes PayPal payment.`
+    : "Shipping is not yet quoted and payment has not been collected.";
   return send({
     to: recipientEmail,
-    subject: `New order request: ${order.orderNumber}`,
-    html: shell("New order request.", `<p><strong>Order:</strong> ${escapeHtml(order.orderNumber)}</p><p><strong>Customer:</strong> ${safeName} (${escapeHtml(order.customerEmail)})</p><p><strong>Item subtotal:</strong> ${escapeHtml(subtotal)}</p><p>Please review the order in the JINQAYA admin dashboard. Shipping is not yet quoted and payment has not been collected.</p>`),
-    text: `New order request ${order.orderNumber}. Customer: ${order.customerName} (${order.customerEmail}). Item subtotal: ${subtotal}. Review in admin; no payment collected.`,
+    subject: `${shippingConfirmed ? "New order awaiting PayPal payment" : "New order request"}: ${order.orderNumber}`,
+    html: shell(shippingConfirmed ? "New order awaiting payment." : "New order request.", `<p><strong>Order:</strong> ${escapeHtml(order.orderNumber)}</p><p><strong>Customer:</strong> ${safeName} (${escapeHtml(order.customerEmail)})</p><p><strong>Item subtotal:</strong> ${escapeHtml(subtotal)}</p><p>${escapeHtml(shippingSummary)}</p><p>Please review the order in the JINQAYA admin dashboard.</p>`),
+    text: `${shippingConfirmed ? "New order awaiting PayPal payment" : "New order request"} ${order.orderNumber}. Customer: ${order.customerName} (${order.customerEmail}). Item subtotal: ${subtotal}. ${shippingSummary} Review in admin.`,
   }, idempotencyKey);
 }
 

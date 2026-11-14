@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { CheckoutForm } from "./checkout-form";
 
 const description =
-  "Enter your delivery details for your JINQAYA order request. Stock, shipping and the final total are confirmed before payment.";
+  "Secure checkout for JINQAYA. Confirm your delivery details, review shipping and pay securely with PayPal.";
 
 export const metadata: Metadata = {
   title: "Checkout",

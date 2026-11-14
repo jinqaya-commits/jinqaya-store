@@ -737,16 +737,19 @@ export type Database = {
           image_path: string | null
           media_key: string
           updated_at: string
+          updated_by: string | null
         }
         Insert: {
           image_path?: string | null
           media_key: string
           updated_at?: string
+          updated_by?: string | null
         }
         Update: {
           image_path?: string | null
           media_key?: string
           updated_at?: string
+          updated_by?: string | null
         }
         Relationships: []
       }
@@ -1312,6 +1315,53 @@ export type Database = {
           },
         ]
       }
+      order_shipping_quote_history: {
+        Row: {
+          adjustment_reason: string
+          calculation: string
+          created_at: string
+          created_by: string | null
+          discount_amount: number
+          final_shipping_amount: number
+          id: string
+          order_id: string
+          original_shipping_amount: number
+          unit_count: number
+        }
+        Insert: {
+          adjustment_reason: string
+          calculation: string
+          created_at?: string
+          created_by?: string | null
+          discount_amount: number
+          final_shipping_amount: number
+          id?: string
+          order_id: string
+          original_shipping_amount: number
+          unit_count: number
+        }
+        Update: {
+          adjustment_reason?: string
+          calculation?: string
+          created_at?: string
+          created_by?: string | null
+          discount_amount?: number
+          final_shipping_amount?: number
+          id?: string
+          order_id?: string
+          original_shipping_amount?: number
+          unit_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_shipping_quote_history_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       order_status_history: {
         Row: {
           changed_by: string | null
@@ -1354,6 +1404,7 @@ export type Database = {
         Row: {
           attempt_count: number
           created_at: string
+          event_type: string
           id: string
           last_error: string | null
           locked_until: string | null
@@ -1371,6 +1422,7 @@ export type Database = {
         Insert: {
           attempt_count?: number
           created_at?: string
+          event_type?: string
           id?: string
           last_error?: string | null
           locked_until?: string | null
@@ -1388,6 +1440,7 @@ export type Database = {
         Update: {
           attempt_count?: number
           created_at?: string
+          event_type?: string
           id?: string
           last_error?: string | null
           locked_until?: string | null
@@ -3742,7 +3795,194 @@ export type Database = {
         }
         Relationships: []
       }
-    }
+    
+      checkout_country_restrictions: {
+        Row: {
+          country_code: string
+          country_name: string
+          created_at: string
+          is_active: boolean
+          reason: string
+          updated_at: string
+        }
+        Insert: {
+          country_code: string
+          country_name: string
+          created_at?: string
+          is_active?: boolean
+          reason: string
+          updated_at?: string
+        }
+        Update: {
+          country_code?: string
+          country_name?: string
+          created_at?: string
+          is_active?: boolean
+          reason?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      customer_order_status_sessions: {
+        Row: {
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          order_id: string
+          token_hash: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          expires_at: string
+          id?: string
+          order_id: string
+          token_hash: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          order_id?: string
+          token_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_order_status_sessions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_status_email_challenges: {
+        Row: {
+          attempts: number
+          code_hash: string
+          created_at: string
+          delivery_failed_at: string | null
+          email: string
+          expires_at: string
+          id: string
+          order_id: string
+          verified_at: string | null
+        }
+        Insert: {
+          attempts?: number
+          code_hash: string
+          created_at?: string
+          delivery_failed_at?: string | null
+          email: string
+          expires_at: string
+          id?: string
+          order_id: string
+          verified_at?: string | null
+        }
+        Update: {
+          attempts?: number
+          code_hash?: string
+          created_at?: string
+          delivery_failed_at?: string | null
+          email?: string
+          expires_at?: string
+          id?: string
+          order_id?: string
+          verified_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_status_email_challenges_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      product_image_cleanup_queue: {
+        Row: {
+          attempts: number
+          created_at: string
+          id: string
+          last_error: string | null
+          locked_at: string | null
+          next_attempt_at: string
+          storage_path: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          locked_at?: string | null
+          next_attempt_at?: string
+          storage_path: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          locked_at?: string | null
+          next_attempt_at?: string
+          storage_path?: string
+        }
+        Relationships: []
+      }
+      product_image_upload_intents: {
+        Row: {
+          attempts: number
+          created_at: string
+          created_by: string
+          expires_at: string
+          id: string
+          last_error: string | null
+          locked_at: string | null
+          next_attempt_at: string
+          product_id: string
+          status: string
+          storage_path: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          created_by: string
+          expires_at: string
+          id?: string
+          last_error?: string | null
+          locked_at?: string | null
+          next_attempt_at?: string
+          product_id: string
+          status?: string
+          storage_path: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          created_by?: string
+          expires_at?: string
+          id?: string
+          last_error?: string | null
+          locked_at?: string | null
+          next_attempt_at?: string
+          product_id?: string
+          status?: string
+          storage_path?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "product_image_upload_intents_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+}
     Views: {
       [_ in never]: never
     }
@@ -3753,13 +3993,37 @@ export type Database = {
       }
       claim_order_email_outbox: {
         Args: { p_limit?: number; p_order_id?: string | null }
-        Returns: Database["public"]["Tables"]["order_email_outbox"]["Row"][]
+        Returns: {
+          attempt_count: number
+          created_at: string
+          event_type: string
+          id: string
+          last_error: string | null
+          locked_until: string | null
+          max_attempts: number
+          next_attempt_at: string
+          order_id: string
+          payload: Json
+          provider_message_id: string | null
+          recipient_email: string
+          recipient_type: string
+          sent_at: string | null
+          status: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "order_email_outbox"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       complete_order_email_outbox: {
         Args: {
           p_error?: string | null
           p_id: string
           p_provider_message_id?: string | null
+          p_retryable?: boolean
           p_success: boolean
         }
         Returns: undefined
@@ -3770,7 +4034,7 @@ export type Database = {
           p_primary_category_id: string
           p_product: Json
           p_product_id: string | null
-          p_variant?: Json | null
+          p_variant?: Json
         }
         Returns: string
       }
@@ -3786,10 +4050,10 @@ export type Database = {
         Args: {
           p_notes?: string
           p_on_hand: number
-          p_reorder_point?: number
+          p_reorder_point: number
           p_variant_id: string
         }
-        Returns: Json
+        Returns: undefined
       }
       admin_confirm_after_sales_refund: {
         Args: {
@@ -3866,19 +4130,34 @@ export type Database = {
         Args: { p_condition: string; p_notes?: string; p_receipt_id: string }
         Returns: Json
       }
-      admin_process_order: {
-        Args: {
-          p_action: string
-          p_carrier_name?: string
-          p_note?: string
-          p_order_id: string
-          p_shipping_amount?: number
-          p_shipping_method?: string
-          p_tracking_number?: string
-          p_tracking_url?: string
-        }
-        Returns: Json
-      }
+      admin_process_order:
+        | {
+            Args: {
+              p_action: string
+              p_carrier_name?: string
+              p_note?: string
+              p_order_id: string
+              p_shipping_amount?: number
+              p_shipping_method?: string
+              p_tracking_number?: string
+              p_tracking_url?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_action: string
+              p_carrier_name: string
+              p_note: string
+              p_order_id: string
+              p_shipping_adjustment_reason: string
+              p_shipping_amount: number | null
+              p_shipping_method: string
+              p_tracking_number: string
+              p_tracking_url: string
+            }
+            Returns: Json
+          }
       admin_receive_purchase_order_item: {
         Args: {
           p_item_id: string
@@ -3911,20 +4190,20 @@ export type Database = {
       admin_record_inventory_movement: {
         Args: {
           p_movement_type: string
-          p_notes?: string
+          p_notes: string
           p_quantity: number
           p_variant_id: string
         }
-        Returns: Json
+        Returns: undefined
       }
       admin_record_purchase_order_payment: {
         Args: {
           p_amount: number
-          p_notes: string
+          p_notes?: string
           p_payment_date: string
           p_payment_method: string
           p_purchase_order_id: string
-          p_reference_number: string
+          p_reference_number?: string
         }
         Returns: Json
       }
@@ -4004,7 +4283,12 @@ export type Database = {
         Returns: boolean
       }
       verify_order_status_email_code: {
-        Args: { p_code: string; p_email: string; p_order_number: string; p_token_hash: string }
+        Args: {
+          p_code: string
+          p_email: string
+          p_order_number: string
+          p_token_hash: string
+        }
         Returns: boolean
       }
       get_customer_order_status: {
@@ -4063,17 +4347,30 @@ export type Database = {
         }
         Returns: Json
       }
-      submit_guest_order: {
-        Args: {
-          p_customer: Json
-          p_customer_note?: string
-          p_honeypot?: string
-          p_idempotency_key: string
-          p_items: Json
-          p_shipping_address: Json
-        }
-        Returns: Json
-      }
+      submit_guest_order:
+        | {
+            Args: {
+              p_customer: Json
+              p_customer_note?: string
+              p_honeypot?: string
+              p_idempotency_key: string
+              p_items: Json
+              p_shipping_address: Json
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_checkout_mode: string
+              p_customer: Json
+              p_customer_note: string
+              p_honeypot: string
+              p_idempotency_key: string
+              p_items: Json
+              p_shipping_address: Json
+            }
+            Returns: Json
+          }
       validate_after_sales_upload_ticket: {
         Args: {
           p_actual_size: number
@@ -4103,7 +4400,64 @@ export type Database = {
             }
             Returns: string
           }
-    }
+    
+      admin_create_product_image_upload_intent: {
+        Args: { p_product_id: string; p_storage_path: string }
+        Returns: string
+      }
+      admin_replace_product_image: {
+        Args: {
+          p_image_id: string
+          p_product_id: string
+          p_storage_path: string
+        }
+        Returns: string
+      }
+      admin_resolve_paid_order_stock_review: {
+        Args: { p_note: string; p_order_id: string }
+        Returns: Json
+      }
+      claim_product_image_cleanup: {
+        Args: { p_limit?: number }
+        Returns: {
+          id: string
+          storage_path: string
+        }[]
+      }
+      claim_product_image_upload_cleanup: {
+        Args: { p_limit?: number }
+        Returns: {
+          id: string
+          storage_path: string
+        }[]
+      }
+      complete_product_image_cleanup: {
+        Args: { p_id: string }
+        Returns: undefined
+      }
+      complete_product_image_upload_cleanup: {
+        Args: { p_id: string }
+        Returns: undefined
+      }
+      fail_product_image_cleanup: {
+        Args: { p_error: string; p_id: string }
+        Returns: undefined
+      }
+      fail_product_image_upload_cleanup: {
+        Args: { p_error: string; p_id: string }
+        Returns: undefined
+      }
+      record_paypal_order_payment: {
+        Args: {
+          p_amount: number
+          p_capture_id: string
+          p_currency: string
+          p_order_id: string
+          p_paypal_order_id: string
+        }
+        Returns: Json
+      }
+}
     Enums: {
       app_role: "owner" | "admin" | "warehouse" | "customer_service"
       cart_status: "active" | "converted" | "abandoned" | "expired"
