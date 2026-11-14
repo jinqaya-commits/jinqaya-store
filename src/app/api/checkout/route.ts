@@ -75,7 +75,15 @@ export async function POST(request: Request) {
       const message = error.message.toLowerCase();
       if (message.includes("do not currently ship to this destination")) return NextResponse.json({ error: "We do not currently ship to this destination." }, { status: 400 });
       if (message.includes("too many checkout")) return NextResponse.json({ error: "Too many checkout attempts. Please try again later." }, { status: 429 });
-      if (message.includes("no longer available") || message.includes("different currencies") || message.includes("quantities")) {
+      if (
+        message.includes("no longer available") ||
+        message.includes("different currencies") ||
+        message.includes("quantities") ||
+        message.includes("insufficient stock") ||
+        message.includes("inventory changed") ||
+        message.includes("reservation is no longer valid") ||
+        message.includes("already submitted with a different checkout option")
+      ) {
         return NextResponse.json({ error: error.message }, { status: 409 });
       }
       if (message.includes("already been used")) {
