@@ -106,16 +106,22 @@ export async function createProduct(input: CreateProductInput) {
   revalidatePath("/collections");
   return { productId };
 }
-export async function setProductStatus(productId: string, status: "draft" | "active" | "archived") {
-  const supabase = await requireCatalogManager();
+async function applyProductStatus(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  productId: string,
+  status: "draft" | "active",
+): Promise<string | null> {
   if (status === "active") {
-    const [{ data: product }, { data: images }, { data: variants }, { data: categoryLinks }] = await Promise.all([
+    const [{ data: product, error: productError }, { data: images, error: imagesError }, { data: variants, error: variantsError }, { data: categoryLinks, error: categoriesError }] = await Promise.all([
       supabase.from("products").select("short_description,description,material,seo_title,seo_description").eq("id", productId).maybeSingle(),
       supabase.from("product_images").select("alt_text,is_primary").eq("product_id", productId),
       supabase.from("product_variants").select("sku,price,is_active").eq("product_id", productId),
       supabase.from("product_categories").select("is_primary,categories(parent_id,is_active)").eq("product_id", productId),
     ]);
-    if (!product) return { error: "Product not found." };
+    if (productError || imagesError || variantsError || categoriesError) {
+      return productError?.message || imagesError?.message || variantsError?.message || categoriesError?.message || "Unable to check product readiness.";
+    }
+    if (!product) return "Product not found.";
     const readiness = getProductReadiness({
       ...product,
       images: images ?? [],
@@ -125,16 +131,52 @@ export async function setProductStatus(productId: string, status: "draft" | "act
         return { is_primary: link.is_primary, parent_id: category?.parent_id ?? null, is_active: category?.is_active ?? false };
       }),
     });
-    if (!readiness.ready) return { error: "Complete the product checklist before publishing: " + readiness.missing.join(", ") + "." };
+    if (!readiness.ready) return "Complete the product checklist before publishing: " + readiness.missing.join(", ") + ".";
   }
-  const { error } = await supabase.from("products").update({
+  const { data, error } = await supabase.from("products").update({
     status,
     published_at: status === "active" ? new Date().toISOString() : null,
-  }).eq("id", productId);
+  }).eq("id", productId).select("id").maybeSingle();
+  if (error) return error.message;
+  if (!data) return "Product not found.";
+  return null;
+}
 
-  if (error) throw new Error(error.message);
+export async function setProductStatus(productId: string, status: "draft" | "active" | "archived") {
+  const supabase = await requireCatalogManager();
+  if (status === "archived") {
+    const { error } = await supabase.from("products").update({ status, published_at: null }).eq("id", productId);
+    if (error) return { error: error.message };
+  } else {
+    const error = await applyProductStatus(supabase, productId, status);
+    if (error) return { error };
+  }
   revalidatePath("/admin/products");
   revalidatePath("/shop");
+  revalidatePath("/collections");
+  revalidatePath("/products");
+  return { success: true };
+}
+
+export async function bulkSetProductStatus(productIds: string[], status: "draft" | "active") {
+  const supabase = await requireCatalogManager();
+  const ids = [...new Set((Array.isArray(productIds) ? productIds : []).filter((id) => typeof id === "string" && id.length <= 64))];
+  if (ids.length === 0) return { error: "Select at least one product." };
+  if (ids.length > 300) return { error: "Select no more than 300 products per batch." };
+  const results: { productId: string; success: boolean; error?: string }[] = [];
+  for (const productId of ids) {
+    try {
+      const error = await applyProductStatus(supabase, productId, status);
+      results.push(error ? { productId, success: false, error } : { productId, success: true });
+    } catch (caught) {
+      results.push({ productId, success: false, error: caught instanceof Error ? caught.message : "Update failed." });
+    }
+  }
+  revalidatePath("/admin/products");
+  revalidatePath("/shop");
+  revalidatePath("/collections");
+  revalidatePath("/products");
+  return { results };
 }
 
 export async function updateProduct(productId: string, values: {
