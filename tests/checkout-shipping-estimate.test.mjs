@@ -35,6 +35,6 @@ test("quantity is aggregated across variants, not distinct cart lines", () => {
       { price: 12.99, quantity: 2 },
       { price: 8.5, quantity: 1 },
     ]),
-    { totalUnits: 3, subtotalCents: 3438, shippingCents: 1719 }
+    { totalUnits: 3, subtotalCents: 3448, shippingCents: 1724 }
   );
 });
