@@ -324,6 +324,9 @@ create policy order_shipping_quote_history_manager_read
   for select to authenticated
   using (public.can_manage_catalog());
 
+revoke all on table public.order_shipping_quote_history from public, anon;
+grant select on table public.order_shipping_quote_history to authenticated, service_role;
+
 -- The 9-argument overload records the staff reason and quote history while
 -- delegating the existing permission, stock-reservation and status workflow.
 create or replace function public.admin_process_order(
