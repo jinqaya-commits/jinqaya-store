@@ -261,3 +261,139 @@ $function$;
 
 revoke all on function public.submit_guest_order(text,jsonb,jsonb,jsonb,text,text,text) from public, anon, authenticated;
 grant execute on function public.submit_guest_order(text,jsonb,jsonb,jsonb,text,text,text) to service_role;
+
+
+-- Preserve every staff shipping adjustment as an immutable audit row.
+create table if not exists public.order_shipping_quote_history (
+  id uuid primary key default gen_random_uuid(),
+  order_id uuid not null references public.orders(id) on delete cascade,
+  original_shipping_amount numeric(12,2) not null check (original_shipping_amount >= 0),
+  discount_amount numeric(12,2) not null check (discount_amount >= 0),
+  final_shipping_amount numeric(12,2) not null check (final_shipping_amount >= 0),
+  adjustment_reason text not null check (length(adjustment_reason) between 1 and 500),
+  calculation text not null,
+  unit_count integer not null check (unit_count >= 1),
+  created_by uuid,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists order_shipping_quote_history_order_created_idx
+  on public.order_shipping_quote_history(order_id, created_at desc);
+
+alter table public.order_shipping_quote_history enable row level security;
+
+-- The 9-argument overload records the staff reason and quote history while
+-- delegating the existing permission, stock-reservation and status workflow.
+create or replace function public.admin_process_order(
+  p_order_id uuid,
+  p_action text,
+  p_shipping_amount numeric,
+  p_shipping_method text,
+  p_carrier_name text,
+  p_tracking_number text,
+  p_tracking_url text,
+  p_note text,
+  p_shipping_adjustment_reason text
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path to ''
+as $function$
+declare
+  v_order public.orders%rowtype;
+  v_result jsonb;
+  v_units integer;
+  v_original_shipping numeric(12,2);
+  v_final_shipping numeric(12,2);
+  v_discount numeric(12,2);
+  v_reason text;
+  v_calculation text;
+begin
+  if not public.can_manage_catalog() then
+    raise exception 'You do not have permission to manage orders.';
+  end if;
+  if p_action <> 'confirm_quote' then
+    return public.admin_process_order(
+      p_order_id, p_action, p_shipping_amount, p_shipping_method,
+      p_carrier_name, p_tracking_number, p_tracking_url, p_note
+    );
+  end if;
+  if length(coalesce(p_shipping_adjustment_reason,'')) > 500 then
+    raise exception 'Shipping adjustment reason must be 500 characters or fewer.';
+  end if;
+
+  select * into v_order from public.orders where id = p_order_id for update;
+  if not found then raise exception 'Order not found.'; end if;
+
+  select coalesce(sum(oi.quantity),0)::integer
+    into v_units
+    from public.order_items oi
+   where oi.order_id = p_order_id;
+  if v_units < 1 then raise exception 'Order has no valid item quantities.'; end if;
+
+  if v_units <= 2 then
+    v_original_shipping := 50.00;
+    v_calculation := 'flat_50_for_one_or_two_units';
+  else
+    v_original_shipping := round(coalesce(v_order.subtotal,0) * 0.50,2);
+    v_calculation := '50_percent_of_subtotal_for_three_or_more_units';
+  end if;
+
+  v_reason := coalesce(
+    nullif(pg_catalog.btrim(coalesce(p_shipping_adjustment_reason,'')), ''),
+    'Standard shipping quote confirmed'
+  );
+
+  v_result := public.admin_process_order(
+    p_order_id, p_action, p_shipping_amount, p_shipping_method,
+    p_carrier_name, p_tracking_number, p_tracking_url, p_note
+  );
+  v_final_shipping := coalesce((v_result->>'shipping_amount')::numeric, v_order.shipping_amount);
+  v_discount := greatest(v_original_shipping - v_final_shipping, 0);
+
+  update public.orders
+     set shipping_quote_snapshot = coalesce(shipping_quote_snapshot,'{}'::jsonb)
+       || pg_catalog.jsonb_build_object(
+            'original_shipping_amount', v_original_shipping,
+            'discount_amount', v_discount,
+            'final_shipping_amount', v_final_shipping,
+            'adjustment_reason', v_reason,
+            'unit_count', v_units,
+            'calculation', v_calculation
+          ),
+         updated_at = pg_catalog.now()
+   where id = p_order_id;
+
+  insert into public.order_shipping_quote_history(
+    order_id, original_shipping_amount, discount_amount, final_shipping_amount,
+    adjustment_reason, calculation, unit_count, created_by
+  ) values (
+    p_order_id, v_original_shipping, v_discount, v_final_shipping,
+    v_reason, v_calculation, v_units, auth.uid()
+  );
+
+  insert into public.activity_logs(
+    actor_user_id, action, entity_type, entity_id, old_values, new_values
+  ) values (
+    auth.uid(), 'order.shipping_quote_adjusted', 'order', p_order_id,
+    pg_catalog.jsonb_build_object('original_shipping_amount',v_original_shipping),
+    pg_catalog.jsonb_build_object(
+      'discount_amount',v_discount,
+      'final_shipping_amount',v_final_shipping,
+      'adjustment_reason',v_reason,
+      'unit_count',v_units
+    )
+  );
+
+  return v_result || pg_catalog.jsonb_build_object(
+    'original_shipping_amount',v_original_shipping,
+    'discount_amount',v_discount,
+    'final_shipping_amount',v_final_shipping,
+    'adjustment_reason',v_reason
+  );
+end;
+$function$;
+
+revoke all on function public.admin_process_order(uuid,text,numeric,text,text,text,text,text,text) from public, anon;
+grant execute on function public.admin_process_order(uuid,text,numeric,text,text,text,text,text,text) to authenticated;
