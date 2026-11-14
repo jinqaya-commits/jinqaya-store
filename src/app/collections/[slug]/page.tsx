@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getStoreProducts } from "@/lib/products";
@@ -53,7 +54,7 @@ export default async function CollectionPage({ params }: Props) {
     <main className="inner-page">
       <BreadcrumbJsonLd items={[{ name: "Home", path: "/" }, { name: "Collections", path: "/shop" }, { name: category.name, path: `/collections/${category.slug}` }]} />
       <header className="inner-page-header">
-        <Link className="wordmark" href="/">JINQAYA<span>®</span></Link>
+        <Link className="jq-brand-logo-link" href="/" aria-label="JINQAYA home"><Image className="jq-brand-logo jq-inner-logo" src="/jinqaya-logo.png" alt="JINQAYA Premium Pet Lifestyle" width={900} height={287} /></Link>
         <CategoryNavigation />
       </header>
       <section className="collection-intro">
@@ -74,7 +75,7 @@ export default async function CollectionPage({ params }: Props) {
           <Link className="button button-dark" href="/shop">EXPLORE OTHER COLLECTIONS <span aria-hidden="true">↗</span></Link>
         </section>
       )}
-      <footer className="inner-footer"><Link href="/">JINQAYA</Link><span><Link href="/faq">FAQ</Link> · BETTER LIVING, TOGETHER.</span></footer>
+      <footer className="inner-footer"><Link className="jq-brand-logo-link" href="/" aria-label="JINQAYA home"><Image className="jq-brand-logo jq-inner-logo jq-footer-logo" src="/jinqaya-logo.png" alt="JINQAYA Premium Pet Lifestyle" width={900} height={287} /></Link><span><Link href="/faq">FAQ</Link> · BETTER LIVING, TOGETHER.</span></footer>
     </main>
   );
 }

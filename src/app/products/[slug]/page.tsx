@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getStoreProductBySlug, getStoreProducts, formatProductPrice } from "@/lib/products";
 import { ProductGallery } from "@/components/storefront/product-gallery";
@@ -70,7 +71,7 @@ export default async function ProductPage({ params }: Props) {
       <ProductJsonLd product={product} />
       <BreadcrumbJsonLd items={breadcrumbs} />
       <header className="inner-page-header">
-        <Link className="wordmark" href="/">JINQAYA<span>®</span></Link>
+        <Link className="jq-brand-logo-link" href="/" aria-label="JINQAYA home"><Image className="jq-brand-logo jq-inner-logo" src="/jinqaya-logo.png" alt="JINQAYA Premium Pet Lifestyle" width={900} height={287} /></Link>
         <CategoryNavigation /><CartLink />
       </header>
 
@@ -167,7 +168,7 @@ export default async function ProductPage({ params }: Props) {
         imageUrl: product.images.find((image) => image.is_primary)?.detail_url ?? product.images[0]?.detail_url ?? null,
         priceLabel: price,
       }} />
-      <footer className="inner-footer"><Link href="/">JINQAYA</Link><span>FOR CATS, DOGS & THE LIFE BETWEEN.</span></footer>
+      <footer className="inner-footer"><Link className="jq-brand-logo-link" href="/" aria-label="JINQAYA home"><Image className="jq-brand-logo jq-inner-logo jq-footer-logo" src="/jinqaya-logo.png" alt="JINQAYA Premium Pet Lifestyle" width={900} height={287} /></Link><span>FOR CATS, DOGS & THE LIFE BETWEEN.</span></footer>
     </main>
   );
 }

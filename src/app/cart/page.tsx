@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useMemo, useSyncExternalStore } from "react";
 import { formatCartMoney, getCartSnapshot, parseCartSnapshot, subscribeCart, writeCart } from "@/lib/cart";
 import { CartLink } from "@/components/storefront/cart-link";
@@ -25,7 +26,7 @@ export default function CartPage() {
 
   return <main className="inner-page">
     <header className="inner-page-header">
-      <Link className="wordmark" href="/">JINQAYA<span>®</span></Link>
+      <Link className="jq-brand-logo-link" href="/" aria-label="JINQAYA home"><Image className="jq-brand-logo jq-inner-logo" src="/jinqaya-logo.png" alt="JINQAYA Premium Pet Lifestyle" width={900} height={287} /></Link>
       <nav className="inner-nav" aria-label="Main navigation">
         <Link href="/shop">SHOP ALL</Link><Link href="/#philosophy">OUR PHILOSOPHY</Link><CartLink />
       </nav>
@@ -62,6 +63,6 @@ export default function CartPage() {
         </aside>
       </div>}
     </section>
-    <footer className="inner-footer"><Link href="/">JINQAYA</Link><span>BETTER LIVING, TOGETHER.</span></footer>
+    <footer className="inner-footer"><Link className="jq-brand-logo-link" href="/" aria-label="JINQAYA home"><Image className="jq-brand-logo jq-inner-logo jq-footer-logo" src="/jinqaya-logo.png" alt="JINQAYA Premium Pet Lifestyle" width={900} height={287} /></Link><span>BETTER LIVING, TOGETHER.</span></footer>
   </main>;
 }
