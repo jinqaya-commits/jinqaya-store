@@ -16,7 +16,7 @@ test("shipping quote requests suppress intermediate payment-confirmation emails"
   assert.match(migration, /set_config\('app\.checkout_mode', p_checkout_mode, true\)/i);
   assert.match(migration, /enqueue_order_status_email\(\)'::regprocedure/i);
   assert.match(migration, /regexp_replace\([\s\S]*?'i'\s*\)/i);
-  assert.match(migration, /current_setting\('app\.checkout_mode', true\) = 'request_quote'/i);
+  assert.match(migration, /current_setting\(''app\.checkout_mode'', true\) = ''request_quote''/i);
 });
 
 test("stock reservation release is guarded against inventory underflow", () => {
