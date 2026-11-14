@@ -9,6 +9,7 @@ type SelectionContextValue = {
   selected: Set<string>;
   toggle: (id: string) => void;
   toggleAll: () => void;
+  replaceSelection: (ids: string[]) => void;
   allSelected: boolean;
   products: ProductOption[];
 };
@@ -26,6 +27,7 @@ export function ProductSelectionProvider({ products, children }: { products: Pro
       return next;
     }),
     toggleAll: () => setSelected((current) => allSelected ? new Set() : new Set(ids)),
+    replaceSelection: (ids) => setSelected(new Set(ids)),
     allSelected,
     products,
   }), [selected, allSelected, ids, products]);
@@ -61,7 +63,7 @@ export function ProductSelectionHeader() {
 }
 
 export function ProductBulkToolbar() {
-  const { selected, products, toggleAll } = useProductSelection();
+  const { selected, products, replaceSelection } = useProductSelection();
   const [pending, startTransition] = useTransition();
   const [report, setReport] = useState<{ success: number; failures: { name: string; error: string }[] } | null>(null);
   const router = useRouter();
@@ -85,7 +87,7 @@ export function ProductBulkToolbar() {
         error: row.error ?? "Update failed.",
       }));
       setReport({ success: rows.filter((row) => row.success).length, failures });
-      if (failures.length === 0) toggleAll();
+      replaceSelection(rows.filter((row) => !row.success).map((row) => row.productId));
       router.refresh();
     });
   }
