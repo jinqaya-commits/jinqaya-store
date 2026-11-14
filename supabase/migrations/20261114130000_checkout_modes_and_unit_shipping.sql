@@ -26,7 +26,7 @@ declare
   v_now timestamptz := pg_catalog.now();
   v_existing boolean := false;
 begin
-  if p_checkout_mode not in ('pay_now', 'request_quote') then
+  if p_checkout_mode is null or p_checkout_mode not in ('pay_now', 'request_quote') then
     raise exception 'Invalid checkout option.';
   end if;
 
@@ -118,6 +118,7 @@ begin
       'total_amount', v_order.subtotal - v_order.discount_amount + v_order.tax_amount,
       'shipping_status', 'quote_required',
       'payment_status', 'not_started',
+      'checkout_mode', 'request_quote',
       'payment_ready', false,
       'currency', v_order.currency
     );
