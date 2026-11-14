@@ -47,7 +47,7 @@ export function CheckoutForm() {
   const currency = items[0]?.currency || "USD";
   const mixedCurrencies = items.some((item) => item.currency !== currency);
   const estimate = useMemo(() => items.reduce((sum, item) => sum + item.price * item.quantity, 0), [items]);
-  const { totalUnits, shippingCents } = calculateCheckoutShippingEstimate(items.map((item) => ({ price: item.price, quantity: item.quantity })));
+  const { totalUnits, subtotalCents, shippingCents } = calculateCheckoutShippingEstimate(items.map((item) => ({ price: item.price, quantity: item.quantity })));
   const shippingEstimate = shippingCents / 100;
   const totalEstimate = (subtotalCents + shippingCents) / 100;
   const isBlockedCountry = isRestrictedShippingDestination(countryCode, countryName);
