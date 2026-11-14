@@ -7,6 +7,7 @@ import { CartLink } from "@/components/storefront/cart-link";
 import { PayPalPaymentButton } from "../order-status/paypal-payment-button";
 import { isRestrictedShippingDestination } from "@/lib/shipping-country";
 import { COUNTRY_OPTIONS } from "@/lib/country-options";
+import { calculateCheckoutShippingEstimate } from "@/lib/checkout-shipping-estimate";
 
 type OrderResult = {
   order_id: string;
@@ -46,9 +47,7 @@ export function CheckoutForm() {
   const currency = items[0]?.currency || "USD";
   const mixedCurrencies = items.some((item) => item.currency !== currency);
   const estimate = useMemo(() => items.reduce((sum, item) => sum + item.price * item.quantity, 0), [items]);
-  const totalUnits = items.reduce((sum, item) => sum + item.quantity, 0);
-  const subtotalCents = Math.round((estimate + Number.EPSILON) * 100);
-  const shippingCents = totalUnits <= 2 ? 5000 : Math.round(subtotalCents / 2);
+  const { totalUnits, shippingCents } = calculateCheckoutShippingEstimate(items.map((item) => ({ price: item.price, quantity: item.quantity })));
   const shippingEstimate = shippingCents / 100;
   const totalEstimate = (subtotalCents + shippingCents) / 100;
   const isBlockedCountry = isRestrictedShippingDestination(countryCode, countryName);
