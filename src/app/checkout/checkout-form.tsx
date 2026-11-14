@@ -134,8 +134,10 @@ export function CheckoutForm() {
           <h1>{order.payment_status === "paid" ? "Payment confirmed." : order.checkout_mode === "request_quote" ? "Shipping quote requested." : paymentReady ? "Your order is ready." : "Thank you."}</h1>
           <p>Order <strong>{order.order_number}</strong> has been recorded.</p>
           <div className="checkout-notice">
-            <strong>{paymentReady ? "Confirmed order total" : "Stock confirmation required"}</strong>
-            {paymentReady ? (
+            <strong>{order.checkout_mode === "request_quote" ? "Shipping quote requested" : paymentReady ? "Confirmed order total" : "Stock confirmation required"}</strong>
+            {order.checkout_mode === "request_quote" ? (
+              <p>Your order request has been received. Our team will review the delivery cost and contact you with the final shipping quote before payment. No payment has been taken.</p>
+            ) : paymentReady ? (
               <p>Your items are reserved for 48 hours. Complete payment securely below — there’s no need to look up your order or enter a verification code.</p>
             ) : (
               <p>Your order is recorded, but we couldn&apos;t reserve every item from available stock. Payment is not available yet; our team will contact you to confirm availability.</p>
