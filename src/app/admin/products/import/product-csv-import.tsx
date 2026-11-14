@@ -54,7 +54,7 @@ export function ProductCsvImport({ categories }: { categories: Category[] }) {
     if (!file.name.toLowerCase().endsWith(".csv")) { setError("Please choose a CSV file exported as UTF-8."); return; }
     if (file.size > 2 * 1024 * 1024) { setError("CSV files must be 2 MB or smaller."); return; }
     try {
-      const parsed = parseCsv(await file.text());
+      const parsed = parseCsv((await file.text()).replace(/^\uFEFF/, ""));
       if (parsed.length < 2) throw new Error("The CSV needs a header row and at least one product row.");
       const headers = parsed[0].map((value) => value.trim().toLowerCase());
       const missing = ["name", "category_slug"].filter((key) => !headers.includes(key));
