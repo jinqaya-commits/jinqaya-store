@@ -164,25 +164,19 @@ declare
   v_new text;
 begin
   v_definition := pg_catalog.pg_get_functiondef(
-    'public.enqueue_order_status_emails()'::regprocedure
+    'public.enqueue_order_status_email()'::regprocedure
   );
 
-  v_old := $old$
-begin
-  if new.status is not distinct from old.status then
-$old$;
-  v_new := $new$
-begin
-  if pg_catalog.current_setting('app.checkout_mode', true) = 'request_quote' then
-    return new;
-  end if;
-  if new.status is not distinct from old.status then
-$new$;
-  if pg_catalog.strpos(v_definition, v_old) > 0 then
-    v_definition := pg_catalog.replace(v_definition, v_old, v_new);
-  elsif pg_catalog.strpos(v_definition, v_new) = 0 then
+  v_new := pg_catalog.regexp_replace(
+    v_definition,
+    'BEGIN\\s+IF\\s+NEW\\.status\\s+IS\\s+NOT\\s+DISTINCT\\s+FROM\\s+OLD\\.status\\s+THEN\\s+RETURN\\s+NEW;\\s+END\\s+IF;',
+    'BEGIN IF pg_catalog.current_setting(''app.checkout_mode'', true) = ''request_quote'' THEN RETURN NEW; END IF; IF NEW.status IS NOT DISTINCT FROM OLD.status THEN RETURN NEW; END IF;',
+    'i'
+  );
+  if v_new = v_definition then
     raise exception 'Could not locate order email trigger guard; migration stopped.';
   end if;
+  v_definition := v_new;
 
   execute v_definition;
 end
