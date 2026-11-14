@@ -60,6 +60,7 @@ begin
         'total_amount', v_order.total_amount,
         'shipping_status', 'confirmed',
         'payment_status', 'not_started',
+        'checkout_mode', 'pay_now',
         'payment_ready', true,
         'currency', v_order.currency
       );
@@ -73,6 +74,7 @@ begin
       'total_amount', v_order.total_amount,
       'shipping_status', 'quote_required',
       'payment_status', 'not_started',
+      'checkout_mode', 'request_quote',
       'payment_ready', false,
       'currency', v_order.currency
     );
