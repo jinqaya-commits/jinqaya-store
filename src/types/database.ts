@@ -4104,7 +4104,7 @@ export type Database = {
               p_note: string
               p_order_id: string
               p_shipping_adjustment_reason: string
-              p_shipping_amount: number
+              p_shipping_amount: number | null
               p_shipping_method: string
               p_tracking_number: string
               p_tracking_url: string
