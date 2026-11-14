@@ -30,11 +30,12 @@ test("verification refuses invalid Edge Function results and does not set a sess
   assert.match(verify, /The code is invalid or expired/);
 });
 
-test("verification stores only a hash in the database and protects the session cookie", () => {
+test("verification stores only a hash in the database and protects the session cookie for API routes", () => {
   assert.match(verify, /tokenHash: sha256\(token\)/);
   assert.match(verify, /httpOnly: true/);
   assert.match(verify, /sameSite: "strict"/);
-  assert.match(verify, /path: "\/api\/order-status"/);
+  assert.match(verify, /path: "\/api"/);
+  assert.doesNotMatch(verify, /path: "\/api\/order-status"/);
   assert.match(verify, /maxAge: 1200/);
   assert.doesNotMatch(verify, /NextResponse\.json\(\{[^}]*token/);
 });
