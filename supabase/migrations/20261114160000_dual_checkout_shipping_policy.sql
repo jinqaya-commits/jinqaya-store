@@ -24,6 +24,7 @@ DECLARE
   v_shipping numeric(12,2);
   v_reserved integer := 0;
   v_stock_ok boolean := true;
+  v_reservations_valid boolean := false;
 BEGIN
   IF p_checkout_mode NOT IN ('pay_now','request_quote') THEN
     RAISE EXCEPTION 'Invalid checkout option.';
@@ -66,11 +67,35 @@ BEGIN
   IF v_order.status = 'pending_payment'
      AND v_order.shipping_quote_snapshot->>'checkout_mode' = 'pay_now'
      AND v_order.shipping_quote_snapshot->>'status' = 'confirmed' THEN
+    SELECT
+      NOT EXISTS (
+        SELECT 1
+          FROM (
+            SELECT oi.variant_id, sum(oi.quantity)::integer AS quantity
+              FROM public.order_items oi
+             WHERE oi.order_id = v_order_id
+             GROUP BY oi.variant_id
+          ) required
+         WHERE required.variant_id IS NULL
+            OR required.quantity <> coalesce((
+              SELECT sum(r.quantity)::integer
+                FROM public.stock_reservations r
+               WHERE r.order_id = v_order_id
+                 AND r.variant_id = required.variant_id
+                 AND r.status = 'active'
+                 AND r.expires_at > v_now
+            ),0)
+      )
+      AND EXISTS (
+        SELECT 1 FROM public.stock_reservations r
+         WHERE r.order_id = v_order_id AND r.status = 'active' AND r.expires_at > v_now
+      )
+    INTO v_reservations_valid;
     RETURN jsonb_build_object(
       'order_id',v_order.id,'order_number',v_order.order_number,'status',v_order.status,
       'subtotal',v_order.subtotal,'shipping_amount',v_order.shipping_amount,
       'total_amount',v_order.total_amount,'shipping_status','confirmed',
-      'payment_status','not_started','payment_ready',true,'currency',v_order.currency,
+      'payment_status','not_started','payment_ready',v_reservations_valid,'currency',v_order.currency,
       'checkout_mode','pay_now'
     );
   END IF;
