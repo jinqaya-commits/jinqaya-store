@@ -13,7 +13,7 @@ BEGIN
 
   v_old := 'CREATE OR REPLACE FUNCTION public.submit_guest_order(p_idempotency_key text, p_customer jsonb, p_shipping_address jsonb, p_items jsonb, p_customer_note text DEFAULT NULL::text, p_honeypot text DEFAULT ''''::text)';
   v_new := 'CREATE OR REPLACE FUNCTION public.submit_guest_order(p_idempotency_key text, p_customer jsonb, p_shipping_address jsonb, p_items jsonb, p_customer_note text DEFAULT NULL::text, p_honeypot text DEFAULT ''''::text, p_checkout_mode text DEFAULT ''direct_payment''::text)';
-  IF pg_catalog.position(v_old IN v_definition) = 0 THEN
+  IF pg_catalog.strpos(v_definition, v_old) = 0 THEN
     RAISE EXCEPTION 'Could not locate the existing guest checkout function signature; migration stopped.';
   END IF;
   v_definition := pg_catalog.replace(v_definition, v_old, v_new);
@@ -21,7 +21,7 @@ BEGIN
   v_old := ' v_count integer := 0;';
   v_new := ' v_count integer := 0;
  v_total_units integer := 0;';
-  IF pg_catalog.position(v_old IN v_definition) = 0 THEN
+  IF pg_catalog.strpos(v_definition, v_old) = 0 THEN
     RAISE EXCEPTION 'Could not locate guest checkout quantity declaration; migration stopped.';
   END IF;
   v_definition := pg_catalog.replace(v_definition, v_old, v_new);
@@ -31,7 +31,7 @@ BEGIN
   v_new := 'BEGIN
  IF coalesce(p_checkout_mode,''direct_payment'') NOT IN (''direct_payment'',''manual_quote'') THEN RAISE EXCEPTION ''Invalid checkout option.''; END IF;
  IF coalesce(p_honeypot,'''') <> '''' THEN RAISE EXCEPTION ''Unable to submit checkout request''; END IF;';
-  IF pg_catalog.position(v_old IN v_definition) = 0 THEN
+  IF pg_catalog.strpos(v_definition, v_old) = 0 THEN
     RAISE EXCEPTION 'Could not locate guest checkout validation block; migration stopped.';
   END IF;
   v_definition := pg_catalog.replace(v_definition, v_old, v_new);
@@ -39,7 +39,7 @@ BEGIN
   v_old := '  v_quantity := (v_item->>''quantity'')::integer;';
   v_new := '  v_quantity := (v_item->>''quantity'')::integer;
   v_total_units := v_total_units + v_quantity;';
-  IF pg_catalog.position(v_old IN v_definition) = 0 THEN
+  IF pg_catalog.strpos(v_definition, v_old) = 0 THEN
     RAISE EXCEPTION 'Could not locate guest checkout item quantity calculation; migration stopped.';
   END IF;
   v_definition := pg_catalog.replace(v_definition, v_old, v_new);
@@ -49,7 +49,7 @@ BEGIN
   v_new := ' IF p_checkout_mode = ''direct_payment'' THEN
  -- Lock and plan one warehouse row per variant in a stable order. No inventory is
  -- changed unless every requested variant can be fully reserved.';
-  IF pg_catalog.position(v_old IN v_definition) = 0 THEN
+  IF pg_catalog.strpos(v_definition, v_old) = 0 THEN
     RAISE EXCEPTION 'Could not locate guest checkout stock reservation block; migration stopped.';
   END IF;
   v_definition := pg_catalog.replace(v_definition, v_old, v_new);
@@ -63,7 +63,7 @@ BEGIN
  END IF;
 
  UPDATE public.orders SET currency=coalesce(v_currency,''USD''),';
-  IF pg_catalog.position(v_old IN v_definition) = 0 THEN
+  IF pg_catalog.strpos(v_definition, v_old) = 0 THEN
     RAISE EXCEPTION 'Could not locate the end of guest checkout stock reservation block; migration stopped.';
   END IF;
   v_definition := pg_catalog.replace(v_definition, v_old, v_new);
@@ -101,7 +101,7 @@ BEGIN
    ''destination_country_code'',v_address->>''country_code''
   ) END
  WHERE id=v_order_id;';
-  IF pg_catalog.position(v_old IN v_definition) = 0 THEN
+  IF pg_catalog.strpos(v_definition, v_old) = 0 THEN
     RAISE EXCEPTION 'Could not locate guest checkout shipping calculation block; migration stopped.';
   END IF;
   v_definition := pg_catalog.replace(v_definition, v_old, v_new);
@@ -126,14 +126,14 @@ BEGIN
   ''checkout_mode'',p_checkout_mode,
   ''currency'',coalesce(v_currency,''USD'')
  );';
-  IF pg_catalog.position(v_old IN v_definition) = 0 THEN
+  IF pg_catalog.strpos(v_definition, v_old) = 0 THEN
     RAISE EXCEPTION 'Could not locate guest checkout response block; migration stopped.';
   END IF;
   v_definition := pg_catalog.replace(v_definition, v_old, v_new);
 
   v_old := '''payment_status'',''not_started'',''payment_ready'',(o.status=''pending_payment''),''currency'',o.currency';
   v_new := '''payment_status'',''not_started'',''payment_ready'',(o.status=''pending_payment''),''checkout_mode'',coalesce(o.shipping_quote_snapshot->>''checkout_mode'',''direct_payment''),''currency'',o.currency';
-  IF pg_catalog.position(v_old IN v_definition) = 0 THEN
+  IF pg_catalog.strpos(v_definition, v_old) = 0 THEN
     RAISE EXCEPTION 'Could not locate guest checkout idempotency response; migration stopped.';
   END IF;
   v_definition := pg_catalog.replace(v_definition, v_old, v_new);
