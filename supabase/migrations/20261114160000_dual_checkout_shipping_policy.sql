@@ -26,7 +26,7 @@ DECLARE
   v_stock_ok boolean := true;
   v_reservations_valid boolean := false;
 BEGIN
-  IF p_checkout_mode NOT IN ('pay_now','request_quote') THEN
+  IF p_checkout_mode IS NULL OR p_checkout_mode NOT IN ('pay_now','request_quote') THEN
     RAISE EXCEPTION 'Invalid checkout option.';
   END IF;
 
