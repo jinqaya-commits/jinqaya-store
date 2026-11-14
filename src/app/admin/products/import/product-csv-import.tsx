@@ -57,17 +57,27 @@ export function ProductCsvImport({ categories }: { categories: Category[] }) {
       const parsed = parseCsv((await file.text()).replace(/^\uFEFF/, ""));
       if (parsed.length < 2) throw new Error("The CSV needs a header row and at least one product row.");
       const headers = parsed[0].map((value) => value.trim().toLowerCase());
+      const duplicateHeaders = headers.filter((header, index) => header && headers.indexOf(header) !== index);
+      const unknownHeaders = headers.filter((header) => header && !HEADERS.includes(header));
+      if (headers.some((header) => !header)) throw new Error("The CSV contains an empty column heading.");
+      if (duplicateHeaders.length) throw new Error("Duplicate column headings: " + [...new Set(duplicateHeaders)].join(", "));
+      if (unknownHeaders.length) throw new Error("Unsupported columns: " + [...new Set(unknownHeaders)].join(", "));
       const missing = ["name", "category_slug"].filter((key) => !headers.includes(key));
       if (missing.length) throw new Error("Missing required columns: " + missing.join(", "));
+      const seenSkus = new Set<string>();
       const mapped = parsed.slice(1).map((values, index) => {
         const record = Object.fromEntries(headers.map((header, column) => [header, (values[column] ?? "").trim()]));
         let rowError = "";
-        if (!record.name) rowError = "Product name is required.";
+        const skuKey = (record.sku || "").trim().toLowerCase();
+        if (values.length !== headers.length) rowError = "This row has a different number of columns than the header.";
+        else if (!record.name) rowError = "Product name is required.";
         else if (!categoryBySlug.has((record.category_slug || "").toLowerCase())) rowError = "Unknown category_slug. Use an active category slug.";
         else if (record.pet_type && !["cat", "dog", "both", "shared"].includes(record.pet_type.toLowerCase())) rowError = "pet_type must be cat, dog, both or shared.";
         else if ((record.price || record.compare_at_price) && !record.sku) rowError = "Add an SKU when importing a price.";
         else if (record.price && (!Number.isFinite(Number(record.price)) || Number(record.price) < 0)) rowError = "Price must be a non-negative number.";
         else if (record.compare_at_price && (!Number.isFinite(Number(record.compare_at_price)) || Number(record.compare_at_price) < 0)) rowError = "Compare-at price must be a non-negative number.";
+        else if (skuKey && seenSkus.has(skuKey)) rowError = "Duplicate SKU in this CSV. Each variant SKU must be unique.";
+        if (skuKey) seenSkus.add(skuKey);
         return { line: index + 2, values: record, error: rowError || undefined };
       });
       if (mapped.length > 50) throw new Error("Import up to 50 products per CSV file. Split larger catalogs into batches.");
@@ -76,9 +86,10 @@ export function ProductCsvImport({ categories }: { categories: Category[] }) {
   }
 
   async function importRows() {
-    setRunning(true); setResults([]); setProgress(0); setError("");
-    const completed: { line: number; name: string; error?: string }[] = [];
-    const ready = rows.filter((row) => !row.error);
+    setRunning(true); setProgress(0); setError("");
+    const completed: { line: number; name: string; error?: string }[] = results.filter((item) => !item.error);
+    const successfulLines = new Set(completed.map((item) => item.line));
+    const ready = rows.filter((row) => !row.error && !successfulLines.has(row.line));
     for (let index = 0; index < ready.length; index++) {
       const row = ready[index];
       const v = row.values;
@@ -108,6 +119,7 @@ export function ProductCsvImport({ categories }: { categories: Category[] }) {
   const validCount = rows.filter((row) => !row.error).length;
   const errorCount = rows.length - validCount;
   const successCount = results.filter((row) => !row.error).length;
+  const retryableCount = rows.filter((row) => !row.error && !results.some((item) => item.line === row.line && !item.error)).length;
 
   return <div className="admin-form">
     <section className="admin-form-section">
@@ -123,7 +135,8 @@ export function ProductCsvImport({ categories }: { categories: Category[] }) {
       <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th>CSV ROW</th><th>PRODUCT</th><th>CATEGORY</th><th>SKU</th><th>PRICE</th><th>CHECK</th></tr></thead><tbody>
         {rows.map((row) => <tr key={row.line}><td>{row.line}</td><td>{row.values.name || "—"}</td><td>{row.values.category_slug || "—"}</td><td>{row.values.sku || "—"}</td><td>{row.values.price || "—"}</td><td>{row.error ? <span className="admin-status status-draft">{row.error}</span> : <span className="admin-status status-active">Ready</span>}</td></tr>)}
       </tbody></table></div>
-      <button type="button" className="admin-primary-button" disabled={running || validCount === 0} onClick={() => void importRows()}>{running ? `Importing ${progress}/${validCount}…` : `Import ${validCount} draft products`}</button>
+      <button type="button" className="admin-primary-button" disabled={running || retryableCount === 0} onClick={() => void importRows()}>{running ? `Importing ${progress}/${retryableCount}…` : results.length > 0 ? `Retry ${retryableCount} failed products` : `Import ${validCount} draft products`}</button>
+      {results.length > 0 && retryableCount === 0 && <p className="admin-help">All valid rows have been processed. Choose a new CSV file to start another import.</p>}
     </section>}
     {results.length > 0 && <section className="admin-form-section"><div className="admin-form-heading"><span>03</span><div><h2>Import results</h2><p>{successCount} created · {results.length - successCount} failed</p></div></div><ul>{results.map((item) => <li key={item.line}>Row {item.line}: {item.name} — {item.error || "Created as draft"}</li>)}</ul><Link className="admin-primary-button" href="/admin/products">Return to products</Link></section>}
   </div>;
