@@ -1,5 +1,7 @@
 -- Queue customer notifications for after-sales lifecycle events.
--- Delivery remains handled by the existing production-only, idempotent order email worker.
+-- This migration prepares the event contract and trigger function only.
+-- Triggers are intentionally NOT created here: the matching application code must
+-- be deployed and explicitly activated in a separate release step.
 ALTER TABLE public.order_email_outbox
   DROP CONSTRAINT IF EXISTS order_email_outbox_event_type_check;
 
@@ -95,16 +97,3 @@ END;
 $$;
 
 REVOKE ALL ON FUNCTION public.enqueue_after_sales_customer_email() FROM PUBLIC, anon, authenticated;
-
-DROP TRIGGER IF EXISTS after_sales_customer_email_on_insert ON public.after_sales_cases;
-CREATE TRIGGER after_sales_customer_email_on_insert
-AFTER INSERT ON public.after_sales_cases
-FOR EACH ROW
-EXECUTE FUNCTION public.enqueue_after_sales_customer_email();
-
-DROP TRIGGER IF EXISTS after_sales_customer_email_on_update ON public.after_sales_cases;
-CREATE TRIGGER after_sales_customer_email_on_update
-AFTER UPDATE OF status, refund_status ON public.after_sales_cases
-FOR EACH ROW
-WHEN (OLD.status IS DISTINCT FROM NEW.status OR OLD.refund_status IS DISTINCT FROM NEW.refund_status)
-EXECUTE FUNCTION public.enqueue_after_sales_customer_email();
