@@ -19,49 +19,113 @@ BEGIN
   v_definition := pg_catalog.replace(v_definition, v_old, v_new);
 
   v_old := ' v_count integer := 0;';
-  v_new := ' v_count integer := 0;\n v_total_units integer := 0;';
+  v_new := ' v_count integer := 0;
+ v_total_units integer := 0;';
   IF pg_catalog.position(v_old IN v_definition) = 0 THEN
     RAISE EXCEPTION 'Could not locate guest checkout quantity declaration; migration stopped.';
   END IF;
   v_definition := pg_catalog.replace(v_definition, v_old, v_new);
 
-  v_old := 'BEGIN\n IF coalesce(p_honeypot,'''') <> '''' THEN RAISE EXCEPTION ''Unable to submit checkout request''; END IF;';
-  v_new := 'BEGIN\n IF coalesce(p_checkout_mode,''direct_payment'') NOT IN (''direct_payment'',''manual_quote'') THEN RAISE EXCEPTION ''Invalid checkout option.''; END IF;\n IF coalesce(p_honeypot,'''') <> '''' THEN RAISE EXCEPTION ''Unable to submit checkout request''; END IF;';
+  v_old := 'BEGIN
+ IF coalesce(p_honeypot,'''') <> '''' THEN RAISE EXCEPTION ''Unable to submit checkout request''; END IF;';
+  v_new := 'BEGIN
+ IF coalesce(p_checkout_mode,''direct_payment'') NOT IN (''direct_payment'',''manual_quote'') THEN RAISE EXCEPTION ''Invalid checkout option.''; END IF;
+ IF coalesce(p_honeypot,'''') <> '''' THEN RAISE EXCEPTION ''Unable to submit checkout request''; END IF;';
   IF pg_catalog.position(v_old IN v_definition) = 0 THEN
     RAISE EXCEPTION 'Could not locate guest checkout validation block; migration stopped.';
   END IF;
   v_definition := pg_catalog.replace(v_definition, v_old, v_new);
 
   v_old := '  v_quantity := (v_item->>''quantity'')::integer;';
-  v_new := '  v_quantity := (v_item->>''quantity'')::integer;\n  v_total_units := v_total_units + v_quantity;';
+  v_new := '  v_quantity := (v_item->>''quantity'')::integer;
+  v_total_units := v_total_units + v_quantity;';
   IF pg_catalog.position(v_old IN v_definition) = 0 THEN
     RAISE EXCEPTION 'Could not locate guest checkout item quantity calculation; migration stopped.';
   END IF;
   v_definition := pg_catalog.replace(v_definition, v_old, v_new);
 
-  v_old := ' -- Lock and plan one warehouse row per variant in a stable order. No inventory is\n -- changed unless every requested variant can be fully reserved.';
-  v_new := ' IF p_checkout_mode = ''direct_payment'' THEN\n -- Lock and plan one warehouse row per variant in a stable order. No inventory is\n -- changed unless every requested variant can be fully reserved.';
+  v_old := ' -- Lock and plan one warehouse row per variant in a stable order. No inventory is
+ -- changed unless every requested variant can be fully reserved.';
+  v_new := ' IF p_checkout_mode = ''direct_payment'' THEN
+ -- Lock and plan one warehouse row per variant in a stable order. No inventory is
+ -- changed unless every requested variant can be fully reserved.';
   IF pg_catalog.position(v_old IN v_definition) = 0 THEN
     RAISE EXCEPTION 'Could not locate guest checkout stock reservation block; migration stopped.';
   END IF;
   v_definition := pg_catalog.replace(v_definition, v_old, v_new);
 
-  v_old := ' END IF;\n\n UPDATE public.orders SET currency=coalesce(v_currency,''USD''),';
-  v_new := ' END IF;\n ELSE\n   v_stock_ready := false;\n END IF;\n\n UPDATE public.orders SET currency=coalesce(v_currency,''USD''),';
+  v_old := ' END IF;
+
+ UPDATE public.orders SET currency=coalesce(v_currency,''USD''),';
+  v_new := ' END IF;
+ ELSE
+   v_stock_ready := false;
+ END IF;
+
+ UPDATE public.orders SET currency=coalesce(v_currency,''USD''),';
   IF pg_catalog.position(v_old IN v_definition) = 0 THEN
     RAISE EXCEPTION 'Could not locate the end of guest checkout stock reservation block; migration stopped.';
   END IF;
   v_definition := pg_catalog.replace(v_definition, v_old, v_new);
 
-  v_old := ' UPDATE public.orders SET currency=coalesce(v_currency,''USD''),\n  subtotal=v_subtotal,\n  shipping_amount=round(v_subtotal*0.50,2),\n  total_amount=v_subtotal+round(v_subtotal*0.50,2),\n  shipping_method_name=''Shipping (50% of merchandise subtotal)'',\n  shipping_quote_snapshot=jsonb_build_object(\n   ''status'',''confirmed'',\n   ''calculation'',''50_percent_of_subtotal'',\n   ''rate'',0.50,\n   ''amount'',round(v_subtotal*0.50,2),\n   ''destination_country_code'',v_address->>''country_code''\n  )\n WHERE id=v_order_id;';
-  v_new := ' UPDATE public.orders SET currency=coalesce(v_currency,''USD''),\n  subtotal=v_subtotal,\n  shipping_amount=CASE WHEN p_checkout_mode=''direct_payment'' THEN CASE WHEN v_total_units<=2 THEN 50.00 ELSE round(v_subtotal*0.50,2) END ELSE 0 END,\n  total_amount=v_subtotal+CASE WHEN p_checkout_mode=''direct_payment'' THEN CASE WHEN v_total_units<=2 THEN 50.00 ELSE round(v_subtotal*0.50,2) END ELSE 0 END,\n  shipping_method_name=CASE WHEN p_checkout_mode=''direct_payment'' THEN CASE WHEN v_total_units<=2 THEN ''Standard shipping (USD 50 for 1-2 items)'' ELSE ''Standard shipping (50% of merchandise subtotal)'' END ELSE NULL END,\n  shipping_quote_snapshot=CASE WHEN p_checkout_mode=''direct_payment'' THEN jsonb_build_object(\n   ''status'',''confirmed'',\n   ''checkout_mode'',''direct_payment'',\n   ''calculation'',CASE WHEN v_total_units<=2 THEN ''flat_50_usd_for_1_to_2_items'' ELSE ''50_percent_of_subtotal_for_3_plus_items'' END,\n   ''rate'',CASE WHEN v_total_units<=2 THEN NULL ELSE 0.50 END,\n   ''amount'',CASE WHEN v_total_units<=2 THEN 50.00 ELSE round(v_subtotal*0.50,2) END,\n   ''total_units'',v_total_units,\n   ''destination_country_code'',v_address->>''country_code''\n  ) ELSE jsonb_build_object(\n   ''status'',''quote_required'',\n   ''checkout_mode'',''manual_quote'',\n   ''message'',''Shipping will be confirmed by our team before payment.'',\n   ''destination_country_code'',v_address->>''country_code''\n  ) END\n WHERE id=v_order_id;';
+  v_old := ' UPDATE public.orders SET currency=coalesce(v_currency,''USD''),
+  subtotal=v_subtotal,
+  shipping_amount=round(v_subtotal*0.50,2),
+  total_amount=v_subtotal+round(v_subtotal*0.50,2),
+  shipping_method_name=''Shipping (50% of merchandise subtotal)'',
+  shipping_quote_snapshot=jsonb_build_object(
+   ''status'',''confirmed'',
+   ''calculation'',''50_percent_of_subtotal'',
+   ''rate'',0.50,
+   ''amount'',round(v_subtotal*0.50,2),
+   ''destination_country_code'',v_address->>''country_code''
+  )
+ WHERE id=v_order_id;';
+  v_new := ' UPDATE public.orders SET currency=coalesce(v_currency,''USD''),
+  subtotal=v_subtotal,
+  shipping_amount=CASE WHEN p_checkout_mode=''direct_payment'' THEN CASE WHEN v_total_units<=2 THEN 50.00 ELSE round(v_subtotal*0.50,2) END ELSE 0 END,
+  total_amount=v_subtotal+CASE WHEN p_checkout_mode=''direct_payment'' THEN CASE WHEN v_total_units<=2 THEN 50.00 ELSE round(v_subtotal*0.50,2) END ELSE 0 END,
+  shipping_method_name=CASE WHEN p_checkout_mode=''direct_payment'' THEN CASE WHEN v_total_units<=2 THEN ''Standard shipping (USD 50 for 1-2 items)'' ELSE ''Standard shipping (50% of merchandise subtotal)'' END ELSE NULL END,
+  shipping_quote_snapshot=CASE WHEN p_checkout_mode=''direct_payment'' THEN jsonb_build_object(
+   ''status'',''confirmed'',
+   ''checkout_mode'',''direct_payment'',
+   ''calculation'',CASE WHEN v_total_units<=2 THEN ''flat_50_usd_for_1_to_2_items'' ELSE ''50_percent_of_subtotal_for_3_plus_items'' END,
+   ''rate'',CASE WHEN v_total_units<=2 THEN NULL ELSE 0.50 END,
+   ''amount'',CASE WHEN v_total_units<=2 THEN 50.00 ELSE round(v_subtotal*0.50,2) END,
+   ''total_units'',v_total_units,
+   ''destination_country_code'',v_address->>''country_code''
+  ) ELSE jsonb_build_object(
+   ''status'',''quote_required'',
+   ''checkout_mode'',''manual_quote'',
+   ''message'',''Shipping will be confirmed by our team before payment.'',
+   ''destination_country_code'',v_address->>''country_code''
+  ) END
+ WHERE id=v_order_id;';
   IF pg_catalog.position(v_old IN v_definition) = 0 THEN
     RAISE EXCEPTION 'Could not locate guest checkout shipping calculation block; migration stopped.';
   END IF;
   v_definition := pg_catalog.replace(v_definition, v_old, v_new);
 
-  v_old := ' RETURN jsonb_build_object(\n  ''order_id'',v_order_id,''order_number'',v_order_number,\n  ''status'',case when v_stock_ready then ''pending_payment'' else ''on_hold'' end,\n  ''subtotal'',v_subtotal,''shipping_amount'',round(v_subtotal*0.50,2),\n  ''total_amount'',v_subtotal+round(v_subtotal*0.50,2),\n  ''shipping_status'',''confirmed'',''payment_status'',''not_started'',\n  ''payment_ready'',v_stock_ready,''currency'',coalesce(v_currency,''USD'')\n );';
-  v_new := ' RETURN jsonb_build_object(\n  ''order_id'',v_order_id,''order_number'',v_order_number,\n  ''status'',CASE WHEN p_checkout_mode=''direct_payment'' AND v_stock_ready THEN ''pending_payment'' ELSE ''on_hold'' END,\n  ''subtotal'',v_subtotal,\n  ''shipping_amount'',CASE WHEN p_checkout_mode=''direct_payment'' THEN CASE WHEN v_total_units<=2 THEN 50.00 ELSE round(v_subtotal*0.50,2) END ELSE 0 END,\n  ''total_amount'',v_subtotal+CASE WHEN p_checkout_mode=''direct_payment'' THEN CASE WHEN v_total_units<=2 THEN 50.00 ELSE round(v_subtotal*0.50,2) END ELSE 0 END,\n  ''shipping_status'',CASE WHEN p_checkout_mode=''direct_payment'' THEN ''confirmed'' ELSE ''quote_required'' END,\n  ''payment_status'',''not_started'',\n  ''payment_ready'',(p_checkout_mode=''direct_payment'' AND v_stock_ready),\n  ''checkout_mode'',p_checkout_mode,\n  ''currency'',coalesce(v_currency,''USD'')\n );';
+  v_old := ' RETURN jsonb_build_object(
+  ''order_id'',v_order_id,''order_number'',v_order_number,
+  ''status'',case when v_stock_ready then ''pending_payment'' else ''on_hold'' end,
+  ''subtotal'',v_subtotal,''shipping_amount'',round(v_subtotal*0.50,2),
+  ''total_amount'',v_subtotal+round(v_subtotal*0.50,2),
+  ''shipping_status'',''confirmed'',''payment_status'',''not_started'',
+  ''payment_ready'',v_stock_ready,''currency'',coalesce(v_currency,''USD'')
+ );';
+  v_new := ' RETURN jsonb_build_object(
+  ''order_id'',v_order_id,''order_number'',v_order_number,
+  ''status'',CASE WHEN p_checkout_mode=''direct_payment'' AND v_stock_ready THEN ''pending_payment'' ELSE ''on_hold'' END,
+  ''subtotal'',v_subtotal,
+  ''shipping_amount'',CASE WHEN p_checkout_mode=''direct_payment'' THEN CASE WHEN v_total_units<=2 THEN 50.00 ELSE round(v_subtotal*0.50,2) END ELSE 0 END,
+  ''total_amount'',v_subtotal+CASE WHEN p_checkout_mode=''direct_payment'' THEN CASE WHEN v_total_units<=2 THEN 50.00 ELSE round(v_subtotal*0.50,2) END ELSE 0 END,
+  ''shipping_status'',CASE WHEN p_checkout_mode=''direct_payment'' THEN ''confirmed'' ELSE ''quote_required'' END,
+  ''payment_status'',''not_started'',
+  ''payment_ready'',(p_checkout_mode=''direct_payment'' AND v_stock_ready),
+  ''checkout_mode'',p_checkout_mode,
+  ''currency'',coalesce(v_currency,''USD'')
+ );';
   IF pg_catalog.position(v_old IN v_definition) = 0 THEN
     RAISE EXCEPTION 'Could not locate guest checkout response block; migration stopped.';
   END IF;
