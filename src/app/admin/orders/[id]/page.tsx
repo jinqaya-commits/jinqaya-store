@@ -16,7 +16,7 @@ export default async function AdminOrderDetail({params}:{params:Promise<{id:stri
  const supabase=await createClient();const {data:claims}=await supabase.auth.getClaims();if(!claims?.claims?.sub)redirect("/login");
  const {data:allowed,error:permError}=await supabase.rpc("can_manage_catalog");if(permError||allowed!==true)redirect("/");
  const {data:order,error}=await supabase.from("orders").select("*").eq("id",id).maybeSingle();if(error||!order)notFound();
- const [{data:items},{data:customer},{data:history},{data:shipments},{data:reservations},{data:payments},{data:activity},{data:afterSales},{data:refundLedger},{data:shippingQuoteHistory}]=await Promise.all([
+ const [{data:items},{data:shippingQuoteHistory},{data:customer},{data:history},{data:shipments},{data:reservations},{data:payments},{data:activity},{data:afterSales},{data:refundLedger}]=await Promise.all([
   supabase.from("order_items").select("*").eq("order_id",id).order("created_at"),
   supabase.from("order_shipping_quote_history").select("*").eq("order_id",id).order("created_at",{ascending:false}),
   supabase.from("customers").select("id,email,first_name,last_name,phone,created_at").eq("id",order.customer_id).maybeSingle(),
