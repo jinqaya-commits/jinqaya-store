@@ -53,3 +53,7 @@ test("staff quote confirmation refuses to double-reserve stock already held for 
   assert.match(migration, /This order already has active stock reservations/);
   assert.match(migration, /where order_id = p_order_id and status = 'active'/);
 });
+
+test("admin quote overload delegates null or non-quote actions to the validated legacy RPC", () => {
+  assert.match(migration, /if p_action is distinct from 'confirm_quote' then/);
+});
