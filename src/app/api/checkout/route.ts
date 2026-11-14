@@ -13,7 +13,7 @@ type CheckoutBody = {
     address_line1?: string; address_line2?: string; postal_code?: string;
   };
   items?: Array<{ variant_id?: string; quantity?: number }>;
-  customer_note?: string; idempotency_key?: string; website?: string;
+  customer_note?: string; idempotency_key?: string; website?: string; checkout_mode?: "pay_now" | "request_quote";
 };
 
 export async function POST(request: Request) {
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Please check your checkout details and try again." }, { status: 400 });
   }
 
-  if (!body.customer || !body.shipping_address || !Array.isArray(body.items) || !body.idempotency_key) {
+  if (!body.customer || !body.shipping_address || !Array.isArray(body.items) || !body.idempotency_key || !["pay_now", "request_quote"].includes(String(body.checkout_mode))) {
     return NextResponse.json({ error: "Please complete your contact and shipping details." }, { status: 400 });
   }
   // Enforce destination restrictions against both fields. Never trust a customer-entered
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
   try {
     // Privileged database access stays server-side; public clients cannot call this RPC directly.
     const supabase = createAdminClient();
-    const { data, error } = await supabase.rpc("submit_guest_order", {
+    const { data, error } = await supabase.rpc("submit_guest_order_with_mode", {
       p_idempotency_key: body.idempotency_key,
       p_customer: {
         first_name: String(body.customer.first_name || ""), last_name: String(body.customer.last_name || ""),
@@ -67,6 +67,7 @@ export async function POST(request: Request) {
       p_items: items,
       p_customer_note: String(body.customer_note || ""),
       p_honeypot: String(body.website || ""),
+      p_checkout_mode: body.checkout_mode,
     });
 
     if (error) {
