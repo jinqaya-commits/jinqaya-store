@@ -4083,19 +4083,34 @@ export type Database = {
         Args: { p_condition: string; p_notes?: string; p_receipt_id: string }
         Returns: Json
       }
-      admin_process_order: {
-        Args: {
-          p_action: string
-          p_carrier_name?: string
-          p_note?: string
-          p_order_id: string
-          p_shipping_amount?: number
-          p_shipping_method?: string
-          p_tracking_number?: string
-          p_tracking_url?: string
-        }
-        Returns: Json
-      }
+      admin_process_order:
+        | {
+            Args: {
+              p_action: string
+              p_carrier_name?: string
+              p_note?: string
+              p_order_id: string
+              p_shipping_amount?: number
+              p_shipping_method?: string
+              p_tracking_number?: string
+              p_tracking_url?: string
+            }
+            Returns: Json
+          }
+        | {
+            Args: {
+              p_action: string
+              p_carrier_name: string
+              p_note: string
+              p_order_id: string
+              p_shipping_adjustment_reason: string
+              p_shipping_amount: number
+              p_shipping_method: string
+              p_tracking_number: string
+              p_tracking_url: string
+            }
+            Returns: Json
+          }
       admin_receive_purchase_order_item: {
         Args: {
           p_item_id: string
