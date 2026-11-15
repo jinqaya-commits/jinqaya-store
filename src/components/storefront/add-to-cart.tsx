@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { StoreProduct, StoreProductVariant } from "@/lib/products";
-import { addCartItem } from "@/lib/cart";
+import { addCartItem, setDirectBuyItems } from "@/lib/cart";
 
 function formatPrice(variant: StoreProductVariant | undefined) {
   if (!variant || variant.price === null) return "";
@@ -36,7 +36,7 @@ export function AddToCart({ product }: { product: StoreProduct }) {
 
   function add(redirectToCheckout = false) {
     if (!selected || selected.price === null) return;
-    addCartItem({
+    const item = {
       productId: product.id,
       productSlug: product.slug,
       productName: product.name,
@@ -46,11 +46,13 @@ export function AddToCart({ product }: { product: StoreProduct }) {
       price: selected.price,
       currency: selected.currency || "USD",
       imageUrl: product.images.find((image) => image.is_primary)?.detail_url ?? product.images[0]?.detail_url ?? null,
-    }, quantity);
+    };
     if (redirectToCheckout) {
-      router.push("/checkout");
+      setDirectBuyItems([{ ...item, key: selected.id, quantity }]);
+      router.push("/checkout?mode=buy-now");
       return;
     }
+    addCartItem(item, quantity);
     setMessage("Added to your bag. You can continue shopping or go to checkout.");
   }
 
