@@ -13,6 +13,7 @@ export type CartItem = {
 };
 
 const CART_KEY = "jinqaya-cart-v1";
+const DIRECT_BUY_KEY = "jinqaya-direct-buy-v1";
 export const CART_EVENT = "jinqaya-cart-updated";
 
 export function getCartSnapshot(): string {
@@ -61,6 +62,25 @@ export function writeCart(items: CartItem[]) {
   if (typeof window === "undefined") return;
   window.localStorage.setItem(CART_KEY, JSON.stringify(items));
   window.dispatchEvent(new Event(CART_EVENT));
+}
+
+export function setDirectBuyItems(items: CartItem[]) {
+  if (typeof window === "undefined") return;
+  window.sessionStorage.setItem(DIRECT_BUY_KEY, JSON.stringify(items));
+}
+
+export function readDirectBuyItems(): CartItem[] {
+  if (typeof window === "undefined") return [];
+  try {
+    return parseCartSnapshot(window.sessionStorage.getItem(DIRECT_BUY_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+export function clearDirectBuyItems() {
+  if (typeof window === "undefined") return;
+  window.sessionStorage.removeItem(DIRECT_BUY_KEY);
 }
 
 export function addCartItem(item: Omit<CartItem, "key" | "quantity">, quantity = 1) {
