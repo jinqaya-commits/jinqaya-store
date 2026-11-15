@@ -7,6 +7,7 @@ const action = await readFile(new URL("../src/app/admin/orders/actions.ts", impo
 const ui = await readFile(new URL("../src/app/admin/orders/order-actions.tsx", import.meta.url), "utf8");
 const paypalCreate = await readFile(new URL("../src/app/api/paypal/create-order/route.ts", import.meta.url), "utf8");
 const paypalCapture = await readFile(new URL("../src/app/api/paypal/capture-order/route.ts", import.meta.url), "utf8");
+const requireActionSource = await readFile(new URL("../src/app/admin/orders/actions.ts", import.meta.url), "utf8");
 
 test("order review defaults shipping to 50 percent but accepts a manual quote", () => {
   assert.match(migration, /v_shipping := round\(coalesce\([\s\S]*?case when v_units <= 2 then 50\.00 else coalesce\(v_order\.subtotal,0\) \* 0\.50 end/i);
@@ -56,4 +57,14 @@ test("staff quote confirmation refuses to double-reserve stock already held for 
 
 test("admin quote overload delegates null or non-quote actions to the validated legacy RPC", () => {
   assert.match(migration, /if p_action is distinct from 'confirm_quote' then/);
+});
+
+
+test("admin shipping adjustment reason is preserved without passing an unsupported RPC argument", () => {
+  const actions = requireActionSource;
+  assert.match(actions, /const combinedNote = \[/);
+  assert.match(actions, /Shipping adjustment reason:/);
+  assert.match(actions, /p_note: combinedNote/);
+  assert.doesNotMatch(actions, /p_shipping_adjustment_reason:/);
+  assert.match(actions, /combinedNote\.length > 2000/);
 });
