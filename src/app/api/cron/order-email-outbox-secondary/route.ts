@@ -1,5 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { NextRequest, NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { processOrderEmailOutbox } from "@/lib/order-email-outbox";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +18,7 @@ function isAuthorized(request: NextRequest) {
   const secret = process.env.SUPABASE_CRON_HMAC_SECRET;
   const timestamp = request.headers.get("x-cron-timestamp");
   const signature = request.headers.get("x-cron-signature");
-  if (!secret || !timestamp || !signature || !/^\d{13}$/.test(timestamp)) {
+  if (!secret || !timestamp || !signature || !/^\\d{13}$/.test(timestamp)) {
     return false;
   }
 
@@ -35,15 +36,27 @@ function isAuthorized(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  // Reservation release is a production-only operation. Never run it in Preview or locally.
+  if (process.env.VERCEL_ENV !== "production") {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
   if (!isAuthorized(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    const result = await processOrderEmailOutbox({ limit: 100 });
-    return NextResponse.json({ ok: true, ...result });
+    const supabase = createAdminClient();
+    const { data: reservationExpiry, error: reservationExpiryError } = await supabase.rpc(
+      "release_expired_stock_reservations",
+      { p_limit: 100 },
+    );
+    if (reservationExpiryError) throw reservationExpiryError;
+
+    const emailOutbox = await processOrderEmailOutbox({ limit: 100 });
+    return NextResponse.json({ ok: true, reservationExpiry, emailOutbox });
   } catch (error) {
     console.error("[order-email-outbox-secondary] scheduled processing failed", error);
-    return NextResponse.json({ error: "Order email processing failed." }, { status: 500 });
+    return NextResponse.json({ error: "Scheduled order processing failed." }, { status: 500 });
   }
 }
