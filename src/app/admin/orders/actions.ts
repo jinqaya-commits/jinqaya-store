@@ -33,16 +33,6 @@ export async function processOrderAction(
   if (action === "confirm_quote" && shippingAdjustmentReason.length > 500) {
     return { error: "Shipping adjustment reason must be 500 characters or fewer." };
   }
-  const internalNote = String(formData.get("note") ?? "").trim();
-  const combinedNote = [
-    internalNote,
-    action === "confirm_quote" && shippingAdjustmentReason
-      ? `Shipping adjustment reason: ${shippingAdjustmentReason}`
-      : "",
-  ].filter(Boolean).join("\n");
-  if (combinedNote.length > 2000) {
-    return { error: "The internal note and shipping adjustment reason must total 2,000 characters or fewer." };
-  }
   const { data, error } = await supabase.rpc("admin_process_order", {
     p_order_id: orderId,
     p_action: action,
@@ -54,7 +44,8 @@ export async function processOrderAction(
     p_carrier_name: String(formData.get("carrier_name") ?? ""),
     p_tracking_number: String(formData.get("tracking_number") ?? ""),
     p_tracking_url: String(formData.get("tracking_url") ?? ""),
-    p_note: combinedNote,
+    p_note: String(formData.get("note") ?? ""),
+    p_shipping_adjustment_reason: shippingAdjustmentReason,
   });
   if (error) return { error: error.message };
 
