@@ -26,6 +26,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default function CheckoutPage() {
-  return <CheckoutForm />;
+export default async function CheckoutPage({ searchParams }: { searchParams: Promise<{ mode?: string }> }) {
+  const { mode } = await searchParams;
+  return <CheckoutForm isDirectBuy={mode === "buy-now"} />;
 }
