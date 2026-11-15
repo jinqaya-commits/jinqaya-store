@@ -26,7 +26,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Please check your checkout details and try again." }, { status: 400 });
   }
 
-  if (!body.customer || !body.shipping_address || !Array.isArray(body.items) || !body.idempotency_key || !["pay_now", "request_quote"].includes(String(body.checkout_mode))) {
+  const checkoutMode = body.checkout_mode;
+  if (!body.customer || !body.shipping_address || !Array.isArray(body.items) || !body.idempotency_key || (checkoutMode !== "pay_now" && checkoutMode !== "request_quote")) {
     return NextResponse.json({ error: "Please complete your contact and shipping details." }, { status: 400 });
   }
   // Enforce destination restrictions against both fields. Never trust a customer-entered
@@ -67,7 +68,7 @@ export async function POST(request: Request) {
       p_items: items,
       p_customer_note: String(body.customer_note || ""),
       p_honeypot: String(body.website || ""),
-      p_checkout_mode: body.checkout_mode,
+      p_checkout_mode: checkoutMode,
     });
 
     if (error) {
