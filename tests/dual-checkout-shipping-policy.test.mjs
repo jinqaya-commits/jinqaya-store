@@ -14,7 +14,7 @@ test("checkout offers both immediate PayPal and manual shipping quote paths", ()
   assert.match(form, /Pay now with PayPal/);
   assert.match(form, /Request a shipping quote/);
   assert.match(route, /submit_guest_order_with_mode/);
-  assert.match(route, /p_checkout_mode: body\.checkout_mode/);
+  assert.match(route, /p_checkout_mode: checkoutMode/);
 });
 
 test("shipping policy counts total units across line items", () => {
