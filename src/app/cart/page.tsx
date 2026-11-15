@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useMemo, useSyncExternalStore } from "react";
 import { formatCartMoney, getCartSnapshot, parseCartSnapshot, subscribeCart, writeCart } from "@/lib/cart";
 import { CartLink } from "@/components/storefront/cart-link";
+import { calculateCheckoutShippingEstimate } from "@/lib/checkout-shipping-estimate";
 
 export default function CartPage() {
   const snapshot = useSyncExternalStore(subscribeCart, getCartSnapshot, () => "[]");
@@ -22,7 +23,8 @@ export default function CartPage() {
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const currency = items[0]?.currency || "USD";
   const mixedCurrencies = items.some((item) => item.currency !== currency);
-  const shipping = Math.round((subtotal + Number.EPSILON) * 50) / 100;
+  const { totalUnits, shippingCents } = calculateCheckoutShippingEstimate(items.map((item) => ({ price: item.price, quantity: item.quantity })));
+  const shipping = shippingCents / 100;
 
   return <main className="inner-page">
     <header className="inner-page-header">
@@ -55,9 +57,9 @@ export default function CartPage() {
         <aside className="cart-summary">
           <h2>Order summary</h2>
           <div><span>Subtotal</span><strong>{mixedCurrencies ? "Multiple currencies" : formatCartMoney(subtotal, currency)}</strong></div>
-          <div><span>Shipping (50%)</span><strong>{mixedCurrencies ? "—" : formatCartMoney(shipping, currency)}</strong></div>
+          <div><span>Shipping {totalUnits <= 2 ? "(1–2 items)" : "(3+ items)"}</span><strong>{mixedCurrencies ? "—" : formatCartMoney(shipping, currency)}</strong></div>
           <div><span>Estimated total</span><strong>{mixedCurrencies ? "Multiple currencies" : formatCartMoney(subtotal + shipping, currency)}</strong></div>
-          <p>Shipping is calculated as 50% of the merchandise subtotal. Applicable taxes, if any, are not included.</p>
+          <p>Estimated shipping is $50 for 1–2 total items, or 50% of the merchandise subtotal for 3 or more items. Applicable taxes, if any, are not included. The final amount is confirmed at checkout.</p>
           <Link href="/checkout" className="button button-dark">CONTINUE TO CHECKOUT <span aria-hidden="true">↗</span></Link>
           <Link href="/shop" className="back-link">CONTINUE SHOPPING</Link>
         </aside>
