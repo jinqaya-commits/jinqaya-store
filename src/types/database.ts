@@ -4296,6 +4296,18 @@ export type Database = {
         }
         Returns: Json
       }
+      submit_guest_order_with_mode: {
+        Args: {
+          p_checkout_mode: string
+          p_customer: Json
+          p_customer_note: string
+          p_honeypot: string
+          p_idempotency_key: string
+          p_items: Json
+          p_shipping_address: Json
+        }
+        Returns: Json
+      }
       validate_after_sales_upload_ticket: {
         Args: {
           p_actual_size: number

@@ -122,7 +122,7 @@ test("order email processing is blocked at the service boundary outside Producti
 const adminOrderActions = await readFile(new URL("../src/app/admin/orders/order-actions.tsx", import.meta.url), "utf8");
 const adminOrderServerActions = await readFile(new URL("../src/app/admin/orders/actions.ts", import.meta.url), "utf8");
 const adminOrderDetail = await readFile(new URL("../src/app/admin/orders/[id]/page.tsx", import.meta.url), "utf8");
-const stockReviewSql = await readFile(new URL("../supabase/migrations/20261113170000_guard_paid_paypal_stock_review.sql", import.meta.url), "utf8");
+const stockReviewSql = await readFile(new URL("../supabase/migrations/20261113170002_guard_paid_paypal_stock_review.sql", import.meta.url), "utf8");
 
 test("PayPal payment capture flags partial, expired, invalid, and mismatched reservations for review", () => {
   assert.match(stockReviewSql, /sum\(quantity\)::integer AS quantity/);
