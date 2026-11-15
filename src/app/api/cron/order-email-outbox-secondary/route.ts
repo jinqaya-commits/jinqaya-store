@@ -18,7 +18,7 @@ function isAuthorized(request: NextRequest) {
   const secret = process.env.SUPABASE_CRON_HMAC_SECRET;
   const timestamp = request.headers.get("x-cron-timestamp");
   const signature = request.headers.get("x-cron-signature");
-  if (!secret || !timestamp || !signature || !/^\\d{13}$/.test(timestamp)) {
+  if (!secret || !timestamp || !signature || !/^\d{13}$/.test(timestamp)) {
     return false;
   }
 
