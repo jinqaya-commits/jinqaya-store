@@ -210,6 +210,8 @@ export default async function HomePage() {
           <nav className="jq-footer-group" aria-label="Explore">
             <h2>EXPLORE</h2>
             <Link href="/shop">The shop</Link>
+            <Link href="/order-status">Track your order</Link>
+            <Link href="/account">My account</Link>
             <Link href="#collections">Collections</Link>
             <Link href="#point-of-view">Our point of view</Link>
           </nav>

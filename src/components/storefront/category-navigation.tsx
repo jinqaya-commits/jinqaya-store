@@ -41,6 +41,8 @@ export async function CategoryNavigation() {
       <ShopMenu roots={roots} />
       <Link href="/#collections">DISCOVER</Link>
       <Link href="/about">OUR STORY</Link>
+      <Link href="/order-status">TRACK ORDER</Link>
+      <Link href="/account">MY ACCOUNT</Link>
       <form className={styles.search} action="/shop" method="get" role="search">
         <label className={styles.label} htmlFor="jq-global-search">SEARCH</label>
         <input id="jq-global-search" name="q" type="search" placeholder="Find a product" aria-label="Search products" />
