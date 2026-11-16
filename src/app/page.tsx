@@ -182,7 +182,7 @@ export default async function HomePage() {
           <article>
             <span>01</span>
             <h3>DELIVERY DETAILS</h3>
-            <p>JINQAYA orders are dispatched directly from our factory in China. Shipping is USD 50 for 1–2 items, or 50% of the merchandise subtotal for 3 or more items. Your shipping charge and order total are shown at checkout before payment.</p>
+            <p>JINQAYA orders are dispatched directly from our factory in China. Shipping costs are calculated based on your order and delivery destination. Your shipping charge and order total are shown at checkout before payment.</p>
             <Link className="jq-policy-link" href="/policies/shipping">READ SHIPPING POLICY ↗</Link>
           </article>
           <article>
