@@ -18,8 +18,23 @@ export function OrganizationJsonLd() {
     "@id": `${SITE_URL}/#organization`,
     name: "JINQAYA",
     url: SITE_URL,
+    logo: `${SITE_URL}/jinqaya-logo.png`,
     email: "info@jinqaya.com",
-    description: "A pet lifestyle brand offering considered everyday essentials for cats and dogs.",
+    description: "JINQAYA is a premium pet lifestyle brand offering considered everyday essentials and accessories for cats and dogs.",
+    knowsAbout: [
+      "Pet lifestyle products",
+      "Cat accessories",
+      "Dog accessories",
+      "Pet home and comfort products",
+      "Pet walking and travel accessories",
+      "Pet play and grooming accessories",
+    ],
+    contactPoint: {
+      "@type": "ContactPoint",
+      contactType: "customer support",
+      email: "info@jinqaya.com",
+      availableLanguage: "English",
+    },
   });
 }
 
@@ -68,6 +83,21 @@ export function BreadcrumbJsonLd({ items }: { items: { name: string; path: strin
       position: index + 1,
       name: item.name,
       item: `${SITE_URL}${item.path}`,
+    })),
+  });
+}
+
+export function FAQPageJsonLd({ items }: { items: { question: string; answer: string }[] }) {
+  return jsonLd({
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: items.map((item) => ({
+      "@type": "Question",
+      name: item.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: item.answer,
+      },
     })),
   });
 }
