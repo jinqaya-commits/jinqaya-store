@@ -124,13 +124,13 @@ export default async function ProductPage({ params }: Props) {
 
           <details className={styles.accordion}>
             <summary>SHIPPING & DELIVERY</summary>
-            <p>Shipping options and the estimated delivery window are confirmed with you before your order is finalized.</p>
+            <p>Orders ship from our factory in China. Standard checkout shipping is USD 50 for 1–2 items, or 50% of the merchandise subtotal for 3 or more items. The applicable charge is shown at checkout before payment. Delivery timing varies by destination and carrier.</p>
             <Link href="/policies/shipping">Read our shipping information ↗</Link>
           </details>
 
           <details className={styles.accordion}>
             <summary>RETURNS & REFUNDS</summary>
-            <p>Please review our returns and refunds policy before submitting an order request.</p>
+            <p>Quality issues must be reported within 7 days of delivery. You may also request a return for personal reasons; the item must be unused and in its original condition. For non-quality returns, you pay return shipping and the original delivery charge is non-refundable, subject to applicable law.</p>
             <Link href="/policies/returns-refunds">Read our returns & refunds policy ↗</Link>
           </details>
 
