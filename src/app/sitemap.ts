@@ -29,19 +29,21 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     throw error;
   }
 
-  const [{ data: categories }, products, { data: activeProducts }] = await Promise.all([
+  const [{ data: categories }, products] = await Promise.all([
     supabase.from("categories").select("id,parent_id,slug").eq("is_active", true),
     getStoreProducts(),
-    supabase.from("products").select("id").eq("status", "active"),
   ]);
 
-  const activeProductIds = (activeProducts ?? []).map((product) => product.id);
+  // Use the same public product list as the storefront. This keeps category
+  // URLs out of the sitemap when their only assigned products are internal
+  // preview fixtures or otherwise excluded from public product listings.
+  const publicProductIds = products.map((product) => product.id);
   let assignedCategoryIds = new Set<string>();
-  if (activeProductIds.length) {
+  if (publicProductIds.length) {
     const { data: assignments } = await supabase
       .from("product_categories")
       .select("category_id")
-      .in("product_id", activeProductIds);
+      .in("product_id", publicProductIds);
     assignedCategoryIds = new Set((assignments ?? []).map((row) => row.category_id));
   }
 

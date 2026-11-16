@@ -34,7 +34,7 @@ export default function ShippingPolicyPage() {
         <h2>Shipping costs and estimated delivery</h2>
         <p>Shipping costs are calculated based on your order and delivery destination. The applicable shipping charge and final order total are displayed at checkout before payment. If a destination or order requires a separately arranged shipping quote, we will confirm the cost and available delivery estimate before asking you to pay. Delivery estimates may vary due to the destination, carrier operations, customs processing or other circumstances outside our control.</p>
         <h2>Before placing your order</h2>
-        <p>Please make sure your shipping address and contact details are complete and accurate. Please make sure your shipping address and contact details are complete and accurate. Review the shipping charge and final order total shown at checkout before completing payment.</p>
+        <p>Please make sure your shipping address and contact details are complete and accurate. Review the shipping charge and final order total shown at checkout before completing payment.</p>
         <div className="jq-policy-note"><strong>Need help?</strong><p>For delivery questions, email <a href="mailto:info@jinqaya.com">info@jinqaya.com</a>. For return eligibility, read our <Link href="/policies/returns-refunds">Returns &amp; Refunds Policy</Link>.</p></div>
         <p className="jq-policy-back"><Link href="/shop">CONTINUE SHOPPING ↗</Link></p>
       </article>
