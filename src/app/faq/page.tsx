@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { CartLink } from "@/components/storefront/cart-link";
 import { CategoryNavigation } from "@/components/storefront/category-navigation";
+import { FAQPageJsonLd } from "@/lib/seo-jsonld";
 
 export const metadata: Metadata = {
   title: "Frequently Asked Questions",
@@ -28,14 +29,21 @@ const groups = [
   ]},
   { title: "Returns & support", questions: [
     { question: "What if my item arrives with a quality issue?", answer: "Contact us within 7 days of receiving your order with your order number, a short description and clear photos or videos of the issue. We will review the information and confirm the next steps. Please do not send an item back before receiving our instructions." },
-    { question: "Can I return an item if I change my mind?", answer: "Our policy does not offer returns or exchanges for non-quality-related reasons, such as a change of mind or personal preference, except where a remedy is required by applicable consumer law. Please read the Returns & Refunds Policy for full details." },
+    { question: "Can I return an item if I change my mind?", answer: "You may request a return for a non-quality reason, such as a change of mind or personal preference. The item must be unused, in its original condition, and returned with its original packaging and included accessories. You are responsible for return shipping, and the original delivery charge is non-refundable. Please contact us for approval and return instructions. All requests remain subject to applicable consumer law." },
     { question: "How can I contact JINQAYA?", answer: "Email info@jinqaya.com or use our contact form. For an existing order, include your order number so we can identify your request." },
   ]},
 ] as const;
 
 export default function FAQPage() {
+  const faqItems: { question: string; answer: string }[] = [];
+  for (const group of groups) {
+    for (const item of group.questions) {
+      faqItems.push({ question: item.question, answer: item.answer });
+    }
+  }
   return (
     <main className="jq-home jq-policy-page">
+      <FAQPageJsonLd items={faqItems} />
       <div className="jq-topline"><span>JINQAYA / A PET LIFESTYLE HOUSE</span><span>MADE FOR LIFE, SHARED</span></div>
       <header className="jq-header">
         <Link className="jq-brand-logo-link" href="/" aria-label="JINQAYA home"><Image className="jq-brand-logo" src="/jinqaya-logo.png" alt="JINQAYA Premium Pet Lifestyle" width={900} height={287} /></Link>
