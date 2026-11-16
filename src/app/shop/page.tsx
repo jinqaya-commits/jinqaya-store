@@ -16,8 +16,14 @@ export const metadata: Metadata = {
   description: "Explore thoughtful lifestyle essentials for cats and dogs from JINQAYA.",
 };
 
-export default async function ShopPage() {
-  const [products, categories] = await Promise.all([getStoreProducts(), getRootCategories()]);
+type Props = { searchParams: Promise<{ q?: string }> };
+
+export default async function ShopPage({ searchParams }: Props) {
+  const [{ products, categories }, params] = await Promise.all([
+    Promise.all([getStoreProducts(), getRootCategories()]).then(([products, categories]) => ({ products, categories })),
+    searchParams,
+  ]);
+  const initialSearch = typeof params.q === "string" ? params.q.slice(0, 120) : "";
 
   return (
     <main className="inner-page">
@@ -41,7 +47,7 @@ export default async function ShopPage() {
       <section className="store-product-section">
         <div className="store-section-heading"><p className="eyebrow">THE EDIT</p><h2>Explore the collection</h2></div>
         {products.length ? (
-          <ShopProductBrowser products={products} />
+          <ShopProductBrowser key={initialSearch} products={products} initialSearch={initialSearch} />
         ) : (
           <div className="collection-empty">
             <p className="eyebrow">A THOUGHTFUL EDIT IS IN THE MAKING</p>
