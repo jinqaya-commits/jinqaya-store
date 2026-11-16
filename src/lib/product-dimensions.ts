@@ -47,7 +47,7 @@ export function formatProductDimensions(value: unknown): string | null {
   const unit = d.unit;
   if (d.shape === "round") return `Ø${fmt(d.diameter!)} × ${fmt(d.height!)} ${unit} (Diameter × H)`;
   if (d.shape === "flat") return `${fmt(d.length!)} × ${fmt(d.width!)} ${unit} (L × W)`;
-  const prefix = d.shape === "irregular" ? "Overall " : "";
+  const prefix = "";
   const suffix = d.shape === "irregular" ? " (Overall L × W × Maximum H)" : " (L × W × H)";
   return `${prefix}${fmt(d.length!)} × ${fmt(d.width!)} × ${fmt(d.height!)} ${unit}${suffix}`;
 }
