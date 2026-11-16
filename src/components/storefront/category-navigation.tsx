@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ShopMenu, type ShopNavCategory } from "./shop-menu";
+import styles from "./storefront-search.module.css";
 
 type CategoryRow = { id:string; parent_id:string|null; name:string; slug:string; sort_order:number; is_active:boolean };
 
@@ -38,6 +39,11 @@ export async function CategoryNavigation() {
       <ShopMenu roots={roots} />
       <Link href="/#collections">DISCOVER</Link>
       <Link href="/about">OUR STORY</Link>
+      <form className={styles.search} action="/shop" method="get" role="search">
+        <label className={styles.label} htmlFor="jq-global-search">SEARCH</label>
+        <input id="jq-global-search" name="q" type="search" placeholder="Find a product" aria-label="Search products" />
+        <button type="submit" aria-label="Submit product search">⌕</button>
+      </form>
     </nav>
   );
 }
