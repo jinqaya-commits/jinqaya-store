@@ -4,7 +4,6 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { addProductImage, createProduct, saveProductVariants, type CreateProductInput, type CreateProductVariantInput } from "../actions";
 import { ProductDimensionsFields } from "@/components/admin/product-dimensions-fields";
-import type { ProductDimensions } from "@/lib/product-dimensions";
 
 type Category = { id: string; parent_id: string|null; name: string; slug:string; sort_order:number };
 
