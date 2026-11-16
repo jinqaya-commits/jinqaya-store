@@ -51,16 +51,28 @@ export function ProductEditForm({product,categoryIds,primaryCategoryId,categorie
  async function dropImageOn(targetId:string){if(!draggedImageId||draggedImageId===targetId)return;const next=[...images];const from=next.findIndex(image=>image.id===draggedImageId);const to=next.findIndex(image=>image.id===targetId);if(from<0||to<0)return;const [moved]=next.splice(from,1);next.splice(to,0,moved);setDraggedImageId(null);await persistImageOrder(next);}
  async function dropImage(img:Image){const ok=await run(()=>removeImage(product.id,img.id,img.storage_path));if(ok){const next=images.filter(x=>x.id!==img.id);setImages(next);if(selectedImageId===img.id)setSelectedImageId(next[0]?.id??null);}}
  async function saveImageAlt(img:Image){const ok=await run(()=>updateProductImageAlt(product.id,img.id,img.alt_text??""));if(ok)router.refresh();}
- async function saveAllImageAlt(){
-  if(!images.length)return;
+ function fillMissingAltDrafts(){
   const missing=images.filter(img=>!img.alt_text?.trim());
-  if(missing.length){setError(`Add a description to all ${missing.length} remaining image(s) before saving the batch.`);return;}
+  if(!missing.length)return;
+  setImages(current=>current.map((img,index)=>img.alt_text?.trim()?img:{
+   ...img,
+   alt_text: images.length===1
+    ? `${product.name} – product image`
+    : `${product.name} – ${index===0?"main product image":`product image ${index+1}`}`,
+  }));
+  setError("");
+ }
+ async function saveAllImageAlt(){
+  const completed=images.filter(img=>img.alt_text?.trim());
+  if(!completed.length){setError("There are no image descriptions ready to save.");return;}
   setAltSaving(true);setError("");
   try{
-   const result=await updateProductImageAltBatch(product.id,images.map(img=>({imageId:img.id,altText:img.alt_text??""})));
+   const result=await updateProductImageAltBatch(product.id,completed.map(img=>({imageId:img.id,altText:img.alt_text!.trim()})));
    if("error" in result){setError(result.error ?? "Unable to save image descriptions.");return;}
    if(result.failures.length){setError(`${result.updated} description(s) saved; ${result.failures.length} failed. Save the failed descriptions again.`);return;}
    router.refresh();
+   const missing=images.filter(img=>!img.alt_text?.trim()).length;
+   if(missing)setError(`${result.updated} description(s) saved. ${missing} image(s) still need descriptions.`);
   }catch(err){setError(err instanceof Error?err.message:"Unable to save image descriptions.");}
   finally{setAltSaving(false);}
  }
@@ -163,7 +175,14 @@ export function ProductEditForm({product,categoryIds,primaryCategoryId,categorie
    {uploadBusy&&uploadProgress&&<p className="admin-help">Uploading images: {uploadProgress.completed} of {uploadProgress.total} complete…</p>}
    {!uploadBusy&&pendingFiles.length>0&&<div className="admin-selected-images"><p className="admin-help">{pendingFiles.length} image(s) still waiting to upload. Successfully saved images will not be uploaded again.</p><button type="button" className="admin-secondary-button" disabled={busy} onClick={()=>void uploadImages(pendingFiles)}>Retry remaining images</button></div>}
    <div className="admin-image-summary"><strong>{images.length} {images.length===1?"image":"images"}</strong><span>Drag to reorder · Select a photo to edit</span></div>
-   {images.length>0&&<div className="admin-form-actions"><button type="button" className="admin-secondary-button" disabled={busy||uploadBusy||altSaving} onClick={()=>void saveAllImageAlt()}>{altSaving?"Saving descriptions…":"Save all image descriptions"}</button><span className="admin-help">Save every image description together; all images must have text.</span></div>}
+   {images.length>0&&<div className="admin-image-alt-audit">
+    <div className="admin-image-summary"><strong>{images.filter(img=>img.alt_text?.trim()).length} of {images.length} descriptions ready</strong><span>{images.filter(img=>!img.alt_text?.trim()).length} missing</span></div>
+    <p className="admin-help">Basic drafts use the product name and image order only. They do not identify what is actually shown in each photo, so review and edit them before publishing.</p>
+    <div className="admin-form-actions">
+     <button type="button" className="admin-secondary-button" disabled={busy||uploadBusy||altSaving||images.every(img=>img.alt_text?.trim())} onClick={fillMissingAltDrafts}>Fill missing drafts</button>
+     <button type="button" className="admin-primary-button" disabled={busy||uploadBusy||altSaving||images.every(img=>!img.alt_text?.trim())} onClick={()=>void saveAllImageAlt()}>{altSaving?"Saving descriptions…":"Save completed descriptions"}</button>
+    </div>
+   </div>}
    {images.length===0?<p className="admin-help">No images uploaded.</p>:<>
     <div className="admin-image-grid">
      {images.map((img,i)=><div className={"admin-image-tile"+(selectedImageId===img.id?" is-selected":"")+(draggedImageId===img.id?" is-dragging":"")} key={img.id} draggable={!busy&&!uploadBusy} onDragStart={event=>{setDraggedImageId(img.id);event.dataTransfer.effectAllowed="move";event.dataTransfer.setData("text/plain",img.id);}} onDragOver={event=>{event.preventDefault();event.dataTransfer.dropEffect="move";}} onDrop={event=>{event.preventDefault();void dropImageOn(img.id);}} onDragEnd={()=>setDraggedImageId(null)}>
