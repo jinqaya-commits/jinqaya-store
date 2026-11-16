@@ -520,8 +520,10 @@ a { color: inherit; text-decoration: none; }
 .cart-summary > div { display: flex; justify-content: space-between; gap: 12px; font-size: 12px; }
 .cart-summary > div strong { font-weight: 500; }
 .cart-summary > p { margin: 18px 0 24px; color: #766b5e; font: 12px/1.7 Georgia,serif; }
-.cart-summary .button { width: 100%; justify-content: center; opacity: .6; cursor: not-allowed; }
+.cart-summary .button { width: 100%; justify-content: center; }
 .cart-summary .back-link { display: block; text-align: center; }
+.cart-policy-note { margin:16px 0; color:#766b5e; font:12px/1.7 Georgia,serif; }
+.cart-policy-note a { text-decoration:underline; text-underline-offset:3px; }
 .add-to-cart { margin: 26px 0; padding: 20px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
 .cart-field { display: grid; gap: 8px; margin-bottom: 14px; color: #766b5e; font-size: 10px; letter-spacing: .7px; }
 .cart-field select, .cart-field input { min-height: 42px; max-width: 100%; padding: 9px 12px; border: 1px solid var(--line); background: transparent; color: var(--chocolate); font: 12px Arial,sans-serif; }
@@ -1503,3 +1505,19 @@ a { color: inherit; text-decoration: none; }
 .product-page .product-mobile-buybar-actions .button-light{border:1px solid #b8aa98;background:transparent;color:#51463a}
 .product-page .product-mobile-buybar-actions .button-dark{background:#193b2b;color:#fff}
 @media(max-width:760px){.product-page .product-mobile-buybar{gap:10px}.product-page .product-mobile-buybar-actions{gap:7px}.product-page .product-mobile-buybar-actions .button{font-size:7px;padding:0 7px;letter-spacing:.3px}.product-page .product-mobile-buybar-price{font-size:14px}}
+
+@media(max-width:600px) {
+  .cart-item { grid-template-columns:72px minmax(0,1fr); gap:12px; }
+  .cart-item > img, .cart-item-placeholder { width:72px; }
+  .cart-item > strong { grid-column:2; }
+  .cart-item-actions { flex-wrap:wrap; gap:14px; }
+  .cart-item-actions input { min-height:40px; }
+  .cart-summary { padding:18px; }
+  .cart-summary > div { align-items:flex-start; }
+  .cart-summary > div strong { text-align:right; overflow-wrap:anywhere; }
+  .cart-summary .button, .checkout-submit { min-height:48px; }
+  .checkout-disclaimer a, .checkout-summary a { text-decoration:underline; text-underline-offset:3px; }
+  .checkout-total, .checkout-pending { align-items:flex-start; }
+  .checkout-total strong, .checkout-pending strong { text-align:right; overflow-wrap:anywhere; }
+  .inner-nav a, .inner-nav button { min-height:40px; display:inline-flex; align-items:center; }
+}

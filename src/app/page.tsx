@@ -182,13 +182,13 @@ export default async function HomePage() {
           <article>
             <span>01</span>
             <h3>DELIVERY DETAILS</h3>
-            <p>JINQAYA orders are dispatched directly from our factory in China. Shipping is calculated at 50% of the merchandise subtotal and shown with your order total before PayPal payment.</p>
+            <p>JINQAYA orders are dispatched directly from our factory in China. Shipping is USD 50 for 1–2 items, or 50% of the merchandise subtotal for 3 or more items. Your shipping charge and order total are shown at checkout before payment.</p>
             <Link className="jq-policy-link" href="/policies/shipping">READ SHIPPING POLICY ↗</Link>
           </article>
           <article>
             <span>02</span>
             <h3>RETURNS &amp; QUESTIONS</h3>
-            <p>Returns are accepted for confirmed quality issues, subject to applicable consumer rights.</p>
+            <p>Returns may be requested for quality and non-quality reasons. Quality issues must be reported within 7 days of delivery; for personal-preference returns, the customer pays return shipping and the original shipping charge is non-refundable.</p>
             <Link className="jq-policy-link" href="/policies/returns-refunds">READ RETURNS POLICY ↗</Link>
           </article>
           <article>
