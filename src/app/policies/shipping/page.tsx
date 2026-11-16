@@ -30,11 +30,11 @@ export default function ShippingPolicyPage() {
         <h2>Where orders ship from</h2>
         <p>JINQAYA orders are shipped directly from our factory in China to the delivery address provided at checkout. We do not dispatch orders from local warehouses in the destination country.</p>
         <h2>Available destinations and delivery methods</h2>
-        <p>After you submit an order request, we will check whether delivery is available for your destination and confirm the shipping methods that can be used for your items.</p>
+        <p>Available destinations and delivery options depend on the delivery address and the items in your order. The checkout page will show the shipping charge applicable to your order before you complete payment.</p>
         <h2>Shipping costs and estimated delivery</h2>
-        <p>We will confirm the applicable shipping charge and any available estimated delivery information with you after reviewing your order request and delivery address. You can review the final total and agreed shipping arrangements before making any payment. Delivery estimates are provided for guidance and may vary due to the destination, carrier operations, customs processing or other circumstances outside our control.</p>
+        <p>For orders using the standard online checkout, shipping is calculated as follows: USD 50 for orders containing 1 or 2 items; for orders containing 3 or more items, shipping is 50% of the merchandise subtotal. The applicable shipping charge and final order total are displayed at checkout before payment. If a destination or order requires a separately arranged shipping quote, we will confirm the cost and available delivery estimate before asking you to pay. Delivery estimates may vary due to the destination, carrier operations, customs processing or other circumstances outside our control.</p>
         <h2>Before placing your order</h2>
-        <p>Please make sure your shipping address and contact details are complete and accurate. Submitting an order request does not collect payment or commit you to dispatch. Please review the confirmed shipping arrangements and final total before making payment.</p>
+        <p>Please make sure your shipping address and contact details are complete and accurate. Please make sure your shipping address and contact details are complete and accurate. Review the shipping charge and final order total shown at checkout before completing payment.</p>
         <div className="jq-policy-note"><strong>Need help?</strong><p>For delivery questions, email <a href="mailto:info@jinqaya.com">info@jinqaya.com</a>. For return eligibility, read our <Link href="/policies/returns-refunds">Returns &amp; Refunds Policy</Link>.</p></div>
         <p className="jq-policy-back"><Link href="/shop">CONTINUE SHOPPING ↗</Link></p>
       </article>
