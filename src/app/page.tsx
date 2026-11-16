@@ -92,7 +92,7 @@ export default async function HomePage() {
       <section className="jq-hero">
         <div className="jq-hero-image">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={heroImage} alt="A golden retriever in a sunlit outdoor setting" fetchPriority="high" />
+          <Image src={heroImage} alt="A golden retriever in a sunlit outdoor setting" fill priority sizes="100vw" quality={82} />
         </div>
         <div className="jq-hero-shade" />
         <div className="jq-hero-top"><span>ISSUE Nº 01</span><span>THE ART OF LIVING TOGETHER</span></div>
@@ -118,7 +118,7 @@ export default async function HomePage() {
             <Link className={`jq-collection-tile jq-tile-${index + 1}`} href={`/collections/${category.slug}`} key={category.slug}>
               <div className="jq-tile-image">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={categoryImageMap.get(category.slug) || categoryVisuals[index % categoryVisuals.length].image} alt={`${category.name} collection`} loading="lazy" decoding="async" />
+                <Image src={categoryImageMap.get(category.slug) || categoryVisuals[index % categoryVisuals.length].image} alt={`${category.name} collection`} fill sizes="(max-width: 760px) 50vw, 30vw" quality={76} />
               </div>
               <div className="jq-tile-meta"><span>{category.number ?? String(index + 1).padStart(2, "0")}</span><span>↗</span></div>
               <div className="jq-tile-title"><h3>{category.name}</h3><p>{category.description}</p></div>
@@ -160,7 +160,7 @@ export default async function HomePage() {
       <section className="jq-closing" id="life-with-pets">
         <div className="jq-closing-image">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={lifestyleImage} alt="A cat enjoying a peaceful moment at home" loading="lazy" />
+          <Image src={lifestyleImage} alt="A cat enjoying a peaceful moment at home" fill sizes="(max-width: 760px) 100vw, 55vw" quality={80} />
           <span>THE QUIET JOY OF BEING TOGETHER</span>
         </div>
         <div className="jq-closing-copy">
