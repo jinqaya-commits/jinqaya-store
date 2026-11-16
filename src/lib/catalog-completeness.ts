@@ -22,7 +22,7 @@ export function getCatalogCompleteness(product: CatalogCompletenessInput) {
   if (images.some((image) => !image.alt_text?.trim())) {
     missing.push("Image Alt Text");
   } else if (images.length === 0) {
-    missing.push("Product Images");
+    missing.push("Product Images", "Image Alt Text");
   }
 
   const hasActivePrimaryCategory = (product.categories ?? []).some(
