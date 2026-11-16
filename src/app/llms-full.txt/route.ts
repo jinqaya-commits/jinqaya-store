@@ -1,5 +1,6 @@
 import { getStoreProducts } from "@/lib/products";
 import { getRootCategories } from "@/lib/catalog";
+import { formatProductDimensions } from "@/lib/product-dimensions";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -55,6 +56,8 @@ export async function GET() {
             `- Suitable for: ${petType(product.pet_type)}`,
             product.primary_category?.name ? `- Collection: ${line(product.primary_category.name)}` : null,
             product.material ? `- Material: ${line(product.material)}` : null,
+            formatProductDimensions(product.dimensions) ? `- Dimensions: ${formatProductDimensions(product.dimensions)}` : null,
+            product.dimensions?.measurement_note ? `- Measurement note: ${line(product.dimensions.measurement_note)}` : null,
             product.short_description ? `- Summary: ${line(product.short_description)}` : null,
             product.description ? `- Description: ${line(product.description)}` : null,
             product.care_instructions ? `- Care: ${line(product.care_instructions)}` : null,
