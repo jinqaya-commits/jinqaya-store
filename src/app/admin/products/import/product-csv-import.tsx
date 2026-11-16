@@ -101,6 +101,7 @@ export function ProductCsvImport({ categories }: { categories: Category[] }) {
         shortDescription: v.short_description || "", description: v.description || "",
         material: v.material || "", careInstructions: v.care_instructions || "",
         seoTitle: v.seo_title || "", seoDescription: v.seo_description || "",
+        dimensions: null,
         variants: v.sku ? [{
           sku: v.sku, variantName: v.variant_name || "", color: v.color || "", size: v.size || "",
           price: v.price || "", compareAtPrice: v.compare_at_price || "",

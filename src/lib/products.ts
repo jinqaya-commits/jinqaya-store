@@ -1,4 +1,5 @@
 import { resolveProductImageUrls } from "@/lib/product-images";
+import type { ProductDimensions } from "@/lib/product-dimensions";
 import { createClient } from "@/lib/supabase/server";
 
 const internalPreviewProductSlugs = ["preview-checkout-test-item", "test-harness-item"] as const;
@@ -41,6 +42,7 @@ export type StoreProduct = {
   brand_name: string;
   material: string | null;
   care_instructions: string | null;
+  dimensions: ProductDimensions | null;
   is_featured: boolean;
   is_new_arrival: boolean;
   seo_title: string | null;
@@ -131,7 +133,7 @@ async function attachProductData(rows: ProductRow[]): Promise<StoreProduct[]> {
   }));
 }
 
-const productColumns = "id, name, slug, short_description, description, pet_type, brand_name, material, care_instructions, is_featured, is_new_arrival, seo_title, seo_description";
+const productColumns = "id, name, slug, short_description, description, pet_type, brand_name, material, care_instructions, dimensions, is_featured, is_new_arrival, seo_title, seo_description";
 
 export async function getStoreProducts(categorySlug?: string): Promise<StoreProduct[]> {
   let supabase;

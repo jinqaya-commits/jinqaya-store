@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getProductReadiness } from "@/lib/product-readiness";
+import { validateProductDimensions, type ProductDimensions } from "@/lib/product-dimensions";
 
 async function requireCatalogManager() {
   const supabase = await createClient();
@@ -49,6 +50,7 @@ export type CreateProductInput = {
   seoDescription: string;
   variants: CreateProductVariantInput[];
   status: "draft" | "active";
+  dimensions: ProductDimensions | null;
 };
 
 function prepareProductVariants(variants: CreateProductVariantInput[]) {
@@ -127,6 +129,7 @@ export async function saveProductVariants(productId: string, variants: CreatePro
 
 export async function createProduct(input: CreateProductInput) {
   const supabase = await requireCatalogManager();
+  if (input.dimensions !== null && !validateProductDimensions(input.dimensions)) return { error: "Enter valid positive product measurements for the selected shape, or clear the dimensions." };
   const name = input.name.trim();
   const slug = slugify(name);
   if (!name || !slug) return { error: "Please enter a product name." };
@@ -176,6 +179,8 @@ export async function createProduct(input: CreateProductInput) {
   });
   if (error || !productId) return { error: error?.message || "Unable to create product." };
 
+  const { error: dimensionsError } = await supabase.from("products").update({ dimensions: input.dimensions }).eq("id", productId);
+  if (dimensionsError) return { productId, error: `Product created, but dimensions could not be saved: ${dimensionsError.message}` };
   const variantError = await insertMissingProductVariants(supabase, productId, input.variants ?? []);
   revalidatePath("/admin/products");
   revalidatePath("/shop");
@@ -265,9 +270,10 @@ export async function bulkSetProductStatus(productIds: string[], status: "draft"
 export async function updateProduct(productId: string, values: {
   name: string; petType: "cat"|"dog"|"both"|"shared"; shortDescription: string;
   description: string; material: string; careInstructions: string; seoTitle: string; seoDescription: string;
-  status: "draft"|"active"|"archived"; categoryIds: string[]; primaryCategoryId: string;
+  status: "draft"|"active"|"archived"; categoryIds: string[]; primaryCategoryId: string; dimensions: ProductDimensions | null;
 }) {
   const supabase = await requireCatalogManager();
+  if (values.dimensions !== null && !validateProductDimensions(values.dimensions)) return { error: "Enter valid positive product measurements for the selected shape, or clear the dimensions." };
   const name = values.name.trim();
   const slug = slugify(name);
   if (!name || !slug) return { error: "Product name is required." };
@@ -334,6 +340,8 @@ export async function updateProduct(productId: string, values: {
     p_variant: null,
   });
   if (saveError) return { error: saveError.message };
+  const { error: dimensionsError } = await supabase.from("products").update({ dimensions: values.dimensions }).eq("id", productId);
+  if (dimensionsError) return { error: dimensionsError.message };
 
   revalidatePath("/admin/products"); revalidatePath("/shop"); revalidatePath("/collections");
   for (const categoryId of categoryIds) {

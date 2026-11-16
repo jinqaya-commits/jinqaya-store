@@ -1,4 +1,5 @@
 import type { StoreProduct } from "@/lib/products";
+import { formatProductDimensions } from "@/lib/product-dimensions";
 
 const SITE_URL = "https://www.jinqaya.com";
 
@@ -65,6 +66,7 @@ export function ProductJsonLd({ product }: { product: StoreProduct }) {
     category: product.primary_category?.name || undefined,
     additionalProperty: [
       { "@type": "PropertyValue", name: "Pet type", value: product.pet_type },
+      ...(formatProductDimensions(product.dimensions) ? [{ "@type": "PropertyValue", name: "Product dimensions", value: formatProductDimensions(product.dimensions)! }] : []),
       ...product.variants.flatMap((variant) => variant.size ? [{ "@type": "PropertyValue", name: "Size", value: variant.size }] : []),
       ...product.variants.flatMap((variant) => variant.color ? [{ "@type": "PropertyValue", name: "Color", value: variant.color }] : []),
     ],

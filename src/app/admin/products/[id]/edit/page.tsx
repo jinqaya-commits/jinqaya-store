@@ -15,7 +15,7 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
   if (error || allowed !== true) redirect("/");
 
   const [{ data: product }, { data: variants }, { data: images }, { data: categoryLinks }, { data: categories }] = await Promise.all([
-    supabase.from("products").select("id,name,pet_type,short_description,description,material,care_instructions,status,seo_title,seo_description").eq("id", id).maybeSingle(),
+    supabase.from("products").select("id,name,pet_type,short_description,description,material,care_instructions,status,seo_title,seo_description,dimensions").eq("id", id).maybeSingle(),
     supabase.from("product_variants").select("id,sku,variant_name,color,size,price,compare_at_price").eq("product_id", id).order("created_at"),
     supabase.from("product_images").select("id,storage_path,alt_text,sort_order").eq("product_id", id).order("sort_order"),
     supabase.from("product_categories").select("category_id,is_primary").eq("product_id",id),
@@ -26,7 +26,7 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
   if (!validPetTypes.includes(product.pet_type as (typeof validPetTypes)[number])) {
     throw new Error("This product has an unsupported pet type.");
   }
-  const productForForm = { ...product, pet_type: product.pet_type as (typeof validPetTypes)[number] };
+  const productForForm = { ...product, dimensions: (product.dimensions ?? null) as import("@/lib/product-dimensions").ProductDimensions | null, pet_type: product.pet_type as (typeof validPetTypes)[number] };
   return <main className="admin-shell">
     <aside className="admin-sidebar"><Link href="/" className="admin-brand">JINQAYA<span>ADMIN</span></Link><nav><Link className="active" href="/admin/products">Products</Link><Link href="/shop">View storefront ↗</Link></nav><p className="admin-sidebar-note">CATALOG MANAGEMENT</p></aside>
     <section className="admin-main">
