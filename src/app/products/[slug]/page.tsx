@@ -171,7 +171,7 @@ export default async function ProductPage({ params }: Props) {
         imageUrl: product.images.find((image) => image.is_primary)?.detail_url ?? product.images[0]?.detail_url ?? null,
         priceLabel: price,
       }} />
-      <footer className="inner-footer"><Link className="jq-brand-logo-link" href="/" aria-label="JINQAYA home"><Image className="jq-brand-logo jq-inner-logo jq-footer-logo" src="/jinqaya-logo.png" alt="JINQAYA Premium Pet Lifestyle" width={900} height={287} /></Link><span>FOR CATS, DOGS & THE LIFE BETWEEN.</span></footer>
+      <footer className="inner-footer"><Link className="jq-brand-logo-link" href="/" aria-label="JINQAYA home"><Image className="jq-brand-logo jq-inner-logo jq-footer-logo" src="/jinqaya-logo.png" alt="JINQAYA Premium Pet Lifestyle" width={900} height={287} /></Link><span><Link href="/order-status">TRACK ORDER</Link> · <Link href="/account">MY ACCOUNT</Link> · FOR CATS, DOGS & THE LIFE BETWEEN.</span></footer>
     </main>
   );
 }

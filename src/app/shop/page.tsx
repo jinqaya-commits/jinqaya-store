@@ -56,7 +56,7 @@ export default async function ShopPage({ searchParams }: Props) {
           </div>
         )}
       </section>
-      <footer className="inner-footer"><Link className="jq-brand-logo-link" href="/" aria-label="JINQAYA home"><Image className="jq-brand-logo jq-inner-logo jq-footer-logo" src="/jinqaya-logo.png" alt="JINQAYA Premium Pet Lifestyle" width={900} height={287} /></Link><span><Link href="/faq">FAQ</Link> · BETTER LIVING, TOGETHER.</span></footer>
+      <footer className="inner-footer"><Link className="jq-brand-logo-link" href="/" aria-label="JINQAYA home"><Image className="jq-brand-logo jq-inner-logo jq-footer-logo" src="/jinqaya-logo.png" alt="JINQAYA Premium Pet Lifestyle" width={900} height={287} /></Link><span><Link href="/faq">FAQ</Link> · <Link href="/order-status">TRACK ORDER</Link> · <Link href="/account">MY ACCOUNT</Link> · BETTER LIVING, TOGETHER.</span></footer>
     </main>
   );
 }
