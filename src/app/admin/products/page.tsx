@@ -45,11 +45,6 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
   const missingCategoryCount = catalogRows.filter((row) => row.checks.missing.includes("Category")).length;
   const visibleProducts = catalogRows.filter((row) => !incompleteOnly || !row.checks.complete).map((row) => row.product);
 
-  const catalogIncompleteCount = catalogRows.filter((row) => !row.checks.complete).length;
-  const missingSkuCount = catalogRows.filter((row) => row.checks.missing.includes("SKU")).length;
-  const missingDimensionsCount = catalogRows.filter((row) => row.checks.missing.includes("Dimensions")).length;
-  const missingAltCount = catalogRows.filter((row) => row.checks.missing.includes("Image Alt Text")).length;
-  const missingCategoryCount = catalogRows.filter((row) => row.checks.missing.includes("Category")).length;
   const needsContentCount = (products ?? []).filter((product) => {
     const imageRows = Array.isArray(product.product_images) ? product.product_images : [];
     const categoryRows = Array.isArray(product.product_categories) ? product.product_categories : [];
