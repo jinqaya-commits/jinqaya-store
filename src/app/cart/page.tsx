@@ -57,9 +57,9 @@ export default function CartPage() {
         <aside className="cart-summary">
           <h2>Order summary</h2>
           <div><span>Subtotal</span><strong>{mixedCurrencies ? "Multiple currencies" : formatCartMoney(subtotal, currency)}</strong></div>
-          <div><span>Shipping {totalUnits <= 2 ? "(1–2 items)" : "(3+ items)"}</span><strong>{mixedCurrencies ? "—" : formatCartMoney(shipping, currency)}</strong></div>
+          <div><span>Shipping</span><strong>{mixedCurrencies ? "—" : formatCartMoney(shipping, currency)}</strong></div>
           <div><span>Estimated total</span><strong>{mixedCurrencies ? "Multiple currencies" : formatCartMoney(subtotal + shipping, currency)}</strong></div>
-          <p>Estimated shipping is $50 for 1–2 total items, or 50% of the merchandise subtotal for 3 or more items. Applicable taxes, if any, are not included. The final amount is confirmed at checkout.</p>
+          <p>Shipping costs are calculated based on your order and delivery destination. Applicable taxes, if any, are not included. The final amount is confirmed at checkout.</p>
           <Link href="/checkout" className="button button-dark">CONTINUE TO CHECKOUT <span aria-hidden="true">↗</span></Link>
           <p className="cart-policy-note">For non-quality returns, return shipping is paid by the customer and the original delivery charge is non-refundable. <Link href="/policies/returns-refunds">Read our Returns &amp; Refunds Policy</Link>.</p>
           <Link href="/shop" className="back-link">CONTINUE SHOPPING</Link>

@@ -124,7 +124,7 @@ export default async function ProductPage({ params }: Props) {
 
           <details className={styles.accordion}>
             <summary>SHIPPING & DELIVERY</summary>
-            <p>Orders ship from our factory in China. Standard checkout shipping is USD 50 for 1–2 items, or 50% of the merchandise subtotal for 3 or more items. The applicable charge is shown at checkout before payment. Delivery timing varies by destination and carrier.</p>
+            <p>Orders ship from our factory in China. Shipping costs are calculated based on your order and delivery destination, with the applicable charge shown at checkout before payment. Delivery timing varies by destination and carrier.</p>
             <Link href="/policies/shipping">Read our shipping information ↗</Link>
           </details>
 
