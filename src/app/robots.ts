@@ -11,22 +11,22 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "OAI-SearchBot",
         allow: "/",
-        disallow: ["/admin/", "/login", "/api/"],
+        disallow: ["/admin/", "/api/"],
       },
       {
         userAgent: "ChatGPT-User",
         allow: "/",
-        disallow: ["/admin/", "/login", "/api/"],
+        disallow: ["/admin/", "/api/"],
       },
       {
         userAgent: "Googlebot",
         allow: "/",
-        disallow: ["/admin/", "/login", "/api/"],
+        disallow: ["/admin/", "/api/"],
       },
       {
         userAgent: "Bingbot",
         allow: "/",
-        disallow: ["/admin/", "/login", "/api/"],
+        disallow: ["/admin/", "/api/"],
       },
     ],
     sitemap: "https://www.jinqaya.com/sitemap.xml",
