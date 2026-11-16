@@ -9,7 +9,7 @@ import { ProductBulkToolbar, ProductSelectionCheckbox, ProductSelectionHeader, P
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminProductsPage({ searchParams }: { searchParams?: Promise<{ completeness?: string }> }) {
+export default async function AdminProductsPage({ searchParams }: { searchParams?: Promise<{ completeness?: string; missing?: string }> }) {
   const supabase = await createClient();
   const { data: claimsData } = await supabase.auth.getClaims();
   if (!claimsData?.claims?.sub) redirect("/login");
@@ -23,6 +23,8 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
 
   const params = searchParams ? await searchParams : {};
   const incompleteOnly = params.completeness === "incomplete";
+  const allowedMissingFields = ["SKU", "Dimensions", "Image Alt Text", "Category"] as const;
+  const missingField = allowedMissingFields.find((field) => field === params.missing) ?? null;
   const catalogRows = (products ?? []).map((product) => {
     const imageRows = Array.isArray(product.product_images) ? product.product_images : [];
     const categoryRows = Array.isArray(product.product_categories) ? product.product_categories : [];
@@ -43,7 +45,7 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
   const missingDimensionsCount = catalogRows.filter((row) => row.checks.missing.includes("Dimensions")).length;
   const missingAltCount = catalogRows.filter((row) => row.checks.missing.includes("Image Alt Text")).length;
   const missingCategoryCount = catalogRows.filter((row) => row.checks.missing.includes("Category")).length;
-  const visibleProducts = catalogRows.filter((row) => !incompleteOnly || !row.checks.complete).map((row) => row.product);
+  const visibleProducts = catalogRows.filter((row) => missingField ? row.checks.missing.includes(missingField) : !incompleteOnly || !row.checks.complete).map((row) => row.product);
 
   const needsContentCount = (products ?? []).filter((product) => {
     const imageRows = Array.isArray(product.product_images) ? product.product_images : [];
@@ -78,21 +80,21 @@ export default async function AdminProductsPage({ searchParams }: { searchParams
           <div className="admin-panel-heading"><div><p className="admin-kicker">CATALOG DATA QUALITY</p><h2>Product completeness check</h2></div><span>{catalogIncompleteCount} NEED ATTENTION</span></div>
           <p className="admin-help">Checks four essential fields: SKU, valid product dimensions, image Alt Text, and an active primary category. This check only reports missing data and never changes product records.</p>
           <div className="admin-summary">
-            <div><span>MISSING SKU</span><strong>{missingSkuCount}</strong></div>
-            <div><span>MISSING DIMENSIONS</span><strong>{missingDimensionsCount}</strong></div>
-            <div><span>MISSING ALT TEXT</span><strong>{missingAltCount}</strong></div>
-            <div><span>MISSING CATEGORY</span><strong>{missingCategoryCount}</strong></div>
+            <div><span>MISSING SKU</span><strong>{missingSkuCount}</strong><small><Link href="/admin/products?missing=SKU">Review SKU gaps →</Link></small></div>
+            <div><span>MISSING DIMENSIONS</span><strong>{missingDimensionsCount}</strong><small><Link href="/admin/products?missing=Dimensions">Review dimensions →</Link></small></div>
+            <div><span>MISSING ALT TEXT</span><strong>{missingAltCount}</strong><small><Link href="/admin/products?missing=Image%20Alt%20Text">Review image text →</Link></small></div>
+            <div><span>MISSING CATEGORY</span><strong>{missingCategoryCount}</strong><small><Link href="/admin/products?missing=Category">Review categories →</Link></small></div>
           </div>
-          <p className="admin-help"><Link className="admin-secondary-button" href="/admin/products">All products</Link> <Link className="admin-secondary-button" href="/admin/products?completeness=incomplete">Show incomplete products ({catalogIncompleteCount})</Link></p>
+          <p className="admin-help"><Link className="admin-secondary-button" href="/admin/products">All products</Link> <Link className="admin-secondary-button" href="/admin/products?completeness=incomplete">Show all incomplete products ({catalogIncompleteCount})</Link>{missingField ? <> <Link className="admin-secondary-button" href="/admin/products?completeness=incomplete">Clear field filter</Link></> : null}</p>
         </div>
         <ProductSelectionProvider products={(products ?? []).map((product) => ({ id: product.id, name: product.name, status: product.status }))}>
         <section className="admin-panel">
-          <div className="admin-panel-heading"><div><p className="admin-kicker">YOUR CATALOG</p><h2>{incompleteOnly ? "Incomplete products" : "All products"}</h2></div><span>{visibleProducts.length} ITEMS</span></div>
+          <div className="admin-panel-heading"><div><p className="admin-kicker">YOUR CATALOG</p><h2>{missingField ? `Missing ${missingField}` : incompleteOnly ? "Incomplete products" : "All products"}</h2></div><span>{visibleProducts.length} ITEMS</span></div>
           <ProductBulkToolbar />
           {error ? <p className="admin-error">Unable to load products: {error.message}</p> : !products?.length ? (
             <div className="admin-empty"><span>✳</span><h3>Your product catalog starts here.</h3><p>Add your first product to begin building the JINQAYA collection.</p><Link className="admin-primary-button" href="/admin/products/new">Add your first product</Link></div>
           ) : visibleProducts.length === 0 ? (
-            <div className="admin-empty"><h3>No incomplete products found.</h3><p>All products currently have an SKU, valid dimensions, image descriptions and an active primary category.</p><Link className="admin-secondary-button" href="/admin/products">View all products</Link></div>
+            <div className="admin-empty"><h3>No matching products found.</h3><p>{missingField ? `No products are currently missing ${missingField}.` : "All products currently have an SKU, valid dimensions, image descriptions and an active primary category."}</p><Link className="admin-secondary-button" href="/admin/products">View all products</Link></div>
           ) : (
             <div className="admin-table-wrap"><table className="admin-table"><thead><tr><th><ProductSelectionHeader /></th><th>PRODUCT</th><th>SKU</th><th>PET</th><th>PRICE</th><th>DATA CHECK</th><th>READINESS</th><th>STATUS</th><th>ACTION</th></tr></thead><tbody>
               {visibleProducts.map((product) => {
