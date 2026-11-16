@@ -256,7 +256,7 @@ export function CheckoutForm({ isDirectBuy = false }: { isDirectBuy?: boolean })
                 <div className="checkout-total"><span>Subtotal</span><strong>{mixedCurrencies ? "Multiple currencies" : formatCartMoney(estimate, currency)}</strong></div>
                 <div className="checkout-pending"><span>Shipping estimate {totalUnits <= 2 ? "(1–2 items)" : "(3+ items)"}</span><strong>{mixedCurrencies ? "—" : formatCartMoney(shippingEstimate, currency)}</strong></div>
                 <div className="checkout-total"><span>Total</span><strong>{mixedCurrencies ? "Multiple currencies" : formatCartMoney(totalEstimate, currency)}</strong></div>
-                <p>Standard shipping: USD 50 for 1–2 total items, or 50% of merchandise subtotal for 3+ items. Your final shipping charge is confirmed by the server. Taxes, duties or import charges may apply depending on your destination. See our <Link href="/policies/shipping">Shipping Policy</Link>.</p>
+                <p>Shipping costs are calculated based on your order and delivery destination. Your final shipping charge is confirmed by the server. Taxes, duties or import charges may apply depending on your destination. See our <Link href="/policies/shipping">Shipping Policy</Link>.</p>
                 <p>For non-quality returns, return shipping is paid by the customer and the original delivery charge is non-refundable. Quality issues must be reported within 7 days of delivery. See our <Link href="/policies/returns-refunds">Returns &amp; Refunds Policy</Link>.</p>
                 {mixedCurrencies && <p className="checkout-error">Your bag contains different currencies. Please check out separately.</p>}
                 <Link className="back-link" href="/cart">← RETURN TO BAG</Link>
