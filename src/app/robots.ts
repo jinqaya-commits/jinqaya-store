@@ -19,6 +19,21 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/admin/", "/login", "/api/"],
       },
       {
+        userAgent: "PerplexityBot",
+        allow: "/",
+        disallow: ["/admin/", "/login", "/api/"],
+      },
+      {
+        userAgent: "Claude-SearchBot",
+        allow: "/",
+        disallow: ["/admin/", "/login", "/api/"],
+      },
+      {
+        userAgent: "Claude-User",
+        allow: "/",
+        disallow: ["/admin/", "/login", "/api/"],
+      },
+      {
         userAgent: "Googlebot",
         allow: "/",
         disallow: ["/admin/", "/login", "/api/"],
