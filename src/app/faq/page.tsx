@@ -35,7 +35,12 @@ const groups = [
 ] as const;
 
 export default function FAQPage() {
-  const faqItems = groups.flatMap((group) => group.questions);
+  const faqItems: { question: string; answer: string }[] = [];
+  for (const group of groups) {
+    for (const item of group.questions) {
+      faqItems.push({ question: item.question, answer: item.answer });
+    }
+  }
   return (
     <main className="jq-home jq-policy-page">
       <FAQPageJsonLd items={faqItems} />
