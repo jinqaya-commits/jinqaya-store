@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { StoreProduct } from "@/lib/products";
 import { formatProductPrice } from "@/lib/product-pricing";
 
@@ -11,8 +12,7 @@ export function ProductCard({ product }: { product: StoreProduct }) {
     <article className="product-card">
       <Link className="product-card-image" href={`/products/${product.slug}`}>
         {image?.thumbnail_url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={image.thumbnail_url} alt={image.alt_text || product.name} loading="lazy" />
+          <Image src={image.thumbnail_url} alt={image.alt_text || product.name} fill sizes="(max-width: 760px) 50vw, 33vw" quality={78} />
         ) : (
           <span className="product-image-placeholder">JINQAYA</span>
         )}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import type { StoreProductImage } from "@/lib/products";
 
 export function ProductGallery({ images, productName }: { images: StoreProductImage[]; productName: string }) {
@@ -45,8 +46,7 @@ export function ProductGallery({ images, productName }: { images: StoreProductIm
       {active?.detail_url ? (
         <div className="product-gallery-stage" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
           <button className="product-detail-image-button" type="button" onClick={() => setIsZoomed(true)} aria-label={"Enlarge " + (active.alt_text || productName)}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img className="product-detail-main-image" src={active.detail_url} alt={active.alt_text || productName} fetchPriority="high" />
+            <Image className="product-detail-main-image" src={active.detail_url} alt={active.alt_text || productName} width={1600} height={2000} sizes="(max-width: 760px) 100vw, 55vw" priority quality={85} />
             <span className="product-image-expand-hint">VIEW LARGER</span>
           </button>
           {available.length > 1 && <>
@@ -61,8 +61,7 @@ export function ProductGallery({ images, productName }: { images: StoreProductIm
           <div className="product-thumbnail-grid" aria-label="Product image gallery">
             {available.map((image, index) => (
               <button key={image.id} type="button" className={"product-thumbnail-button" + (image.id === active?.id ? " is-active" : "")} onClick={() => setActiveId(image.id)} aria-label={"Show product image " + (index + 1)} aria-pressed={image.id === active?.id}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={image.thumbnail_url ?? image.detail_url!} alt={image.alt_text || productName + " image " + (index + 1)} loading="lazy" />
+                <Image src={image.thumbnail_url ?? image.detail_url!} alt={image.alt_text || productName + " image " + (index + 1)} width={320} height={320} sizes="(max-width: 760px) 68px, 15vw" quality={65} />
               </button>
             ))}
           </div>
