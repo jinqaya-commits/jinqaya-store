@@ -26,7 +26,7 @@ export function getCatalogCompleteness(product: CatalogCompletenessInput) {
   }
 
   const hasActivePrimaryCategory = (product.categories ?? []).some(
-    (category) => category.is_primary && category.is_active && Boolean(category.parent_id),
+    (category) => category.is_primary && category.is_active,
   );
   if (!hasActivePrimaryCategory) missing.push("Category");
 
