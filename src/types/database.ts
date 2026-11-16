@@ -2012,6 +2012,7 @@ export type Database = {
           care_instructions?: string | null
           created_at?: string
           description?: string | null
+          dimensions?: Json | null
           id?: string
           is_featured?: boolean
           is_new_arrival?: boolean
