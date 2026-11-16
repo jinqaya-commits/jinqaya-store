@@ -9,6 +9,7 @@ import { ProductCard } from "@/components/storefront/product-card";
 import { CartLink } from "@/components/storefront/cart-link";
 import { CategoryNavigation } from "@/components/storefront/category-navigation";
 import { BreadcrumbJsonLd, ProductJsonLd } from "@/lib/seo-jsonld";
+import { formatProductDimensions } from "@/lib/product-dimensions";
 import { RecentlyViewed } from "@/components/storefront/recently-viewed";
 import styles from "./product-experience.module.css";
 
@@ -107,6 +108,8 @@ export default async function ProductPage({ params }: Props) {
             <div className="product-specifications">
               <dl className="product-specification-grid">
                 {product.material && <div><dt>Material</dt><dd>{product.material}</dd></div>}
+                {formatProductDimensions(product.dimensions) && <div><dt>Dimensions</dt><dd>{formatProductDimensions(product.dimensions)}</dd></div>}
+                {product.dimensions?.measurement_note && <div><dt>Measurement note</dt><dd>{product.dimensions.measurement_note}</dd></div>}
                 {suitableFor && <div><dt>Designed for</dt><dd>{suitableFor}</dd></div>}
                 {product.primary_category && <div><dt>Collection</dt><dd>{product.primary_category.name}</dd></div>}
                 {colors.length > 0 && <div><dt>Color options</dt><dd>{colors.join(", ")}</dd></div>}
