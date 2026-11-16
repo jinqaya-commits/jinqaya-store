@@ -90,7 +90,7 @@ export function CheckoutSuccessContent() {
           </>
         )}
       </section>
-      <footer className="inner-footer"><Link href="/">JINQAYA</Link><span>BETTER LIVING, TOGETHER.</span></footer>
+      <footer className="inner-footer"><Link href="/">JINQAYA</Link><span><Link href="/account">MY ACCOUNT</Link> · BETTER LIVING, TOGETHER.</span></footer>
     </main>
   );
 }
