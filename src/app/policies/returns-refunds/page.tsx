@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/policies/returns-refunds" },
 
   title: "Returns & Refunds Policy",
-  description: "Learn about JINQAYA's policy for items with confirmed quality issues.",
+  description: "Learn how to request a return for quality and non-quality reasons, and how refunds and return shipping are handled.",
 };
 
 export default function ReturnsRefundsPage() {
@@ -23,18 +23,20 @@ export default function ReturnsRefundsPage() {
       <section className="jq-policy-hero">
         <p className="jq-kicker">CUSTOMER CARE / 01</p>
         <h1>Returns &amp;<br /><em>refunds.</em></h1>
-        <p>Our approach to returns when an item arrives with a confirmed quality issue.</p>
+        <p>Our return options for both quality-related and personal-preference returns.</p>
       </section>
       <article className="jq-policy-content">
         <p className="jq-policy-updated">RETURNS POLICY</p>
         <h2>Quality issues</h2>
-        <p>We accept return requests for items with confirmed manufacturing defects or quality issues. Please contact us within 7 days of receiving your order.</p>
+        <p>If an item arrives with a manufacturing defect or other confirmed quality issue, contact us within 7 days of receiving your order. Include your order number, a description of the issue, and clear photos or videos so we can review your request.</p>
         <h2>How to report an issue</h2>
         <p>Before sending anything back, contact our customer service team with your order number, clear photos or videos showing the issue, and a brief description. We will review the information and confirm whether the item qualifies for a return.</p>
         <h2>Return shipping</h2>
         <p>For a confirmed quality issue, JINQAYA will cover the agreed return shipping costs. Please wait for our instructions before arranging or sending a return.</p>
         <h2>Other reasons for return</h2>
-        <p>We do not offer returns or exchanges for non-quality-related reasons, such as a change of mind or personal preference, except where a return, cancellation, refund or other remedy is required by applicable consumer law.</p>
+        <p>You may request a return for a non-quality reason, such as a change of mind or personal preference. The item must be unused, in its original condition, and returned with its original packaging and included accessories. You are responsible for the return shipping cost. The original shipping charge paid to deliver the order is non-refundable. Please contact us for approval and return instructions before sending anything back. Any request remains subject to applicable consumer law.</p>
+        <h2>Refunds</h2>
+        <p>Once an approved return is received and inspected, we will notify you of the outcome and, if approved, arrange the applicable refund to the original payment method where possible. Any refund will be handled in accordance with applicable consumer law.</p>
         <h2>Important information</h2>
         <p>This policy does not limit or exclude any consumer rights that cannot legally be limited or excluded in the country or region where you purchase our products.</p>
         <div className="jq-policy-note"><strong>Before placing an order</strong><p>Please review product descriptions, dimensions, images and other details carefully. If you have a question about a product or need to report a quality issue, email <a href="mailto:info@jinqaya.com">info@jinqaya.com</a>.</p></div>
