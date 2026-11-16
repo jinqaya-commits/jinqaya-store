@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getStoreProducts } from "@/lib/products";
+import { getStoreProducts, getStoreCategoryIdsWithProducts } from "@/lib/products";
 import { resolveProductImageUrls } from "@/lib/product-images";
 import { ProductCard } from "@/components/storefront/product-card";
 import { CategoryNavigation } from "@/components/storefront/category-navigation";
@@ -47,8 +47,12 @@ export default async function CollectionPage({ params }: Props) {
     supabase.from("categories").select("id,parent_id,name,slug,sort_order").eq("is_active",true).order("sort_order")
   ]);
   if (!category) notFound();
-  const childCategories = (allCategories ?? []).filter(item => item.parent_id === category.id);
-  const products = await getStoreProducts(slug);
+  const categoryRows = allCategories ?? [];
+  const [populatedCategoryIds, products] = await Promise.all([
+    getStoreCategoryIdsWithProducts(categoryRows),
+    getStoreProducts(slug),
+  ]);
+  const childCategories = categoryRows.filter(item => item.parent_id === category.id && populatedCategoryIds.has(item.id));
 
   return (
     <main className="inner-page">
