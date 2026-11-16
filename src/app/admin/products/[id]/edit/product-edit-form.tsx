@@ -3,9 +3,11 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { updateProduct, updateVariant, removeVariant, reorderImages, removeImage, addProductImage, updateProductImageAlt, updateProductImageAltBatch, replaceProductImage } from "../../actions";
+import { ProductDimensionsFields } from "@/components/admin/product-dimensions-fields";
+import type { ProductDimensions } from "@/lib/product-dimensions";
 
 type Category = {id:string;parent_id:string|null;name:string;slug:string;sort_order:number;is_active:boolean};
-type Product = { id:string; name:string; pet_type:"cat"|"dog"|"both"|"shared"; short_description:string|null; description:string|null; material:string|null; care_instructions:string|null; seo_title:string|null; seo_description:string|null; status:"draft"|"active"|"archived" };
+type Product = { id:string; name:string; pet_type:"cat"|"dog"|"both"|"shared"; short_description:string|null; description:string|null; material:string|null; care_instructions:string|null; seo_title:string|null; seo_description:string|null; status:"draft"|"active"|"archived"; dimensions:ProductDimensions|null };
 type Variant = { id?:string; sku:string; variantName:string; color:string; size:string; price:string; compareAtPrice:string };
 type Image = { id:string; storage_path:string; alt_text:string|null; sort_order:number; previewUrl:string };
 
@@ -23,6 +25,7 @@ function categoryPath(category:Category,categories:Category[]) {
 
 export function ProductEditForm({product,categoryIds,primaryCategoryId,categories,variants: initialVariants,images: initialImages}:{product:Product;categoryIds:string[];primaryCategoryId:string;categories:Category[];variants:Variant[];images:Image[]}) {
  const [fields,setFields]=useState({name:product.name,petType:product.pet_type,shortDescription:product.short_description??"",description:product.description??"",material:product.material??"",careInstructions:product.care_instructions??"",seoTitle:product.seo_title??"",seoDescription:product.seo_description??"",status:product.status});
+ const [dimensions,setDimensions]=useState<ProductDimensions|null>(product.dimensions);
  const [selectedCategoryIds,setSelectedCategoryIds]=useState(categoryIds);
  const [selectedPrimaryCategoryId,setSelectedPrimaryCategoryId]=useState(primaryCategoryId);
  const [variants,setVariants]=useState(initialVariants);
@@ -31,7 +34,7 @@ export function ProductEditForm({product,categoryIds,primaryCategoryId,categorie
  const [selectedImageId,setSelectedImageId]=useState<string|null>(initialImages[0]?.id??null);
  const [error,setError]=useState(""); const [busy,setBusy]=useState(false); const [uploadBusy,setUploadBusy]=useState(false); const [altSaving,setAltSaving]=useState(false); const [pendingFiles,setPendingFiles]=useState<File[]>([]); const [uploadProgress,setUploadProgress]=useState<{completed:number;total:number}|null>(null); const [draggingFiles,setDraggingFiles]=useState(false); const router=useRouter();
  async function run(action:()=>Promise<{error?:string;success?:boolean}>) {setBusy(true);setError("");try{const result=await action();if(result.error){setError(result.error);setBusy(false);return false;}setBusy(false);router.refresh();return true;}catch(e){setError(e instanceof Error?e.message:"Unable to save.");setBusy(false);return false;}}
- async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();await run(()=>updateProduct(product.id,{...fields,categoryIds:selectedCategoryIds,primaryCategoryId:selectedPrimaryCategoryId}));}
+ async function submit(e:FormEvent<HTMLFormElement>){e.preventDefault();await run(()=>updateProduct(product.id,{...fields,dimensions,categoryIds:selectedCategoryIds,primaryCategoryId:selectedPrimaryCategoryId}));}
  function toggleCategory(categoryId:string,checked:boolean) {
   const next=checked
    ? Array.from(new Set([...selectedCategoryIds,categoryId]))
@@ -131,6 +134,7 @@ export function ProductEditForm({product,categoryIds,primaryCategoryId,categorie
    <label>Short description<input value={fields.shortDescription} onChange={e=>setFields({...fields,shortDescription:e.target.value})}/></label>
    <label>Full description<textarea rows={5} value={fields.description} onChange={e=>setFields({...fields,description:e.target.value})}/></label>
    <div className="admin-form-grid"><label>Material<input value={fields.material} onChange={e=>setFields({...fields,material:e.target.value})}/></label><label>Care instructions<input value={fields.careInstructions} onChange={e=>setFields({...fields,careInstructions:e.target.value})}/></label></div>
+   <ProductDimensionsFields value={dimensions} onChange={setDimensions}/>
    <section className="admin-form-section"><div className="admin-form-heading"><span>SEO</span><div><h2>Search appearance</h2><p>Write a clear page title and summary for search results. Leave blank to use the product name and description.</p></div></div><label>SEO title<input maxLength={65} value={fields.seoTitle} onChange={e=>setFields({...fields,seoTitle:e.target.value})} placeholder="Product name | JINQAYA"/></label><p className="admin-help">{fields.seoTitle.length}/65 characters</p><label>SEO description<textarea rows={3} maxLength={160} value={fields.seoDescription} onChange={e=>setFields({...fields,seoDescription:e.target.value})} placeholder="Describe what the product is, who it is for and its useful detail."/></label><p className="admin-help">{fields.seoDescription.length}/160 characters</p></section>
    <label>Status<select value={fields.status} onChange={e=>setFields({...fields,status:e.target.value as Product["status"]})}><option value="draft">Draft</option><option value="active">Active</option><option value="archived">Archived</option></select></label>
    <button className="admin-primary-button" disabled={busy} type="submit">{busy?"Saving…":"Save product details"}</button>
