@@ -1549,3 +1549,13 @@ a { color: inherit; text-decoration: none; }
  .jq-header-search-toggle{width:26px}
  .jq-header-search-toggle svg{width:17px;height:17px}
 }
+
+/* Header refinement: search before account, with more legible primary navigation. */
+.jq-header .jq-category-nav { font-size: 11px; letter-spacing: 1.25px; }
+.jq-header-actions { gap: clamp(16px, 1.8vw, 26px); }
+@media (max-width: 900px) {
+  .jq-header .jq-category-nav { font-size: 10px; gap: clamp(18px, 3vw, 28px); }
+}
+@media (max-width: 600px) {
+  .jq-header .jq-category-nav { font-size: 9px; letter-spacing: 1px; gap: 18px; }
+}
