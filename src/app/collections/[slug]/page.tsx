@@ -8,6 +8,7 @@ import { resolveProductImageUrls } from "@/lib/product-images";
 import { ProductCard } from "@/components/storefront/product-card";
 import { CategoryNavigation } from "@/components/storefront/category-navigation";
 import { BreadcrumbJsonLd } from "@/lib/seo-jsonld";
+import { SiteFooter } from "@/components/storefront/site-footer";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -79,7 +80,7 @@ export default async function CollectionPage({ params }: Props) {
           <Link className="button button-dark" href="/shop">EXPLORE OTHER COLLECTIONS <span aria-hidden="true">↗</span></Link>
         </section>
       )}
-      <footer className="inner-footer"><Link className="jq-brand-logo-link" href="/" aria-label="JINQAYA home"><Image className="jq-brand-logo jq-inner-logo jq-footer-logo" src="/jinqaya-logo.png" alt="JINQAYA Premium Pet Lifestyle" width={900} height={287} /></Link><span><Link href="/faq">FAQ</Link> · BETTER LIVING, TOGETHER.</span></footer>
+      <SiteFooter />
     </main>
   );
 }
