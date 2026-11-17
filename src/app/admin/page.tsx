@@ -100,6 +100,7 @@ export default async function AdminDashboardPage() {
           <Link href="/admin/customers">Customer directory <span>→</span></Link>
           <Link href="/admin/follow-ups">Customer follow-ups <span>→</span></Link>
           <Link href="/admin/after-sales">After-sales cases <span>→</span></Link>
+          <Link href="/admin/paypal-disputes">PayPal dispute review <span>→</span></Link>
           <Link href="/admin/inventory">Stock management <span>→</span></Link>
         </section>
       </div>
