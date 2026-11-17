@@ -6,7 +6,7 @@ test("product editor supports multi-image selection, retry and batch description
   const form = await readFile(new URL("../src/app/admin/products/[id]/edit/product-edit-form.tsx", import.meta.url), "utf8");
   assert.match(form, /type="file"[^>]*multiple/);
   assert.match(form, /Retry remaining images/);
-  assert.match(form, /Save all image descriptions/);
+  assert.match(form, /Save completed descriptions/);
   assert.match(form, /updateProductImageAltBatch/);
 });
 
