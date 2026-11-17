@@ -9,11 +9,10 @@ const socialLinks = [
 ] as const;
 
 function SocialIcon({ name }: { name: (typeof socialLinks)[number]["icon"] }) {
-  const common = { fill: "none", stroke: "currentColor", strokeWidth: 1.7, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
-  if (name === "instagram") return <svg viewBox="0 0 24 24" aria-hidden="true" {...common}><rect x="3.2" y="3.2" width="17.6" height="17.6" rx="5" /><circle cx="12" cy="12" r="4.1" /><circle cx="17.8" cy="6.5" r="1" fill="currentColor" stroke="none" /></svg>;
-  if (name === "tiktok") return <svg viewBox="0 0 24 24" aria-hidden="true" {...common}><path d="M14.2 3.2v11.2a4.1 4.1 0 1 1-3.2-4V7.1a7.3 7.3 0 1 0 7.1 7.3V9.8a8.2 8.2 0 0 0 3.1.6V7.2a5.1 5.1 0 0 1-4.3-4h-2.7Z" /></svg>;
-  if (name === "youtube") return <svg viewBox="0 0 24 24" aria-hidden="true" {...common}><path d="M21 7.4a2.5 2.5 0 0 0-1.8-1.8C17.6 5.2 12 5.2 12 5.2s-5.6 0-7.2.4A2.5 2.5 0 0 0 3 7.4 26 26 0 0 0 2.6 12 26 26 0 0 0 3 16.6a2.5 2.5 0 0 0 1.8 1.8c1.6.4 7.2.4 7.2.4s5.6 0 7.2-.4a2.5 2.5 0 0 0 1.8-1.8 26 26 0 0 0 .4-4.6 26 26 0 0 0-.4-4.6Z" /><path d="m10 15.3 5-3.3-5-3.3v6.6Z" fill="currentColor" stroke="none" /></svg>;
-  return <svg viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="M13.5 21v-8h2.7l.4-3.1h-3.1v-2c0-.9.3-1.5 1.6-1.5h1.7V3.6c-.3 0-1.3-.1-2.4-.1-2.4 0-4.1 1.5-4.1 4.2v2.2H7.6V13h2.7v8h3.2Z" /></svg>;
+  if (name === "instagram") return <svg viewBox="0 0 24 24" aria-hidden="true"><defs><linearGradient id="jq-instagram-gradient" x1="0%" y1="100%" x2="100%" y2="0%"><stop offset="0%" stopColor="#FEDA75" /><stop offset="48%" stopColor="#D62976" /><stop offset="100%" stopColor="#4F5BD5" /></linearGradient></defs><rect x="3" y="3" width="18" height="18" rx="5.2" fill="none" stroke="url(#jq-instagram-gradient)" strokeWidth="2.2" /><circle cx="12" cy="12" r="4.1" fill="none" stroke="#D62976" strokeWidth="2" /><circle cx="17.7" cy="6.5" r="1.25" fill="#F77737" /></svg>;
+  if (name === "tiktok") return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.1 3.1v11.2a4.1 4.1 0 1 1-3.2-4V7.1a7.3 7.3 0 1 0 7.1 7.3V9.8a8.2 8.2 0 0 0 3.1.6V7.2a5.1 5.1 0 0 1-4.3-4.1h-2.7Z" fill="#25F4EE" transform="translate(-1 0)" /><path d="M14.1 3.1v11.2a4.1 4.1 0 1 1-3.2-4V7.1a7.3 7.3 0 1 0 7.1 7.3V9.8a8.2 8.2 0 0 0 3.1.6V7.2a5.1 5.1 0 0 1-4.3-4.1h-2.7Z" fill="#FE2C55" transform="translate(1 0)" /><path d="M14.1 3.1v11.2a4.1 4.1 0 1 1-3.2-4V7.1a7.3 7.3 0 1 0 7.1 7.3V9.8a8.2 8.2 0 0 0 3.1.6V7.2a5.1 5.1 0 0 1-4.3-4.1h-2.7Z" fill="#111111" /></svg>;
+  if (name === "youtube") return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="4" fill="#FF0033" /><path d="m10 8.5 5.5 3.5-5.5 3.5v-7Z" fill="#FFFFFF" /></svg>;
+  return <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#1877F2" d="M24 12a12 12 0 1 0-13.9 11.9v-8.4H7.1V12h3V9.3c0-3 1.8-4.7 4.6-4.7 1.3 0 2.6.2 2.6.2v2.9h-1.5c-1.5 0-2 .9-2 1.9V12h3.4l-.5 3.5h-2.9v8.4A12 12 0 0 0 24 12Z" /></svg>;
 }
 
 export function SiteFooter() {
