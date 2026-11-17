@@ -13,6 +13,7 @@ import { formatProductDimensions } from "@/lib/product-dimensions";
 import { RecentlyViewed } from "@/components/storefront/recently-viewed";
 import styles from "./product-experience.module.css";
 import { SiteFooter } from "@/components/storefront/site-footer";
+import { SiteFooter } from "@/components/storefront/site-footer";
 
 type Props = { params: Promise<{ slug: string }> };
 
