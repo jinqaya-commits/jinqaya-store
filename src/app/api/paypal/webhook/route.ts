@@ -138,7 +138,8 @@ export async function POST(request: NextRequest) {
       const relatedIds = resource.supplementary_data?.related_ids;
       const captureId = relatedIds?.capture_id
         || resource.seller_transaction_id
-        || resource.disputed_transactions?.[0]?.seller_transaction_id;
+        || resource.disputed_transactions?.[0]?.seller_transaction_id
+        || (event.event_type === "PAYMENT.CAPTURE.REVERSED" ? resource.id : undefined);
       const disputeEvent = event.event_type.startsWith("CUSTOMER.DISPUTE.");
       const amountValue = resource.amount?.value;
       const amount = amountValue && /^\d+(\.\d{1,2})?$/.test(amountValue) ? amountValue : null;
