@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json({
-      ok: failed === 0 && orphanFailed === 0,
+      ok: failed === 0,
       claimed: items.length,
       deleted,
       skipped,
