@@ -28,11 +28,13 @@ export default async function PayPalDisputesPage() {
   const { data: allowed, error: permissionError } = await supabase.rpc("can_manage_catalog");
   if (permissionError || allowed !== true) redirect("/");
 
+  // These operational PayPal tables are created by the production migration but are not yet in the generated Supabase TypeScript schema.
+  const db = supabase as any;
   const [{ data: disputes, error: disputeError }, { data: events, error: eventError }] = await Promise.all([
-    supabase.from("paypal_disputes")
+    db.from("paypal_disputes")
       .select("dispute_id,order_id,payment_id,capture_id,status,reason,amount,currency,created_at,updated_at,orders(id,order_number,customer_email,status),payments(status,payment_review_required)")
       .order("updated_at", { ascending: false }).limit(200),
-    supabase.from("paypal_webhook_events")
+    db.from("paypal_webhook_events")
       .select("paypal_event_id,event_type,resource_id,order_id,processing_status,error_message,created_at,processed_at,orders(id,order_number)")
       .order("created_at", { ascending: false }).limit(50),
   ]);
