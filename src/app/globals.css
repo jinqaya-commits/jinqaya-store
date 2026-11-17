@@ -1620,3 +1620,8 @@ a { color: inherit; text-decoration: none; }
 .jq-footer-social .jq-footer-social-link:hover{transform:translateY(-2px);border-color:#9b8264;background:#eee9e0;color:#8b735e}
 .jq-footer-social .jq-footer-social-link:focus-visible{outline:2px solid #9b8264;outline-offset:4px}
 @media(max-width:600px){.jq-footer-social-links{gap:10px}.jq-footer-social .jq-footer-social-link{width:36px;height:36px}}
+
+/* Official platform brand colors for social icons */
+.jq-footer-social .jq-footer-social-link{background:transparent;border-color:#d7cfc2;color:inherit}
+.jq-footer-social .jq-footer-social-link svg{display:block;width:19px;height:19px}
+.jq-footer-social .jq-footer-social-link:hover{background:#fff;border-color:#c8bba8;transform:translateY(-2px)}
