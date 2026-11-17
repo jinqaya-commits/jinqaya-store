@@ -13,7 +13,10 @@ type WebhookEvent = {
     id?: string;
     status?: string;
     amount?: { value?: string; currency_code?: string };
-    supplementary_data?: { related_ids?: { order_id?: string } };
+    supplementary_data?: { related_ids?: { order_id?: string; capture_id?: string } };
+    disputed_transactions?: Array<{ seller_transaction_id?: string; buyer_transaction_id?: string }>;
+    reason?: string;
+    dispute_amount?: { value?: string; currency_code?: string };
   };
 };
 type PayPalOrder = {
@@ -71,6 +74,65 @@ export async function POST(request: NextRequest) {
     );
     if (verification.verification_status !== "SUCCESS") {
       return NextResponse.json({ error: "Invalid PayPal signature." }, { status: 400 });
+    }
+
+    const supportedEvents = new Set([
+      "PAYMENT.CAPTURE.REFUNDED",
+      "PAYMENT.CAPTURE.REVERSED",
+      "CUSTOMER.DISPUTE.CREATED",
+      "CUSTOMER.DISPUTE.UPDATED",
+      "CUSTOMER.DISPUTE.RESOLVED",
+    ]);
+
+    if (supportedEvents.has(event.event_type || "")) {
+      const resource = event.resource;
+      const dispute = event.event_type?.startsWith("CUSTOMER.DISPUTE.") === true;
+      let captureId = resource?.supplementary_data?.related_ids?.capture_id;
+      if (event.event_type === "PAYMENT.CAPTURE.REVERSED") captureId = resource?.id;
+      if (dispute) {
+        captureId = resource?.disputed_transactions?.find(
+          (item) => typeof item.seller_transaction_id === "string" && item.seller_transaction_id.length > 0,
+        )?.seller_transaction_id;
+      }
+      const eventId = event.id;
+      const resourceId = resource?.id;
+      if (!eventId || !resourceId || !captureId) {
+        return NextResponse.json({ error: "Incomplete PayPal refund or dispute event." }, { status: 400 });
+      }
+
+      const rawAmount = dispute ? resource?.dispute_amount : resource?.amount;
+      const parsedAmount = rawAmount?.value ? Number(rawAmount.value) : null;
+      const amount = parsedAmount !== null && Number.isFinite(parsedAmount) && parsedAmount > 0
+        ? parsedAmount : null;
+      const currency = rawAmount?.currency_code || null;
+
+      const supabase = createAdminClient();
+      const typed = supabase as unknown as {
+        rpc: (name: string, args: Record<string, unknown>) => Promise<{ data: unknown; error: { message: string } | null }>;
+      };
+      const { data, error } = await typed.rpc("process_paypal_webhook_event", {
+        p_event_id: eventId,
+        p_event_type: event.event_type,
+        p_resource_id: resourceId,
+        p_capture_id: captureId,
+        p_amount: amount,
+        p_currency: currency,
+        p_dispute_status: resource?.status || null,
+        p_reason: resource?.reason || null,
+        p_payload: event,
+      });
+      if (error) {
+        console.error("[paypal-webhook] refund or dispute event could not be processed", error.message);
+        return NextResponse.json({ error: "Unable to record the verified PayPal event." }, { status: 503 });
+      }
+      const result = data && typeof data === "object" ? data as Record<string, unknown> : {};
+      if (result.retry === true) {
+        return NextResponse.json({ error: "Related PayPal payment is not yet available. Retry this event." }, { status: 503 });
+      }
+      if (result.ok !== true) {
+        return NextResponse.json({ error: "PayPal event requires manual review." }, { status: 422 });
+      }
+      return NextResponse.json({ received: true, processed: true, duplicate: result.duplicate === true });
     }
 
     if (event.event_type !== "PAYMENT.CAPTURE.COMPLETED") {
