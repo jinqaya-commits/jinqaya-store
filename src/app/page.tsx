@@ -8,6 +8,7 @@ import { getRootCategories } from "@/lib/catalog";
 import { getStoreProducts } from "@/lib/products";
 import { createClient } from "@/lib/supabase/server";
 import { resolveProductImageUrls } from "@/lib/product-images";
+import { SiteFooter } from "@/components/storefront/site-footer";
 
 export const dynamic = "force-dynamic";
 
@@ -200,42 +201,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <footer className="jq-footer">
-        <div className="jq-footer-main">
-          <div className="jq-footer-brand">
-            <Link className="jq-brand-logo-link" href="/" aria-label="JINQAYA home"><Image className="jq-brand-logo jq-footer-logo" src="/jinqaya-logo.png" alt="JINQAYA Premium Pet Lifestyle" width={900} height={287} /></Link>
-            <p>Thoughtful essentials for the life we share with cats and dogs.</p>
-            <a className="jq-footer-email" href="mailto:info@jinqaya.com">INFO@JINQAYA.COM <span>↗</span></a>
-            <a className="jq-footer-email" href="https://wa.me/8613247615836" target="_blank" rel="noopener noreferrer">WHATSAPP <span>↗</span></a>
-          </div>
-          <nav className="jq-footer-group" aria-label="Explore">
-            <h2>EXPLORE</h2>
-            <Link href="/shop">The shop</Link>
-            <Link href="/order-status">Track your order</Link>
-            <Link href="/account">My account</Link>
-            <Link href="#collections">Collections</Link>
-            <Link href="#point-of-view">Our point of view</Link>
-          </nav>
-          <nav className="jq-footer-group" aria-label="Customer care">
-            <h2>CUSTOMER CARE</h2>
-            <Link href="/policies/shipping">Shipping</Link>
-            <Link href="/policies/returns-refunds">Returns &amp; refunds</Link>
-            <Link href="/contact">Contact us</Link>
-            <Link href="/faq">Frequently asked questions</Link>
-          </nav>
-          <nav className="jq-footer-group" aria-label="Information">
-            <h2>INFORMATION</h2>
-            <Link href="/policies/privacy">Privacy policy</Link>
-            <Link href="/policies/terms">Terms of service</Link>
-            <Link href="/about">About JINQAYA</Link>
-          </nav>
-        </div>
-        <div className="jq-footer-bottom">
-          <span>© {new Date().getFullYear()} JINQAYA. ALL RIGHTS RESERVED.</span>
-          <span>FOR CATS, DOGS &amp; THE LIFE BETWEEN.</span>
-          <Link href="/">BACK TO TOP ↑</Link>
-        </div>
-      </footer>
+      <SiteFooter />
     </main>
   );
 }
