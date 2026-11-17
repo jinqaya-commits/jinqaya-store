@@ -45,7 +45,7 @@ export default async function PayPalDisputesPage() {
     const payment = Array.isArray(d.payments) ? d.payments[0] : d.payments;
     return payment?.payment_review_required === true;
   }).length;
-  const failedEvents = (events || []).filter((e) => e.processing_status === "failed" || Boolean(e.error_message)).length;
+  const failedEvents = (events || []).filter((e: any) => e.processing_status === "failed" || Boolean(e.error_message)).length;
 
   return <main className="admin-shell">
     <aside className="admin-sidebar">
