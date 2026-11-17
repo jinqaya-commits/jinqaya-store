@@ -35,6 +35,8 @@ export default async function ContactPage({ searchParams }: { searchParams: Prom
         <h2>Send an enquiry</h2>
         <p>For product information, order requests, delivery questions or general support, send us a message using the form below. Our team will reply by email.</p>
         <InquiryForm productId={product?.id || null} productName={product?.name || null} />
+        <h2>Prefer WhatsApp?</h2>
+        <p>Message our team directly on WhatsApp: <a href="https://wa.me/8613247615836" target="_blank" rel="noopener noreferrer">+86 132 4761 5836</a>.</p>
         <h2>Prefer email?</h2>
         <p>You can also contact us directly at <a href="mailto:info@jinqaya.com">info@jinqaya.com</a>.</p>
         <div className="jq-policy-note">
