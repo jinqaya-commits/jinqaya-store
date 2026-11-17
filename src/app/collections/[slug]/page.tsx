@@ -9,7 +9,6 @@ import { ProductCard } from "@/components/storefront/product-card";
 import { CategoryNavigation } from "@/components/storefront/category-navigation";
 import { BreadcrumbJsonLd } from "@/lib/seo-jsonld";
 import { SiteFooter } from "@/components/storefront/site-footer";
-import { SiteFooter } from "@/components/storefront/site-footer";
 
 type Props = { params: Promise<{ slug: string }> };
 
