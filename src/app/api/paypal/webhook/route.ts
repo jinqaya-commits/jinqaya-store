@@ -23,6 +23,7 @@ type WebhookEvent = {
       buyer_transaction_id?: string;
       seller?: { email?: string; merchant_id?: string };
     }>;
+    links?: Array<{ rel?: string; href?: string }>;
   };
 };
 type PayPalOrder = {
@@ -136,9 +137,12 @@ export async function POST(request: NextRequest) {
     if (event.event_type && SUPPORTED_NON_CAPTURE_EVENTS.has(event.event_type)) {
       const resource = event.resource ?? {};
       const relatedIds = resource.supplementary_data?.related_ids;
+      const captureLink = resource.links?.find((link) => link.rel === "up")?.href;
+      const captureIdFromLink = captureLink?.match(/\\/captures\\/([^/?]+)/)?.[1];
       const captureId = relatedIds?.capture_id
         || resource.seller_transaction_id
         || resource.disputed_transactions?.[0]?.seller_transaction_id
+        || captureIdFromLink
         || (event.event_type === "PAYMENT.CAPTURE.REVERSED" ? resource.id : undefined);
       const disputeEvent = event.event_type.startsWith("CUSTOMER.DISPUTE.");
       const amountValue = resource.amount?.value;
