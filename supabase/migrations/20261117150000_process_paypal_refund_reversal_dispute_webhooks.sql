@@ -133,7 +133,15 @@ begin
     insert into public.order_refunds(order_id,payment_id,source_type,source_id,amount,currency,reference,
       refund_method,transaction_number,confirmed_at)
     values(v_payment.order_id,v_payment.id,'paypal_webhook',gen_random_uuid(),round(p_amount,2),
-      upper(trim(p_currency)),'PayPal refund webhook '||trim(p_event_id),'paypal',v_refund_id,pg_catalog.now());
+      upper(trim(p_currency)),'PayPal refund webhook '||trim(p_event_id),'paypal',v_refund_id,pg_catalog.now())
+    on conflict(transaction_number) where source_type='paypal_webhook' do nothing;
+
+    if not found then
+      update public.paypal_webhook_events set order_id=v_payment.order_id,payment_id=v_payment.id,
+        processing_status='processed',processed_at=pg_catalog.now(),error_message=null
+       where paypal_event_id=trim(p_event_id);
+      return jsonb_build_object('received',true,'duplicate_refund',true,'order_id',v_payment.order_id);
+    end if;
 
     v_refund_total:=v_refund_total+round(p_amount,2);
     update public.payments set status=case when v_refund_total>=round(amount,2)
