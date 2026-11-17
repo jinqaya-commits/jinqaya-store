@@ -91,6 +91,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid PayPal signature." }, { status: 400 });
     }
 
+    if (
+      event.event_type !== "PAYMENT.CAPTURE.COMPLETED"
+      && (!event.event_type || !SUPPORTED_NON_CAPTURE_EVENTS.has(event.event_type))
+    ) {
+      return NextResponse.json({ received: true });
+    }
+
     if (event.event_type === "PAYMENT.CAPTURE.COMPLETED") {
       const paypalOrderId = event.resource?.supplementary_data?.related_ids?.order_id;
       const captureId = event.resource?.id;
