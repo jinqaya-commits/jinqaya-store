@@ -12,6 +12,7 @@ import { BreadcrumbJsonLd, ProductJsonLd } from "@/lib/seo-jsonld";
 import { formatProductDimensions } from "@/lib/product-dimensions";
 import { RecentlyViewed } from "@/components/storefront/recently-viewed";
 import styles from "./product-experience.module.css";
+import { SiteFooter } from "@/components/storefront/site-footer";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -171,7 +172,7 @@ export default async function ProductPage({ params }: Props) {
         imageUrl: product.images.find((image) => image.is_primary)?.detail_url ?? product.images[0]?.detail_url ?? null,
         priceLabel: price,
       }} />
-      <footer className="inner-footer"><Link className="jq-brand-logo-link" href="/" aria-label="JINQAYA home"><Image className="jq-brand-logo jq-inner-logo jq-footer-logo" src="/jinqaya-logo.png" alt="JINQAYA Premium Pet Lifestyle" width={900} height={287} /></Link><span>FOR CATS, DOGS & THE LIFE BETWEEN.</span></footer>
+      <SiteFooter />
     </main>
   );
 }
