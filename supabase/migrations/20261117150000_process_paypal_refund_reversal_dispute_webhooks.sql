@@ -7,7 +7,7 @@ as $function$
 begin
   if new.status is distinct from old.status
      and new.status in ('processing'::public.order_status,'partially_shipped'::public.order_status,'shipped'::public.order_status)
-     and exists(select 1 from public.payments p where p.order_id=new.id and p.payment_review_required is true) then
+     and exists(select 1 from public.payments p where p.order_id=new.id and (p.payment_review_required is true or p.status='refunded'::public.payment_status)) then
     raise exception 'Payment review is required before this order can enter fulfilment.';
   end if;
   return new;
