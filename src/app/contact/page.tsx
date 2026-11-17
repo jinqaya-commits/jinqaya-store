@@ -5,6 +5,7 @@ import { CartLink } from "@/components/storefront/cart-link";
 import { CategoryNavigation } from "@/components/storefront/category-navigation";
 import { InquiryForm } from "@/components/storefront/inquiry-form";
 import { getStoreProductBySlug } from "@/lib/products";
+import { SiteFooter } from "@/components/storefront/site-footer";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/contact" },
@@ -69,14 +70,7 @@ export default async function ContactPage({ searchParams }: { searchParams: Prom
         <p><Link href="/policies/shipping">Shipping Policy</Link><Link href="/policies/returns-refunds">Returns &amp; Refunds</Link><Link href="/policies/privacy">Privacy Policy</Link><Link href="/policies/terms">Terms of Service</Link></p>
       </div>
 
-      <footer className="jq-footer">
-        <div className="jq-footer-main">
-          <div><Link className="jq-wordmark" href="/">JINQAYA<span>®</span></Link><p>Life is better in good company.</p></div>
-          <div className="jq-footer-links"><Link href="/shop">THE SHOP</Link><Link href="/policies/shipping">SHIPPING POLICY</Link><Link href="/policies/returns-refunds">RETURNS &amp; REFUNDS</Link><Link href="/policies/privacy">PRIVACY POLICY</Link><Link href="/policies/terms">TERMS OF SERVICE</Link><Link href="/contact">CONTACT</Link><a href="mailto:info@jinqaya.com">info@jinqaya.com</a></div>
-          <span className="jq-footer-note">FOR CATS, DOGS<br />AND THE LIFE BETWEEN.</span>
-        </div>
-        <div className="jq-footer-bottom"><span>© {new Date().getFullYear()} JINQAYA. ALL RIGHTS RESERVED.</span><span>DESIGNED FOR LIFE, SHARED.</span></div>
-      </footer>
+      <SiteFooter />
     </main>
   );
 }
