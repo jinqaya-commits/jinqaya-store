@@ -69,13 +69,17 @@ export function setDirectBuyItems(items: CartItem[]) {
   window.sessionStorage.setItem(DIRECT_BUY_KEY, JSON.stringify(items));
 }
 
-export function readDirectBuyItems(): CartItem[] {
-  if (typeof window === "undefined") return [];
+export function getDirectBuySnapshot(): string {
+  if (typeof window === "undefined") return "[]";
   try {
-    return parseCartSnapshot(window.sessionStorage.getItem(DIRECT_BUY_KEY) || "[]");
+    return window.sessionStorage.getItem(DIRECT_BUY_KEY) || "[]";
   } catch {
-    return [];
+    return "[]";
   }
+}
+
+export function readDirectBuyItems(): CartItem[] {
+  return parseCartSnapshot(getDirectBuySnapshot());
 }
 
 export function clearDirectBuyItems() {
