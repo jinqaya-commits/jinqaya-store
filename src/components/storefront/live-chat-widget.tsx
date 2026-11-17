@@ -236,7 +236,7 @@ export function LiveChatWidget() {
               <div className={styles.formFooter}><small>We usually reply during business hours.</small><button type="submit" disabled={sending || !draft.trim()}>{sending ? "SENDING…" : "SEND MESSAGE"} <span aria-hidden="true">↗</span></button></div>
             </form>
           )}
-          <footer className={styles.footer}>For email support: <a href="mailto:info@jinqaya.com">info@jinqaya.com</a></footer>
+          <footer className={styles.footer}><span>For email support: <a href="mailto:info@jinqaya.com">info@jinqaya.com</a></span><span>Prefer WhatsApp? <a href="https://wa.me/8613247615836" target="_blank" rel="noopener noreferrer">Chat with us</a></span></footer>
         </section>
       )}
       <button type="button" className={styles.launcher} aria-expanded={open} onClick={() => setOpen((value) => !value)}>
