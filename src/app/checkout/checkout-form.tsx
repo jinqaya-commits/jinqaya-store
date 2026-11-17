@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, useSyncExternalStore, type FormEvent } from "react";
-import { clearDirectBuyItems, formatCartMoney, getCartSnapshot, parseCartSnapshot, readDirectBuyItems, subscribeCart, writeCart, type CartItem } from "@/lib/cart";
+import { useMemo, useState, useSyncExternalStore, type FormEvent } from "react";
+import { clearDirectBuyItems, formatCartMoney, getCartSnapshot, getDirectBuySnapshot, parseCartSnapshot, subscribeCart, writeCart } from "@/lib/cart";
 import { CartLink } from "@/components/storefront/cart-link";
 import { PayPalPaymentButton } from "../order-status/paypal-payment-button";
 import { isRestrictedShippingDestination } from "@/lib/shipping-country";
@@ -33,14 +33,16 @@ function newRequestKey() {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
 
+function subscribeDirectBuy() {
+  return () => {};
+}
+
 export function CheckoutForm({ isDirectBuy = false }: { isDirectBuy?: boolean }) {
   const snapshot = useSyncExternalStore(subscribeCart, getCartSnapshot, () => "[]");
+  const directBuySnapshot = useSyncExternalStore(subscribeDirectBuy, getDirectBuySnapshot, () => "[]");
   const cartItems = useMemo(() => parseCartSnapshot(snapshot), [snapshot]);
-  const [directBuyItems, setDirectBuyItems] = useState<CartItem[] | null>(null);
-  useEffect(() => {
-    setDirectBuyItems(isDirectBuy ? readDirectBuyItems() : null);
-  }, [isDirectBuy]);
-  const items = isDirectBuy ? (directBuyItems ?? []) : cartItems;
+  const directBuyItems = useMemo(() => parseCartSnapshot(directBuySnapshot), [directBuySnapshot]);
+  const items = isDirectBuy ? directBuyItems : cartItems;
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [order, setOrder] = useState<OrderResult | null>(null);

@@ -32,11 +32,11 @@ test("checkout confirmation shows immediate PayPal payment for reserved stock an
   assert.match(checkoutForm, /Your items are reserved for 48 hours/);
 });
 
-test("checkout copy explains that customers can pay immediately without looking up the order", () => {
+test("checkout copy explains payment readiness and quote-before-payment flow", () => {
   assert.match(checkoutForm, /choose whether to pay immediately or request a shipping quote/);
   assert.match(checkoutForm, /no need to look up your order or enter a verification code/);
   assert.match(checkoutForm, /Payment is not available yet/);
-  assert.match(checkoutForm, /You won’t be charged when you submit/);
+  assert.match(checkoutForm, /You have not been charged/);
 });
 
 test("stock reservation migration can be safely reconciled when its changes already exist", () => {
