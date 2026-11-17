@@ -4,6 +4,7 @@ import Image from "next/image";
 import { CartLink } from "@/components/storefront/cart-link";
 import { CategoryNavigation } from "@/components/storefront/category-navigation";
 import { SiteFooter } from "@/components/storefront/site-footer";
+import { SiteFooter } from "@/components/storefront/site-footer";
 
 export const metadata: Metadata = {
   alternates: { canonical: "/policies/shipping" },
