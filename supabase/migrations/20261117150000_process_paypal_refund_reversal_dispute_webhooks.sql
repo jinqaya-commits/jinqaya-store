@@ -1,3 +1,7 @@
+create unique index if not exists order_refunds_paypal_transaction_unique_idx
+on public.order_refunds(transaction_number)
+where source_type='paypal_webhook';
+
 -- PayPal refunds, reversals, and disputes are recorded from verified webhooks.
 -- Payment review flags block fulfillment; refund state remains separate from order fulfillment status.
 
