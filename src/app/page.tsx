@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import { CartLink } from "@/components/storefront/cart-link";
+import { HeaderActions } from "@/components/storefront/header-actions";
 import { CategoryNavigation } from "@/components/storefront/category-navigation";
 import { ProductCard } from "@/components/storefront/product-card";
 import { getRootCategories } from "@/lib/catalog";
@@ -86,7 +86,7 @@ export default async function HomePage() {
       <header className="jq-header">
         <Link className="jq-brand-logo-link" href="/" aria-label="JINQAYA home"><Image className="jq-brand-logo" src="/jinqaya-logo.png" alt="JINQAYA Premium Pet Lifestyle" width={900} height={287} priority /></Link>
         <CategoryNavigation />
-        <div className="jq-header-actions"><CartLink /></div>
+        <HeaderActions />
       </header>
 
       <section className="jq-hero">
