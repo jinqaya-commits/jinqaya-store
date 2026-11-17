@@ -206,6 +206,7 @@ export default async function HomePage() {
             <Link className="jq-brand-logo-link" href="/" aria-label="JINQAYA home"><Image className="jq-brand-logo jq-footer-logo" src="/jinqaya-logo.png" alt="JINQAYA Premium Pet Lifestyle" width={900} height={287} /></Link>
             <p>Thoughtful essentials for the life we share with cats and dogs.</p>
             <a className="jq-footer-email" href="mailto:info@jinqaya.com">INFO@JINQAYA.COM <span>↗</span></a>
+            <a className="jq-footer-email" href="https://wa.me/8613247615836" target="_blank" rel="noopener noreferrer">WHATSAPP <span>↗</span></a>
           </div>
           <nav className="jq-footer-group" aria-label="Explore">
             <h2>EXPLORE</h2>
