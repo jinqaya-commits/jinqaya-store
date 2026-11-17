@@ -15,6 +15,7 @@ CREATE INDEX IF NOT EXISTS order_refunds_payment_idx
   ON public.order_refunds(payment_id, confirmed_at);
 
 CREATE TABLE IF NOT EXISTS public.paypal_webhook_events (
+  id uuid NOT NULL DEFAULT gen_random_uuid() UNIQUE,
   paypal_event_id text PRIMARY KEY,
   event_type text NOT NULL,
   resource_id text,
