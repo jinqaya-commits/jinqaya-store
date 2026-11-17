@@ -215,6 +215,44 @@ export async function getStoreProducts(categorySlug?: string): Promise<StoreProd
   }));
 }
 
+
+export async function getStoreCategoryIdsWithProducts(
+  categories: Array<{ id: string; parent_id: string | null }>,
+): Promise<Set<string>> {
+  if (categories.length === 0) return new Set();
+  const supabase = await createClient();
+  const { data: products, error: productsError } = await supabase
+    .from("products")
+    .select("id")
+    .eq("status", "active")
+    .not("slug", "in", `(${internalPreviewProductSlugs.map((slug) => `"${slug}"`).join(",")})`);
+  if (productsError) {
+    console.error("Unable to load public products for category navigation:", productsError.message);
+    return new Set();
+  }
+  const productIds = (products ?? []).map((product) => product.id);
+  if (productIds.length === 0) return new Set();
+  const { data: assignments, error: assignmentsError } = await supabase
+    .from("product_categories")
+    .select("category_id")
+    .in("product_id", productIds);
+  if (assignmentsError) {
+    console.error("Unable to load public category assignments:", assignmentsError.message);
+    return new Set();
+  }
+
+  const parentById = new Map(categories.map((category) => [category.id, category.parent_id]));
+  const populated = new Set<string>();
+  for (const assignment of assignments ?? []) {
+    let currentId: string | null = assignment.category_id;
+    while (currentId && !populated.has(currentId)) {
+      populated.add(currentId);
+      currentId = parentById.get(currentId) ?? null;
+    }
+  }
+  return populated;
+}
+
 export async function getStoreProductBySlug(slug: string): Promise<StoreProduct | null> {
   // Preview checkout fixtures must never be reachable through direct product URLs.
   if ((internalPreviewProductSlugs as readonly string[]).includes(slug)) return null;

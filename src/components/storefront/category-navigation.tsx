@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ShopMenu, type ShopNavCategory } from "./shop-menu";
+import { getStoreCategoryIdsWithProducts } from "@/lib/products";
 import styles from "./storefront-search.module.css";
 
 type CategoryRow = { id:string; parent_id:string|null; name:string; slug:string; sort_order:number; is_active:boolean };
@@ -25,8 +26,9 @@ export async function CategoryNavigation() {
     rows = (data ?? []) as CategoryRow[];
   }
 
+  const populatedCategoryIds = supabase ? await getStoreCategoryIdsWithProducts(rows) : new Set<string>();
   const buildTree = (parentId: string | null): ShopNavCategory[] =>
-    rows.filter(row => row.parent_id === parentId).map(row => ({
+    rows.filter(row => row.parent_id === parentId && (parentId === null || populatedCategoryIds.has(row.id))).map(row => ({
       id: row.id,
       name: row.name,
       slug: row.slug,
@@ -39,6 +41,8 @@ export async function CategoryNavigation() {
       <ShopMenu roots={roots} />
       <Link href="/#collections">DISCOVER</Link>
       <Link href="/about">OUR STORY</Link>
+      <Link href="/order-status">TRACK ORDER</Link>
+      <Link href="/account">MY ACCOUNT</Link>
       <form className={styles.search} action="/shop" method="get" role="search">
         <label className={styles.label} htmlFor="jq-global-search">SEARCH</label>
         <input id="jq-global-search" name="q" type="search" placeholder="Find a product" aria-label="Search products" />

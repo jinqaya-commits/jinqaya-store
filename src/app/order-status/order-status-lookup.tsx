@@ -49,8 +49,8 @@ function money(value: number | string | null, currency: string) {
   catch { return amount.toFixed(2) + " " + currency; }
 }
 
-export function OrderStatusLookup() {
-  const [orderNumber, setOrderNumber] = useState("");
+export function OrderStatusLookup({ initialOrderNumber = "" }: { initialOrderNumber?: string }) {
+  const [orderNumber, setOrderNumber] = useState(initialOrderNumber);
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [stage, setStage] = useState<"details" | "code" | "result">("details");
