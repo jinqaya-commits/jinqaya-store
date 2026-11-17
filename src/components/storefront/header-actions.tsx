@@ -9,7 +9,6 @@ export function HeaderActions() {
 
   return (
     <div className="jq-header-actions">
-      <Link className="jq-header-account" href="/account">ACCOUNT</Link>
       <div className="jq-header-search-wrap">
         <button
           className="jq-header-search-toggle"
@@ -31,6 +30,7 @@ export function HeaderActions() {
           </form>
         ) : null}
       </div>
+      <Link className="jq-header-account" href="/account">ACCOUNT</Link>
       <CartLink />
     </div>
   );
