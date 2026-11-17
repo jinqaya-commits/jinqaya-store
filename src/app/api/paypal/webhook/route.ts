@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
       const resource = event.resource ?? {};
       const relatedIds = resource.supplementary_data?.related_ids;
       const captureLink = resource.links?.find((link) => link.rel === "up")?.href;
-      const captureIdFromLink = captureLink?.match(/\\/captures\\/([^/?]+)/)?.[1];
+      const captureIdFromLink = captureLink?.split("/captures/")[1]?.split("/")[0]?.split("?")[0];
       const captureId = relatedIds?.capture_id
         || resource.seller_transaction_id
         || resource.disputed_transactions?.[0]?.seller_transaction_id
