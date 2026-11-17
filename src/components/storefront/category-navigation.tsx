@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ShopMenu, type ShopNavCategory } from "./shop-menu";
-import { getStoreCategoryIdsWithProducts } from "@/lib/products";
 
 type CategoryRow = { id:string; parent_id:string|null; name:string; slug:string; sort_order:number; is_active:boolean };
 
@@ -25,9 +24,8 @@ export async function CategoryNavigation() {
     rows = (data ?? []) as CategoryRow[];
   }
 
-  const populatedCategoryIds = supabase ? await getStoreCategoryIdsWithProducts(rows) : new Set<string>();
   const buildTree = (parentId: string | null): ShopNavCategory[] =>
-    rows.filter(row => row.parent_id === parentId && (parentId === null || populatedCategoryIds.has(row.id))).map(row => ({
+    rows.filter(row => row.parent_id === parentId).map(row => ({
       id: row.id,
       name: row.name,
       slug: row.slug,
